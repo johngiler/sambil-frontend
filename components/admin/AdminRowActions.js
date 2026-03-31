@@ -3,7 +3,7 @@
 import { IconRowEdit, IconRowTrash, IconRowView } from "@/components/admin/rowActionIcons";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 
-const btn = `${ROUNDED_CONTROL} p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c9dcf]/30`;
+const btn = `${ROUNDED_CONTROL} cursor-pointer p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c9dcf]/30`;
 
 export function AdminRowActions({
   onView,

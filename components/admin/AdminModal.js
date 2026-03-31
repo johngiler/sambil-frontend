@@ -57,7 +57,7 @@ export function AdminModal({
           wide ? "max-w-2xl" : "max-w-lg"
         }`}
       >
-        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-100 px-5 py-4">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-100 py-4 pl-5 pr-1.5">
           <div className="min-w-0">
             <h2 id={labelledById} className="text-lg font-bold tracking-tight text-slate-900">
               {title}
@@ -66,7 +66,7 @@ export function AdminModal({
           </div>
           <button
             type="button"
-            className="rounded-[10px] p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800"
+            className="-mr-0.5 shrink-0 rounded-[10px] p-2 text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-800"
             aria-label="Cerrar ventana"
             onClick={tryClose}
           >

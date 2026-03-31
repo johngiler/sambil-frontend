@@ -20,6 +20,11 @@
   --sambil-duration-fast: 180ms;
   --sambil-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --sambil-ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  /* Barras de desplazamiento (Firefox + WebKit): finas, píldora, acento marca. */
+  --sambil-scrollbar-size: 6px;
+  --sambil-scrollbar-track: transparent;
+  --sambil-scrollbar-thumb: rgba(24, 24, 27, 0.14);
+  --sambil-scrollbar-thumb-hover: rgba(12, 157, 207, 0.5);
 }
 
 @keyframes sambil-drawer-link-in {
@@ -51,6 +56,53 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-jakarta), system-ui, sans-serif;
+}
+
+/* Scrollbars: cuerpo y cualquier contenedor con overflow (Firefox). */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sambil-scrollbar-thumb) var(--sambil-scrollbar-track);
+}
+
+/* Scrollbars: WebKit / Blink (Chrome, Safari, Edge). */
+*::-webkit-scrollbar {
+  width: var(--sambil-scrollbar-size);
+  height: var(--sambil-scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--sambil-scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  background-color: var(--sambil-scrollbar-thumb);
+  transition: background-color var(--sambil-duration-fast) var(--sambil-ease-out);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--sambil-scrollbar-thumb-hover);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+@layer base {
+  button:not(:disabled),
+  input[type="submit"]:not(:disabled),
+  input[type="button"]:not(:disabled),
+  input[type="reset"]:not(:disabled) {
+    cursor: pointer;
+  }
+  button:disabled,
+  input[type="submit"]:disabled,
+  input[type="button"]:disabled,
+  input[type="reset"]:disabled {
+    cursor: not-allowed;
+  }
 }
 
 /* Ítems del menú móvil: entrada escalonada cuando el panel está visible. */

@@ -7,7 +7,7 @@ import { adminSecondaryBtn } from "@/components/admin/adminFormStyles";
 
 /** Botón de acción destructiva (eliminar, revocar, etc.). */
 const adminDangerBtn =
-  "inline-flex items-center justify-center gap-2 rounded-[15px] bg-gradient-to-r from-red-600 via-red-600 to-red-700 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-red-900/20 transition hover:brightness-105 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/45 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-60";
+  "inline-flex cursor-pointer items-center justify-center gap-2 rounded-[15px] bg-gradient-to-r from-red-600 via-red-600 to-red-700 px-6 py-2.5 text-sm font-semibold text-white shadow-md shadow-red-900/20 transition hover:brightness-105 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/45 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60";
 
 /**
  * Diálogo de confirmación (sustituye `confirm()` nativo).
