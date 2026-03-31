@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+/* Incluir `lib/` etc.: clases como `rounded-[15px]` solo aparecen como string en `uiRounding.js`;
+   si no se escanean, Tailwind no genera la utilidad y el navegador deja radios por defecto (muy redondos). */
+@source "../lib/**/*.js";
+@source "../services/**/*.js";
+@source "../components/**/*.{js,jsx}";
+@source "../views/**/*.{js,jsx}";
+@source "./**/*.{js,jsx}";
+
+:root {
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  /* Mismo criterio que `ROUNDED_CONTROL` (botones, campos, tarjetas admin). */
+  --sambil-control-radius: 15px;
+  /* Modales admin: `rounded-[10px]` en componentes + reglas `.sambil-admin-modal` abajo. */
+  --sambil-modal-radius: 10px;
+  /* Movimiento unificado (siempre activo en la UI del marketplace). */
+  --sambil-duration: 280ms;
+  --sambil-duration-fast: 180ms;
+  --sambil-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --sambil-ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+}
+
+@keyframes sambil-drawer-link-in {
+  from {
+    opacity: 0;
+    transform: translateX(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-jakarta);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-jakarta), system-ui, sans-serif;
+}
+
+/* Ítems del menú móvil: entrada escalonada cuando el panel está visible. */
+.sambil-drawer-nav[data-visible="true"] a {
+  animation: sambil-drawer-link-in var(--sambil-duration) var(--sambil-ease-out) backwards;
+}
+.sambil-drawer-nav[data-visible="true"] a:nth-child(1) {
+  animation-delay: 35ms;
+}
+.sambil-drawer-nav[data-visible="true"] a:nth-child(2) {
+  animation-delay: 70ms;
+}
+.sambil-drawer-nav[data-visible="true"] a:nth-child(3) {
+  animation-delay: 105ms;
+}
+.sambil-drawer-nav[data-visible="true"] a:nth-child(4) {
+  animation-delay: 140ms;
+}
+
+/*
+ * Modales admin: sin @layer para ganar a las utilidades Tailwind (`rounded-[15px]` en botones del footer).
+ * !important en radio: WebKit a veces ignora o combina mal con appearance en inputs.
+ */
+.sambil-admin-modal {
+  border-radius: var(--sambil-modal-radius) !important;
+}
+
+.sambil-admin-modal input:not([type="file"]):not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([type="range"]),
+.sambil-admin-modal textarea {
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: var(--sambil-modal-radius) !important;
+}
+
+.sambil-admin-modal select {
+  border-radius: var(--sambil-modal-radius) !important;
+}
+
+.sambil-admin-modal label:has(> input[type="file"]) {
+  border-radius: var(--sambil-modal-radius) !important;
+}
+
+.sambil-admin-modal button {
+  border-radius: var(--sambil-modal-radius) !important;
+}
+
+/* Login: evitar el azul de autofill del navegador; mantiene el fondo del diseño. */
+.sambil-login-field:-webkit-autofill,
+.sambil-login-field:-webkit-autofill:hover,
+.sambil-login-field:-webkit-autofill:focus {
+  -webkit-text-fill-color: #18181b;
+  -webkit-box-shadow: 0 0 0 1000px #fafafa inset;
+  box-shadow: 0 0 0 1000px #fafafa inset;
+  transition: background-color 99999s ease-out 0s;
+}

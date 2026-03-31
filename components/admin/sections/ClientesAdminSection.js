@@ -1,0 +1,725 @@
+"use client";
+
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+
+import {
+  AdminAccordionDetailHeader,
+  AdminAccordionRowPanel,
+  AdminDetailField,
+  AdminDetailInset,
+  AdminDetailSection,
+  adminDetailEmpty,
+} from "@/components/admin/AdminAccordionDetail";
+import { AdminAccordionToggle } from "@/components/admin/AdminAccordionToggle";
+import { AdminCreatePlusIcon } from "@/components/admin/AdminCreatePlusIcon";
+import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
+import { AdminModal } from "@/components/admin/AdminModal";
+import { AdminRowActions } from "@/components/admin/AdminRowActions";
+import {
+  adminField,
+  adminLabel,
+  adminPanelCard,
+  adminSectionHeaderIconWrap,
+  adminCreateBtnLabel,
+  adminPrimaryBtn,
+  adminSecondaryBtn,
+  adminTableCard,
+} from "@/components/admin/adminFormStyles";
+import { CLIENT_STATUS } from "@/components/admin/adminConstants";
+import { AdminSelect } from "@/components/admin/AdminSelect";
+import { IconAdminBriefcase } from "@/components/admin/adminIcons";
+import { ClientesUsuariosSectionSkeleton } from "@/components/admin/skeletons/ClientesUsuariosSectionSkeleton";
+import { CoverImageField } from "@/components/admin/CoverImageField";
+import { useAuth } from "@/context/AuthContext";
+import { EmptyState, EmptyStateIconBriefcase } from "@/components/ui/EmptyState";
+import { clientsListPath } from "@/lib/adminListQuery";
+import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import { ROUNDED_CONTROL } from "@/lib/uiRounding";
+import { parsePaginatedResponse } from "@/services/api";
+import { authFetch, authFetchForm, mediaAbsoluteUrl } from "@/services/authApi";
+import {
+  AdminFilterClearButton,
+  AdminFiltersRow,
+  AdminFilterSearchInput,
+  AdminFilterSelect,
+  FilterClearAction,
+} from "@/components/admin/AdminListFilters";
+import { AdminListPagination } from "@/components/admin/AdminListPagination";
+
+const CLIENT_STATUS_FILTERS = [{ v: "all", l: "Todos los estados" }, ...CLIENT_STATUS];
+
+/** Texto de usuarios vinculados a la empresa (nombres de usuario, más legible que IDs). */
+function formatLinkedUsersDisplay(c) {
+  if (c == null) return "—";
+  if (Array.isArray(c.linked_usernames) && c.linked_usernames.length > 0) {
+    return c.linked_usernames.join(", ");
+  }
+  if (Array.isArray(c.linked_user_ids) && c.linked_user_ids.length > 0) {
+    return c.linked_user_ids.join(", ");
+  }
+  return "—";
+}
+
+export function ClientesAdminSection() {
+  const { authReady, accessToken } = useAuth();
+  const [rows, setRows] = useState([]);
+  const [ready, setReady] = useState(false);
+  const [expandedId, setExpandedId] = useState(null);
+  const [msg, setMsg] = useState("");
+  const [err, setErr] = useState("");
+  const [modal, setModal] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [filterQ, setFilterQ] = useState("");
+  const [filterClientStatus, setFilterClientStatus] = useState("all");
+  const [totalCount, setTotalCount] = useState(0);
+  const [page, setPage] = useState(1);
+  const debouncedFilterQ = useDebouncedValue(filterQ, 400);
+  const filtersActive = filterQ.trim() !== "" || filterClientStatus !== "all";
+
+  const [companyName, setCompanyName] = useState("");
+  const [rif, setRif] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [clStatus, setClStatus] = useState("pending");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const [coverFile, setCoverFile] = useState(null);
+  const [filePreview, setFilePreview] = useState("");
+  const [pendingClearCover, setPendingClearCover] = useState(false);
+  const fileRef = useRef(null);
+
+  const reload = useCallback(async () => {
+    const d = await authFetch(clientsListPath(page, debouncedFilterQ, filterClientStatus));
+    const { results, count } = parsePaginatedResponse(d);
+    setRows(results);
+    setTotalCount(count);
+  }, [page, debouncedFilterQ, filterClientStatus]);
+
+  useEffect(() => {
+    if (!authReady || !accessToken) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        await reload();
+      } catch (e) {
+        if (!cancelled) setErr(e instanceof Error ? e.message : "Error al cargar");
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, accessToken, reload]);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedFilterQ, filterClientStatus]);
+
+  useEffect(() => {
+    if (!coverFile) {
+      setFilePreview("");
+      return;
+    }
+    const u = URL.createObjectURL(coverFile);
+    setFilePreview(u);
+    return () => URL.revokeObjectURL(u);
+  }, [coverFile]);
+
+  function resetForm() {
+    setCompanyName("");
+    setRif("");
+    setContactName("");
+    setEmail("");
+    setPhone("");
+    setClStatus("pending");
+    setAddress("");
+    setCity("");
+    setNotes("");
+    setCoverFile(null);
+    setPendingClearCover(false);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  function openCreate() {
+    setSelected(null);
+    resetForm();
+    setModal("create");
+  }
+
+  function openView(c) {
+    setSelected(c);
+    setModal("view");
+  }
+
+  function openEdit(c) {
+    if (!c) return;
+    setSelected(c);
+    setCompanyName(c.company_name);
+    setRif(c.rif);
+    setContactName(c.contact_name || "");
+    setEmail(c.email);
+    setPhone(c.phone || "");
+    setClStatus(c.status);
+    setAddress(c.address || "");
+    setCity(c.city || "");
+    setNotes(c.notes || "");
+    setCoverFile(null);
+    setPendingClearCover(false);
+    if (fileRef.current) fileRef.current.value = "";
+    setModal("edit");
+  }
+
+  function closeModal() {
+    setModal(null);
+    setSelected(null);
+    resetForm();
+  }
+
+  async function submitSave() {
+    setErr("");
+    setMsg("");
+    try {
+      if (modal === "create") {
+        if (coverFile) {
+          const fd = new FormData();
+          fd.append("company_name", companyName.trim());
+          fd.append("rif", rif.trim());
+          fd.append("contact_name", contactName.trim());
+          fd.append("email", email.trim());
+          fd.append("phone", phone.trim());
+          fd.append("address", address.trim());
+          fd.append("city", city.trim());
+          fd.append("notes", notes.trim());
+          fd.append("status", clStatus);
+          fd.append("cover_image", coverFile);
+          await authFetchForm("/api/clients/", { method: "POST", formData: fd });
+        } else {
+          await authFetch("/api/clients/", {
+            method: "POST",
+            body: {
+              company_name: companyName.trim(),
+              rif: rif.trim(),
+              contact_name: contactName.trim(),
+              email: email.trim(),
+              phone: phone.trim(),
+              address: address.trim(),
+              city: city.trim(),
+              notes: notes.trim(),
+              status: clStatus,
+            },
+          });
+        }
+        setMsg("Cliente creado.");
+      } else if (modal === "edit" && selected) {
+        if (coverFile) {
+          const fd = new FormData();
+          fd.append("company_name", companyName.trim());
+          fd.append("contact_name", contactName.trim());
+          fd.append("email", email.trim());
+          fd.append("phone", phone.trim());
+          fd.append("address", address.trim());
+          fd.append("city", city.trim());
+          fd.append("notes", notes.trim());
+          fd.append("status", clStatus);
+          fd.append("cover_image", coverFile);
+          await authFetchForm(`/api/clients/${selected.id}/`, { method: "PATCH", formData: fd });
+        } else {
+          const body = {
+            company_name: companyName.trim(),
+            contact_name: contactName.trim(),
+            email: email.trim(),
+            phone: phone.trim(),
+            address: address.trim(),
+            city: city.trim(),
+            notes: notes.trim(),
+            status: clStatus,
+          };
+          if (pendingClearCover) body.cover_image = null;
+          await authFetch(`/api/clients/${selected.id}/`, { method: "PATCH", body });
+        }
+        setMsg("Cliente actualizado.");
+      }
+      closeModal();
+      await reload();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Error");
+    }
+  }
+
+  function askDeleteClient(id) {
+    setDeleteTargetId(id);
+  }
+
+  async function executeDeleteClient(id) {
+    setErr("");
+    try {
+      await authFetch(`/api/clients/${id}/`, { method: "DELETE" });
+      setMsg("Cliente eliminado.");
+      await reload();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Error");
+      throw e;
+    }
+  }
+
+  const readOnly = modal === "view";
+  const existingCover = selected?.cover_image && !pendingClearCover ? selected.cover_image : null;
+
+  useEffect(() => {
+    setExpandedId(null);
+  }, [filterQ, filterClientStatus, page]);
+
+  if (!ready) {
+    return <ClientesUsuariosSectionSkeleton />;
+  }
+
+  return (
+    <div className={adminPanelCard}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className={adminSectionHeaderIconWrap}>
+            <IconAdminBriefcase className="!h-8 !w-8" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-slate-900">Clientes</h2>
+            <p className="mt-0.5 text-sm text-zinc-500">
+              {totalCount} cliente{totalCount === 1 ? "" : "s"}
+            </p>
+          </div>
+        </div>
+        <button type="button" className={adminPrimaryBtn} onClick={openCreate}>
+          <AdminCreatePlusIcon />
+          <span className={adminCreateBtnLabel}>Nuevo cliente</span>
+        </button>
+      </div>
+
+      {msg ? (
+        <p className={`mt-4 ${ROUNDED_CONTROL} bg-emerald-50 px-3 py-2 text-sm text-emerald-900`}>{msg}</p>
+      ) : null}
+      {err ? (
+        <p className={`mt-4 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}>{err}</p>
+      ) : null}
+
+      {totalCount === 0 && !filtersActive ? (
+        <div className="mt-6">
+          <EmptyState
+            icon={<EmptyStateIconBriefcase />}
+            title="No hay empresas cliente registradas"
+            description="Todavía no hay empresas dadas de alta. Puedes registrar la primera con «Nuevo cliente» o aparecerán cuando un usuario complete los datos de su empresa en Mi empresa."
+          />
+        </div>
+      ) : (
+        <>
+          <AdminFiltersRow>
+            <AdminFilterSearchInput
+              id="clientes-filter-q"
+              value={filterQ}
+              onChange={setFilterQ}
+              placeholder="Empresa, RIF, correo, contacto…"
+            />
+            <AdminFilterSelect
+              id="clientes-filter-status"
+              label="Estado de la ficha"
+              value={filterClientStatus}
+              onChange={setFilterClientStatus}
+              options={CLIENT_STATUS_FILTERS}
+            />
+            <AdminFilterClearButton
+              show={filtersActive}
+              onClick={() => {
+                setFilterQ("");
+                setFilterClientStatus("all");
+                setPage(1);
+              }}
+            />
+          </AdminFiltersRow>
+
+          {rows.length === 0 && filtersActive ? (
+            <div className="mt-6 rounded-[15px] border border-zinc-200 bg-zinc-50/80 px-4 py-8 text-center text-sm text-zinc-600">
+              <p>Ningún cliente coincide con los filtros.</p>
+              <div className="mt-5 flex justify-center">
+                <FilterClearAction
+                  onClick={() => {
+                    setFilterQ("");
+                    setFilterClientStatus("all");
+                    setPage(1);
+                  }}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          {rows.length > 0 ? (
+        <div className={`mt-6 ${adminTableCard}`}>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-zinc-100 bg-zinc-50/90">
+                  <th className="w-8 px-2 py-3" aria-hidden />
+                  <th className="px-2 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Foto
+                  </th>
+                  <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Empresa
+                  </th>
+                  <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    RIF
+                  </th>
+                  <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Usuarios vinculados
+                  </th>
+                  <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Estado
+                  </th>
+                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Acciones
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((c) => {
+                const open = expandedId === c.id;
+                const panelId = `cliente-extra-${c.id}`;
+                const linkedUsersText = formatLinkedUsersDisplay(c);
+                return (
+                  <Fragment key={c.id}>
+                    <tr className="border-b border-zinc-100 transition-colors hover:bg-sky-50/40">
+                      <td className="px-2 py-2.5">
+                        <AdminAccordionToggle
+                          expanded={open}
+                          onToggle={() => setExpandedId(open ? null : c.id)}
+                          rowId={c.id}
+                          controlsId={panelId}
+                        />
+                      </td>
+                      <td className="px-2 py-2">
+                        <div className="flex h-11 w-11 overflow-hidden rounded-full border border-zinc-100 bg-zinc-100">
+                          {c.cover_image ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img
+                              src={mediaAbsoluteUrl(c.cover_image)}
+                              alt=""
+                              className="h-full w-full object-cover"
+                            />
+                          ) : null}
+                        </div>
+                      </td>
+                      <td className="max-w-[10rem] truncate px-3 py-2.5 font-medium text-zinc-900" title={c.company_name}>
+                        {c.company_name}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-xs text-zinc-800">{c.rif}</td>
+                      <td
+                        className="max-w-[14rem] truncate px-3 py-2.5 text-zinc-700"
+                        title={linkedUsersText}
+                      >
+                        {linkedUsersText}
+                      </td>
+                      <td className="px-3 py-2.5 capitalize text-zinc-700">{c.status}</td>
+                      <td className="px-3 py-2">
+                        <AdminRowActions
+                          onView={() => openView(c)}
+                          onEdit={() => openEdit(c)}
+                            onDelete={() => askDeleteClient(c.id)}
+                        />
+                      </td>
+                    </tr>
+                    {open ? (
+                      <AdminAccordionRowPanel colSpan={7} panelId={panelId}>
+                        <AdminAccordionDetailHeader
+                          badgeText={`ID ${c.id}`}
+                          titleLabel="Cliente en sistema"
+                          titleLine={c.company_name}
+                          hint="Datos de contacto y ubicación"
+                        />
+
+                        <div className="mt-5 grid gap-6 lg:grid-cols-2">
+                          <AdminDetailSection panelId={panelId} sectionId="contact" title="Contacto">
+                            <AdminDetailInset>
+                              <AdminDetailField label="Usuarios vinculados">
+                                {linkedUsersText !== "—" ? (
+                                  <span className="text-sm text-zinc-800">{linkedUsersText}</span>
+                                ) : (
+                                  <span className="text-sm text-zinc-400">Ninguno · vincular en Usuarios</span>
+                                )}
+                              </AdminDetailField>
+                              <AdminDetailField label="Persona de contacto">
+                                {adminDetailEmpty(c.contact_name)}
+                              </AdminDetailField>
+                              <AdminDetailField label="Email">
+                                {c.email?.trim() ? (
+                                  <a
+                                    href={`mailto:${c.email.trim()}`}
+                                    className="break-all font-medium text-[#0c9dcf] underline-offset-2 hover:underline"
+                                  >
+                                    {c.email.trim()}
+                                  </a>
+                                ) : (
+                                  adminDetailEmpty("")
+                                )}
+                              </AdminDetailField>
+                              <AdminDetailField label="Teléfono">{adminDetailEmpty(c.phone)}</AdminDetailField>
+                            </AdminDetailInset>
+                          </AdminDetailSection>
+
+                          <AdminDetailSection panelId={panelId} sectionId="ubic" title="Ubicación">
+                            <AdminDetailInset>
+                              <AdminDetailField label="Ciudad">{adminDetailEmpty(c.city)}</AdminDetailField>
+                              <AdminDetailField label="Dirección fiscal / oficina">
+                                {adminDetailEmpty(c.address)}
+                              </AdminDetailField>
+                            </AdminDetailInset>
+                          </AdminDetailSection>
+                        </div>
+                      </AdminAccordionRowPanel>
+                    ) : null}
+                  </Fragment>
+                );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+          ) : null}
+          <AdminListPagination page={page} totalCount={totalCount} onPageChange={setPage} />
+        </>
+      )}
+
+      <AdminModal
+        open={modal != null}
+        onClose={closeModal}
+        title={
+          modal === "create"
+            ? "Nuevo cliente"
+            : modal === "edit"
+              ? "Editar cliente"
+              : "Detalle del cliente"
+        }
+        subtitle={modal === "view" ? selected?.company_name : undefined}
+        wide
+        footer={
+          readOnly ? (
+            <div className="flex justify-end gap-2">
+              <button type="button" className={adminSecondaryBtn} onClick={closeModal}>
+                Cerrar
+              </button>
+              <button type="button" className={adminPrimaryBtn} onClick={() => openEdit(selected)}>
+                Editar
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-wrap justify-end gap-2">
+              <button type="button" className={adminSecondaryBtn} onClick={closeModal}>
+                Cancelar
+              </button>
+              <button type="button" className={adminPrimaryBtn} onClick={submitSave}>
+                {modal === "create" ? "Crear" : "Guardar"}
+              </button>
+            </div>
+          )
+        }
+      >
+        {readOnly && selected ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <CoverImageField readOnly variant="avatar" existingUrl={selected.cover_image} />
+            </div>
+            <div className="sm:col-span-2">
+              <p className={adminLabel}>Razón social</p>
+              <p className="mt-1 font-medium text-zinc-900">{selected.company_name}</p>
+            </div>
+            <div>
+              <p className={adminLabel}>RIF</p>
+              <p className="mt-1 font-mono text-sm text-zinc-800">{selected.rif}</p>
+            </div>
+            <div>
+              <p className={adminLabel}>Estado</p>
+              <p className="mt-1 text-sm capitalize text-zinc-800">{selected.status}</p>
+            </div>
+            <div>
+              <p className={adminLabel}>Contacto</p>
+              <p className="mt-1 text-sm text-zinc-800">{selected.contact_name || "—"}</p>
+            </div>
+            <div>
+              <p className={adminLabel}>Usuarios vinculados</p>
+              <p className="mt-1 text-sm text-zinc-800">{formatLinkedUsersDisplay(selected)}</p>
+              <p className="mt-1 text-xs text-zinc-500">
+                Solo lectura. Enlaza cuentas en la sección Usuarios: rol «Cliente marketplace» y la empresa
+                correspondiente. Varias cuentas pueden compartir la misma ficha.
+              </p>
+            </div>
+            <div>
+              <p className={adminLabel}>Email</p>
+              <p className="mt-1 text-sm text-zinc-800">{selected.email}</p>
+            </div>
+            <div>
+              <p className={adminLabel}>Teléfono</p>
+              <p className="mt-1 text-sm text-zinc-800">{selected.phone || "—"}</p>
+            </div>
+            <div>
+              <p className={adminLabel}>Ciudad</p>
+              <p className="mt-1 text-sm text-zinc-800">{selected.city?.trim() || "—"}</p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className={adminLabel}>Dirección fiscal / oficina</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-800">
+                {selected.address?.trim() || "—"}
+              </p>
+            </div>
+            <div className="sm:col-span-2">
+              <p className={adminLabel}>Notas internas</p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-zinc-700">
+                {selected.notes?.trim() || "—"}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="sm:col-span-2">
+              <CoverImageField
+                readOnly={false}
+                variant="avatar"
+                existingUrl={existingCover}
+                filePreviewUrl={filePreview}
+                onFileChange={(f) => {
+                  setCoverFile(f);
+                  setPendingClearCover(false);
+                }}
+                onClearExisting={() => {
+                  setPendingClearCover(true);
+                  setCoverFile(null);
+                  if (fileRef.current) fileRef.current.value = "";
+                }}
+                fileInputRef={fileRef}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={adminLabel} htmlFor="cl-name">
+                Razón social
+              </label>
+              <input
+                id="cl-name"
+                className={adminField}
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className={adminLabel} htmlFor="cl-rif">
+                RIF
+              </label>
+              <input
+                id="cl-rif"
+                className={adminField}
+                value={rif}
+                onChange={(e) => setRif(e.target.value)}
+                required
+                disabled={modal === "edit"}
+              />
+              {modal === "edit" ? (
+                <p className="mt-1 text-xs text-zinc-500">El RIF no se puede cambiar.</p>
+              ) : null}
+            </div>
+            <div>
+              <label className={adminLabel} htmlFor="cl-status">
+                Estado
+              </label>
+              <AdminSelect
+                id="cl-status"
+                options={CLIENT_STATUS}
+                value={clStatus}
+                onChange={(v) => setClStatus(v || "pending")}
+                inModal
+                aria-label="Estado del cliente"
+              />
+            </div>
+            <div>
+              <label className={adminLabel} htmlFor="cl-contact">
+                Contacto
+              </label>
+              <input
+                id="cl-contact"
+                className={adminField}
+                value={contactName}
+                onChange={(e) => setContactName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className={adminLabel} htmlFor="cl-email">
+                Email
+              </label>
+              <input
+                id="cl-email"
+                type="email"
+                className={adminField}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className={adminLabel} htmlFor="cl-phone">
+                Teléfono
+              </label>
+              <input
+                id="cl-phone"
+                className={adminField}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className={adminLabel} htmlFor="cl-city">
+                Ciudad
+              </label>
+              <input id="cl-city" className={adminField} value={city} onChange={(e) => setCity(e.target.value)} />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={adminLabel} htmlFor="cl-address">
+                Dirección
+              </label>
+              <textarea
+                id="cl-address"
+                className={adminField}
+                rows={2}
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={adminLabel} htmlFor="cl-notes">
+                Notas internas
+              </label>
+              <textarea
+                id="cl-notes"
+                className={adminField}
+                rows={2}
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Solo visibles en el panel"
+              />
+            </div>
+          </div>
+        )}
+      </AdminModal>
+
+      <AdminConfirmDialog
+        open={deleteTargetId != null}
+        onClose={() => setDeleteTargetId(null)}
+        title="Eliminar cliente"
+        confirmLabel="Eliminar"
+        onConfirm={async () => {
+          if (deleteTargetId == null) return;
+          await executeDeleteClient(deleteTargetId);
+        }}
+      >
+        <p>¿Eliminar este cliente? No debe tener pedidos asociados.</p>
+      </AdminConfirmDialog>
+    </div>
+  );
+}

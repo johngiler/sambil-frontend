@@ -1,0 +1,183 @@
+"use client";
+
+import { AdminSelect } from "@/components/admin/AdminSelect";
+
+function FilterResetIcon({ className }) {
+  return (
+    <svg
+      className={className}
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M18 6L6 18M6 6l12 12" />
+    </svg>
+  );
+}
+
+/** Etiquetas de filtros (misma jerarquía que chips de portada). */
+const filterLabelClass =
+  "mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400";
+
+const searchInputClass =
+  "mt-0 w-full min-h-[40px] rounded-xl border border-zinc-200/90 bg-white py-2 pl-10 pr-3 text-sm text-zinc-900 shadow-sm outline-none transition-[border-color,box-shadow,background-color] placeholder:text-zinc-400 focus:border-[#0c9dcf]/45 focus:bg-white focus:ring-2 focus:ring-[#0c9dcf]/12";
+
+function SearchIcon({ className }) {
+  return (
+    <svg
+      className={className}
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+    </svg>
+  );
+}
+
+/**
+ * @param {object} props
+ * @param {string} props.id
+ * @param {string} props.value
+ * @param {(v: string) => void} props.onChange
+ * @param {string} [props.placeholder]
+ */
+export function AdminFilterSearchInput({ id, value, onChange, placeholder = "Buscar…" }) {
+  return (
+    <div className="min-w-0 flex-1">
+      <label htmlFor={id} className={filterLabelClass}>
+        Buscar
+      </label>
+      <div className="relative">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400">
+          <SearchIcon className="block" />
+        </span>
+        <input
+          id={id}
+          type="search"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          className={searchInputClass}
+          autoComplete="off"
+        />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * @param {object} props
+ * @param {string} props.id
+ * @param {string} props.label
+ * @param {string} props.value
+ * @param {(v: string) => void} props.onChange
+ * @param {Array<{ v: string, l: string }>} props.options
+ */
+export function AdminFilterSelect({ id, label, value, onChange, options }) {
+  return (
+    <div className="w-full min-w-[min(100%,220px)] sm:w-auto sm:min-w-[220px] sm:max-w-[300px]">
+      <label htmlFor={id} className={filterLabelClass}>
+        {label}
+      </label>
+      <AdminSelect
+        id={id}
+        inputId={id}
+        options={options}
+        value={value}
+        onChange={(v) => onChange(v == null ? "" : String(v))}
+        placeholder="Seleccionar…"
+        isSearchable={options.length > 8}
+        className="[&_.admin-rs__control]:min-h-[40px] [&_.admin-rs__control]:rounded-xl"
+      />
+    </div>
+  );
+}
+
+const filterClearActionBase =
+  "group inline-flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-100/80 hover:text-[#0c9dcf] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c9dcf]/25 focus-visible:ring-offset-2";
+
+/**
+ * Acción compacta tipo enlace + icono (portada, estados vacíos, etc.).
+ * @param {object} props
+ * @param {() => void} props.onClick
+ * @param {string} [props.className]
+ * @param {string} [props.label]
+ */
+export function FilterClearAction({ onClick, className = "", label = "Limpiar filtros" }) {
+  return (
+    <button type="button" onClick={onClick} className={`${filterClearActionBase} py-2 sm:py-1.5 sm:pl-1 sm:pr-2 ${className}`}>
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-100/90 text-zinc-400 transition-colors group-hover:bg-[#0c9dcf]/12 group-hover:text-[#0c9dcf]">
+        <FilterResetIcon className="block" />
+      </span>
+      <span className="border-b border-transparent pb-px transition-[border-color] group-hover:border-[#0c9dcf]/40">
+        {label}
+      </span>
+    </button>
+  );
+}
+
+/**
+ * Misma acción que {@link FilterClearAction}, alineada con la fila de filtros del admin.
+ * Solo se muestra cuando hay filtros aplicados (`show`).
+ * @param {object} props
+ * @param {() => void} props.onClick
+ * @param {boolean} [props.show]
+ */
+export function AdminFilterClearButton({ onClick, show = true }) {
+  if (!show) return null;
+  return (
+    <div className="flex w-full min-w-0 flex-col justify-end sm:w-auto">
+      <span className={filterLabelClass} aria-hidden>
+        &nbsp;
+      </span>
+      <FilterClearAction onClick={onClick} className="w-full justify-center sm:w-auto sm:justify-start" />
+    </div>
+  );
+}
+
+/** Contenedor de filtros encima de la tabla. */
+export function AdminFiltersRow({ children }) {
+  return (
+    <div className="group mb-5 mt-5 flex flex-col gap-3 overflow-hidden rounded-2xl border border-zinc-200/90 bg-gradient-to-br from-white via-white to-zinc-50/90 shadow-[0_2px_12px_rgba(15,23,42,0.05)] ring-1 ring-zinc-900/[0.04] transition-[box-shadow,border-color] duration-200 hover:border-zinc-200 hover:shadow-[0_8px_28px_rgba(15,23,42,0.07)]">
+      <div
+        className="h-1 w-full shrink-0 bg-gradient-to-r from-[#2c2c81]/90 via-[#a0034e]/85 to-[#0c9dcf]/90"
+        aria-hidden
+      />
+      <div className="px-4 pb-4 sm:px-5 sm:pb-5">
+        <div className="flex min-w-0 flex-col gap-4 rounded-xl border border-zinc-200/60 bg-zinc-50/50 p-4 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-6 sm:gap-y-4 sm:p-5">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * @param {object} props
+ * @param {number} props.shown
+ * @param {number} props.total
+ * @param {string} props.noun — p. ej. «centros»
+ */
+export function AdminFilterResultHint({ shown, total, noun }) {
+  if (shown === total) return null;
+  return (
+    <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-zinc-200/90 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 shadow-sm">
+      <span className="inline-block size-1.5 shrink-0 rounded-full bg-[#0c9dcf]" aria-hidden />
+      Mostrando <span className="tabular-nums font-semibold text-zinc-800">{shown}</span> de{" "}
+      <span className="tabular-nums font-semibold text-zinc-800">{total}</span> {noun}
+    </p>
+  );
+}

@@ -1,0 +1,83 @@
+const c = "h-[1.125rem] w-[1.125rem] shrink-0";
+
+export function IconAdminChart({ className = "" }) {
+  return (
+    <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M3 13.5V19.5M9.75 9.75V19.5M16.5 5.25V19.5M21 21H3M21 10.5l-4.5 4.5-3-3-4.5 4.5"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconAdminBuilding({ className = "" }) {
+  return (
+    <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M3.75 21V6.75A2.25 2.25 0 016 4.5h4.5A2.25 2.25 0 0112.75 6.75V21M3.75 21h16.5M3.75 21H3m16.5 0h.75m-.75 0H12.75M9 6.75h.01M9 9h.01M9 11.25h.01M12 6.75h.01M12 9h.01M12 11.25h.01"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+export function IconAdminGrid({ className = "" }) {
+  return (
+    <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25zM6 13.5h2.25m2.25 0H12m0 0h2.25m2.25 0H18M10.5 6H12m0 0h1.5m-1.5 3H12m0 0h1.5m-6.75 3v1.5m0 0V18m0-1.5h1.5m-1.5 0H9"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconAdminUserPlus({ className = "" }) {
+  return (
+    <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM3 19.235v-.11c0-1.424 1.17-2.625 2.598-2.625h4.898c.957 0 1.817.456 2.402 1.14"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconAdminBriefcase({ className = "" }) {
+  return (
+    <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M20.25 14.15v4.25c0 1.242-.98 2.25-2.188 2.25H5.938c-1.208 0-2.188-1.008-2.188-2.25v-4.25M3.75 8.25A2.25 2.25 0 016 6h12a2.25 2.25 0 012.25 2.25V12a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 12V8.25zM12 12.75h.008v.008H12v-.008zM16.5 6V4.875c0-.621-.504-1.125-1.125-1.125h-6.75c-.621 0-1.125.504-1.125 1.125V6"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconAdminClipboard({ className = "" }) {
+  return (
+    <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.903 2.903 0 00-.106-.774m-5.39-.468c-.066-.017-.133-.025-.2-.025h-3.75c-.621 0-1.125.504-1.125 1.125V18a2.25 2.25 0 002.25 2.25h10.5A2.25 2.25 0 0021 18v-7.5c0-.621-.504-1.125-1.125-1.125h-3.75c-.067 0-.134.008-.2.025m.2 0c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25h-1.5m-6-6h3.75m-3.75 3h3.75m-3.75 3h3.75"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
