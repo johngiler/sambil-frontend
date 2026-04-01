@@ -6,10 +6,10 @@ import { HomeMallCatalogSkeleton } from "@/components/home/HomeMallCatalogSkelet
 import { MallCard } from "@/components/mall/MallCard";
 import { EmptyState, EmptyStateIconBuilding, EmptyStateIconSearchOff } from "@/components/ui/EmptyState";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
-import { formatCatalogCenterList, mapApiCentersToHomeMalls } from "@/lib/homeCenters";
+import { mapApiCentersToHomeMalls } from "@/lib/homeCenters";
 import { AdminFilterClearButton, FilterClearAction } from "@/components/admin/AdminListFilters";
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
-import { fetchCentersCatalogAvailableAll, getCentersCatalogPage } from "@/services/api";
+import { getCentersCatalogPage } from "@/services/api";
 
 const STATUS = {
   all: "all",
@@ -33,7 +33,6 @@ const chipOn =
   "border-white/40 bg-[linear-gradient(115deg,#2f246b_0%,#5f1d64_22%,#90215c_40%,#ea4822_58%,#e97a01_74%,#eeab23_88%,#d97706_100%)] text-white shadow-[0_2px_14px_rgba(47,36,107,0.35)] hover:border-white/55 hover:bg-[linear-gradient(115deg,#3a3585_0%,#6f2474_22%,#a0286c_40%,#ec5a30_58%,#f08912_74%,#f2bc32_88%,#c2410c_100%)] hover:shadow-[0_4px_18px_rgba(234,72,34,0.26)]";
 
 export function HomeMallCatalogClient() {
-  const [centersRaw, setCentersRaw] = useState([]);
   const [malls, setMalls] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -49,23 +48,6 @@ export function HomeMallCatalogClient() {
     () => status !== STATUS.all || location !== LOCATION.all || query.trim() !== "",
     [status, location, query],
   );
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const all = await fetchCentersCatalogAvailableAll();
-        if (!cancelled) setCentersRaw(Array.isArray(all) ? all : []);
-      } catch {
-        if (!cancelled) setCentersRaw([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const enabledLabels = useMemo(() => formatCatalogCenterList(centersRaw), [centersRaw]);
 
   const loadPage = useCallback(async () => {
     setLoading(true);
@@ -109,16 +91,7 @@ export function HomeMallCatalogClient() {
   }
 
   return (
-    <div className="mt-10 space-y-8">
-      <div className="max-w-2xl">
-        <p className="text-base leading-relaxed text-zinc-600">
-          Reserva espacios publicitarios. Los centros con etiqueta{" "}
-          <span className="font-semibold text-zinc-800">Disponible</span> abren el catálogo para reservar; los activos sin
-          catálogo figuran como próximos; los inactivos se indican aparte. Centros con catálogo de reservas habilitado:{" "}
-          <span className="font-semibold text-zinc-800">{enabledLabels}</span>.
-        </p>
-      </div>
-
+    <div className="mt-8 space-y-8">
       <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
           <div className="min-w-0 flex-1">

@@ -1,15 +1,9 @@
 import { Skeleton } from "@/components/ui/Skeleton";
 
-/** Replica la portada del catálogo de centros: texto intro, panel de filtros y rejilla de tarjetas. */
+/** Replica el panel de filtros y la rejilla de tarjetas (el copy del header vive en HomeView). */
 export function HomeMallCatalogSkeleton() {
   return (
-    <div className="mt-10 space-y-8" aria-busy="true" aria-label="Cargando centros">
-      <div className="max-w-2xl space-y-3">
-        <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-[92%]" />
-        <Skeleton className="h-4 w-[70%]" />
-      </div>
-
+    <div className="mt-8 space-y-8" aria-busy="true" aria-label="Cargando centros">
       <div className="rounded-2xl border border-zinc-200/90 bg-white p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
           <Skeleton className="h-11 w-full max-w-xl rounded-xl" />

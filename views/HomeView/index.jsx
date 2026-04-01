@@ -16,6 +16,12 @@ export default function HomeView() {
           <h1 className="mt-5 text-balance text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl md:text-4xl">
             Elige un centro comercial
           </h1>
+          <p className="mt-4 text-sm leading-relaxed text-zinc-600 sm:text-base">
+            Texto orientativo:{" "}
+            <span className="font-semibold text-zinc-800">Disponible</span> significa catálogo listo para reservar;{" "}
+            <span className="font-semibold text-zinc-800">Próximamente</span>, centro activo sin catálogo público aún.
+            Los datos reales están en las tarjetas de abajo (búsqueda y filtros).
+          </p>
         </header>
 
         <HomeMallCatalogClient />
