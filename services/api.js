@@ -11,14 +11,39 @@ export function apiBase() {
   return "";
 }
 
+/**
+ * Si el API público es HTTPS pero el backend devolvió `http://mismo-host/...` (p. ej. tras proxy),
+ * el navegador marca la página como «No es seguro» (contenido mixto). Fuerza https solo para ese host.
+ */
+function upgradeMediaUrlToHttpsIfNeeded(absoluteUrl) {
+  const base = apiBase().replace(/\/$/, "");
+  if (!absoluteUrl || !base.startsWith("https://") || !absoluteUrl.startsWith("http://")) {
+    return absoluteUrl;
+  }
+  try {
+    const bu = new URL(base);
+    const u = new URL(absoluteUrl);
+    if (u.hostname === bu.hostname && String(u.port || "") === String(bu.port || "")) {
+      u.protocol = "https:";
+      return u.toString();
+    }
+  } catch {
+    /* ignore */
+  }
+  return absoluteUrl;
+}
+
 /** URL absoluta para medios del API (p. ej. `/media/...` → host del backend). */
 export function mediaAbsoluteUrl(maybeRelative) {
   if (maybeRelative == null || maybeRelative === "") return "";
   const s = String(maybeRelative);
-  if (s.startsWith("http://") || s.startsWith("https://")) return s;
+  if (s.startsWith("http://") || s.startsWith("https://")) {
+    return upgradeMediaUrlToHttpsIfNeeded(s);
+  }
   const b = apiBase().replace(/\/$/, "");
   const p = s.startsWith("/") ? s : `/${s}`;
-  return b ? `${b}${p}` : p;
+  const out = b ? `${b}${p}` : p;
+  return upgradeMediaUrlToHttpsIfNeeded(out);
 }
 
 /**

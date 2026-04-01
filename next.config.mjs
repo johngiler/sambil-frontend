@@ -19,6 +19,8 @@ function mediaPatternFromApiUrl() {
 const fromEnv = mediaPatternFromApiUrl();
 
 const nextConfig = {
+  // Rutas dinámicas impiden `output: "export"` (solo estático). Standalone + Nginx proxy en prod.
+  output: "standalone",
   images: {
     remotePatterns: [
       {
