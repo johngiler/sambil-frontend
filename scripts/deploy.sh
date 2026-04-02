@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
-# Deploy Sambil frontend a sambil.publivalla.com (servidor compartido).
-# Next.js en modo standalone (rutas dinámicas); Nginx hace proxy a Node en 127.0.0.1:3010.
-# Requiere: npm, rsync, SSH Host sambil-frontend en ~/.ssh/config.
-# Destino: /home/git/sambil (contenido del bundle standalone + static + public).
+# Deploy del frontend del marketplace (ejemplo: tenant en sambil.publivalla.com).
+# Código fuente bajo src/ (App Router). Next.js standalone; Nginx proxy a Node 127.0.0.1:3010.
+# Requiere: npm, rsync, SSH (Host p. ej. sambil-frontend en ~/.ssh/config).
+# Destino: directorio del tenant en el servidor (aquí /home/git/sambil).
 #
 
 set -e

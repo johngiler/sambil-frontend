@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "assets:logos": "cp ../images/logos/isotype.svg app/icon.svg && cp ../images/logos/logotype.svg public/logotype.svg"
+    "assets:logos": "cp ../images/logos/isotype.svg src/app/icon.svg && cp ../images/logos/logotype.svg public/logotype.svg"
   },
   "dependencies": {
     "next": "16.2.1",

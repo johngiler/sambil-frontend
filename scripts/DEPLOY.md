@@ -2,6 +2,10 @@
 
 Servidor **compartido** (mismo esquema que PortPax / rbcold): Nginx en `sites-available` + `sites-enabled`, código bajo `/home/git/…`.
 
+## Estructura del código (`src/`)
+
+El proyecto usa el directorio **`src/`**: rutas y layouts en **`src/app/`**, componentes en **`src/components/`**, utilidades en **`src/lib/`**, etc. Los alias de import `@/` apuntan a `src/` (ver `jsconfig.json`). El script de deploy no necesita rutas extra: `npm run build` ya toma `src/app` como raíz del App Router.
+
 ## Por qué no es `out/` estático
 
 Esta app Next tiene rutas **dinámicas** (`/catalog/[id]`, `/dashboard/[[...section]]`, `/m/[code]`). No se puede usar `output: "export"` sin reescribir rutas. En producción se usa **`output: "standalone"`**: se sube el bundle mínimo y **Node** sirve la app en `127.0.0.1:3010`; **Nginx** hace **proxy_pass** HTTPS.
