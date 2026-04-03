@@ -22,11 +22,6 @@ export function Footer() {
     workspace.logo_mark_url.trim() !== ""
       ? workspace.logo_mark_url.trim()
       : null;
-  const legalName =
-    typeof workspace?.legal_name === "string" &&
-    workspace.legal_name.trim() !== ""
-      ? workspace.legal_name.trim()
-      : null;
   const supportEmail =
     typeof workspace?.support_email === "string" &&
     workspace.support_email.trim() !== ""
@@ -40,13 +35,7 @@ export function Footer() {
     typeof workspace?.country === "string" && workspace.country.trim() !== ""
       ? workspace.country.trim()
       : null;
-  const city =
-    typeof workspace?.city === "string" && workspace.city.trim() !== ""
-      ? workspace.city.trim()
-      : null;
-  const showLegalColumn = Boolean(
-    legalName || supportEmail || phone || country || city,
-  );
+  const showLegalColumn = Boolean(supportEmail || phone || country);
   const showOperacionColumn = Boolean(me && isAdmin);
   const navColCount =
     1 + (showOperacionColumn ? 1 : 0) + (showLegalColumn ? 1 : 0);
@@ -73,7 +62,7 @@ export function Footer() {
                   alt=""
                   width={100}
                   height={100}
-                  className="max-h-[100px] max-w-[100px] object-contain"
+                  className="h-[100px] w-[100px] object-contain"
                   decoding="async"
                 />
               </div>
@@ -83,9 +72,8 @@ export function Footer() {
                 {displayName}{" "}
                 <span className="font-normal text-zinc-400">Marketplace</span>
               </p>
-              <p className="mt-3 text-sm leading-relaxed text-zinc-400">
-                Reserva y gestiona espacios publicitarios en nuestros centros
-                comerciales. Inventario, disponibilidad y flujo de pedidos en
+              <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-zinc-400">
+                Reserva y gestiona espacios publicitarios en centros comerciales. Inventario, disponibilidad y pedidos en
                 una sola plataforma.
               </p>
             </div>
@@ -138,16 +126,6 @@ export function Footer() {
               <div>
                 <h3 className={sectionTitle}>Datos de contacto</h3>
                 <dl className="mt-4 space-y-3 text-sm">
-                  {legalName ? (
-                    <div>
-                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                        Razón social
-                      </dt>
-                      <dd className="mt-1 leading-relaxed text-zinc-300">
-                        {legalName}
-                      </dd>
-                    </div>
-                  ) : null}
                   {supportEmail ? (
                     <div>
                       <dt className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
@@ -184,14 +162,6 @@ export function Footer() {
                         País
                       </dt>
                       <dd className="mt-1 leading-relaxed text-zinc-300">{country}</dd>
-                    </div>
-                  ) : null}
-                  {city ? (
-                    <div>
-                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                        Ciudad
-                      </dt>
-                      <dd className="mt-1 leading-relaxed text-zinc-300">{city}</dd>
                     </div>
                   ) : null}
                 </dl>

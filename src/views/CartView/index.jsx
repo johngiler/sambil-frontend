@@ -103,11 +103,6 @@ export default function CartView() {
           />
         </div>
       ) : (
-        <>
-          <p className="mt-6 text-sm leading-relaxed text-zinc-600">
-            Cada toma tiene <strong className="font-medium text-zinc-800">sus propias fechas</strong> de contrato. El icono
-            de lápiz abre el detalle; allí pulsa <span className="whitespace-nowrap">«Guardar fechas de esta toma»</span>.
-          </p>
         <ul className="mt-6 space-y-4">
           {items.map((item) => {
             const line = cartLineSubtotalOrNull(item);
@@ -181,7 +176,6 @@ export default function CartView() {
             );
           })}
         </ul>
-        </>
       )}
 
       {items.length > 0 && !meetsMin ? (
