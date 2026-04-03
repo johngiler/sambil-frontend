@@ -1,12 +1,13 @@
 "use client";
 
 import { adminLabel } from "@/components/admin/adminFormStyles";
+import { IconRowTrash } from "@/components/admin/rowActionIcons";
 import { mediaAbsoluteUrl } from "@/services/authApi";
 
 const VARIANT_DEFAULTS = {
   cover: {
     label: "Imagen de portada",
-    clearLabel: "Quitar portada actual",
+    clearAriaLabel: "Quitar portada actual",
     emptyHint: "Sin imagen",
     helper: "JPG, PNG, WebP o GIF. Recomendado imagen cuadrada (p. ej. 1200×1200 px).",
     imgClass: "h-full w-full object-cover",
@@ -15,7 +16,7 @@ const VARIANT_DEFAULTS = {
   },
   avatar: {
     label: "Foto de perfil",
-    clearLabel: "Quitar foto actual",
+    clearAriaLabel: "Quitar foto actual",
     emptyHint: "Sin foto",
     helper: "JPG, PNG, WebP o GIF. Recomendado imagen cuadrada (p. ej. 512×512 px).",
     imgClass: "h-36 w-36 object-cover",
@@ -69,10 +70,11 @@ export function CoverImageField({
           {existingUrl && !filePreviewUrl ? (
             <button
               type="button"
-              className="text-xs font-medium text-red-600 hover:underline"
+              className="mp-ring-brand inline-flex shrink-0 items-center justify-center rounded-[15px] border border-transparent p-2 text-red-600 transition-colors hover:border-red-200/90 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)]"
+              aria-label={v.clearAriaLabel}
               onClick={onClearExisting}
             >
-              {v.clearLabel}
+              <IconRowTrash />
             </button>
           ) : null}
         </div>
