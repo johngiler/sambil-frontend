@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
+import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { saveMyCompany } from "@/services/authApi";
 
-const fieldClass = `mt-1.5 min-h-11 w-full ${ROUNDED_CONTROL} border border-zinc-200 bg-white px-3.5 py-2.5 text-base text-zinc-900 shadow-sm transition-[border-color,box-shadow] duration-200 ease-out placeholder:text-zinc-400 focus:border-[#0c9dcf]/45 focus:outline-none focus:ring-2 focus:ring-[#0c9dcf]/18 sm:min-h-0 sm:py-2 sm:text-sm`;
+const fieldClass = `mp-form-field-accent mt-1.5 min-h-11 w-full ${ROUNDED_CONTROL} border border-zinc-200 bg-white px-3.5 py-2.5 text-base text-zinc-900 shadow-sm transition-[border-color,box-shadow] duration-200 ease-out placeholder:text-zinc-400 focus:outline-none sm:min-h-0 sm:py-2 sm:text-sm`;
 
 function SectionTitle({ children, id }) {
   return (
@@ -16,7 +17,10 @@ function SectionTitle({ children, id }) {
       id={id}
       className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500"
     >
-      <span className="h-px w-6 bg-gradient-to-r from-[#0c9dcf]/60 to-transparent" aria-hidden />
+      <span
+        className="h-px w-6 bg-gradient-to-r from-[color-mix(in_srgb,var(--mp-primary)_60%,transparent)] to-transparent"
+        aria-hidden
+      />
       {children}
     </h2>
   );
@@ -62,7 +66,7 @@ export default function CuentaView() {
   if (!authReady || !me || isAdmin) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-12 text-center text-zinc-500">
-        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-[#0c9dcf]" />
+        <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-zinc-200 border-t-[color:var(--mp-primary)]" />
         <p className="mt-4 text-sm">Cargando…</p>
       </div>
     );
@@ -104,18 +108,18 @@ export default function CuentaView() {
       <nav className="flex flex-wrap gap-2 text-sm" aria-label="Sección de cuenta">
         <Link
           href="/cuenta/pedidos"
-          className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white px-3 py-1.5 font-medium text-zinc-700 shadow-sm transition hover:border-[#0c9dcf]/40 hover:text-[#0c9dcf]`}
+          className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white px-3 py-1.5 font-medium text-zinc-700 shadow-sm transition hover:border-[color-mix(in_srgb,var(--mp-primary)_40%,transparent)] hover:text-[color:var(--mp-primary)]`}
         >
           Mis pedidos
         </Link>
         <Link
           href="/cuenta/perfil"
-          className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white px-3 py-1.5 font-medium text-zinc-700 shadow-sm transition hover:border-[#0c9dcf]/40 hover:text-[#0c9dcf]`}
+          className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white px-3 py-1.5 font-medium text-zinc-700 shadow-sm transition hover:border-[color-mix(in_srgb,var(--mp-primary)_40%,transparent)] hover:text-[color:var(--mp-primary)]`}
         >
           Mi perfil
         </Link>
         <span
-          className={`${ROUNDED_CONTROL} border border-[#0c9dcf]/45 bg-sky-50/90 px-3 py-1.5 text-sm font-semibold text-[#0c9dcf] ring-1 ring-sky-100/80`}
+          className={`${ROUNDED_CONTROL} border border-[color-mix(in_srgb,var(--mp-primary)_45%,#d4d4d8)] bg-[color-mix(in_srgb,var(--mp-primary)_10%,color-mix(in_srgb,var(--mp-secondary)_5%,#fff))] px-3 py-1.5 text-sm font-semibold text-[color:var(--mp-primary)] ring-1 ring-[color-mix(in_srgb,var(--mp-primary)_18%,transparent)]`}
           aria-current="page"
         >
           Mi empresa
@@ -125,11 +129,8 @@ export default function CuentaView() {
         En perfil puedes cambiar usuario, nombre y foto de perfil.
       </p>
 
-      <div className="relative mt-8 overflow-hidden rounded-2xl border border-zinc-200/80 bg-gradient-to-br from-white via-white to-sky-50/30 px-5 py-6 shadow-[0_2px_12px_rgba(15,23,42,0.06)] sm:px-6 sm:py-7">
-        <div
-          className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-[#2c2c81]/90 via-[#0c9dcf] to-[#ea4822]/80"
-          aria-hidden
-        />
+      <div className="relative mt-8 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white px-5 py-6 shadow-[0_2px_12px_rgba(15,23,42,0.06)] sm:px-6 sm:py-7">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] mp-admin-filters-top-accent" aria-hidden />
         <h1 className="text-balance text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
           Mi empresa
         </h1>
@@ -149,9 +150,11 @@ export default function CuentaView() {
       <form
         id="empresa"
         onSubmit={onSubmit}
-        className={`mt-8 ${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-5 shadow-[0_2px_8px_rgba(15,23,42,0.05)] ring-1 ring-zinc-100/80 sm:p-6`}
+        className={`relative mt-8 overflow-hidden ${ROUNDED_CONTROL} border border-zinc-200/90 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.05)] ring-1 ring-zinc-100/80`}
       >
-        <div className="space-y-8">
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] mp-admin-filters-top-accent" aria-hidden />
+        <div className="p-5 sm:p-6">
+          <div className="space-y-8">
           <section aria-labelledby="sec-empresa">
             <SectionTitle id="sec-empresa">Empresa</SectionTitle>
             <div className="mt-4 space-y-4">
@@ -259,7 +262,7 @@ export default function CuentaView() {
               </div>
             </div>
           </section>
-        </div>
+          </div>
 
         {error ? (
           <p
@@ -282,7 +285,7 @@ export default function CuentaView() {
           <button
             type="submit"
             disabled={saving}
-            className={`inline-flex min-h-11 items-center justify-center ${ROUNDED_CONTROL} bg-zinc-900 px-6 py-2.5 text-base font-semibold text-white shadow-sm transition hover:bg-zinc-800 active:scale-[0.99] disabled:bg-zinc-400 sm:min-h-0 sm:text-sm`}
+            className={`${marketplacePrimaryBtn} min-h-11 px-6 py-2.5 text-base sm:min-h-0 sm:text-sm`}
           >
             {saving ? "Guardando…" : hasProfile ? "Guardar cambios" : "Crear ficha de empresa"}
           </button>
@@ -293,6 +296,7 @@ export default function CuentaView() {
             Volver al inicio
           </Link>
         </div>
+      </div>
       </form>
     </div>
   );

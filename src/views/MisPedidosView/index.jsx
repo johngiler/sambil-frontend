@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
+import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
 import { formatUsdInteger, totalWithIva } from "@/lib/marketplacePricing";
 import { orderListReference } from "@/lib/orderDisplay";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
@@ -80,10 +81,10 @@ function timelineTone(toStatus) {
       card: "border-emerald-100 bg-emerald-50/50",
     };
   return {
-    dot: "bg-[#0c9dcf]",
-    ring: "ring-cyan-100",
-    bar: "from-cyan-200 to-[#0c9dcf]/40",
-    card: "border-cyan-100/80 bg-gradient-to-br from-white to-sky-50/40",
+    dot: "bg-[color:var(--mp-primary)]",
+    ring: "ring-[color-mix(in_srgb,var(--mp-primary)_22%,transparent)]",
+    bar: "from-[color-mix(in_srgb,var(--mp-primary)_28%,#e5e7eb)] to-[color-mix(in_srgb,var(--mp-secondary)_35%,var(--mp-primary))]",
+    card: "border-[color-mix(in_srgb,var(--mp-primary)_22%,#e5e7eb)] bg-gradient-to-br from-white to-[color-mix(in_srgb,var(--mp-primary)_8%,#fff)]",
   };
 }
 
@@ -108,7 +109,10 @@ function SectionTitle({ children, id }) {
       id={id}
       className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-zinc-500"
     >
-      <span className="h-px w-6 bg-gradient-to-r from-[#0c9dcf]/60 to-transparent" aria-hidden />
+      <span
+        className="h-px w-6 bg-gradient-to-r from-[color-mix(in_srgb,var(--mp-primary)_60%,transparent)] to-transparent"
+        aria-hidden
+      />
       {children}
     </h2>
   );
@@ -118,7 +122,7 @@ function OrderTimeline({ events }) {
   if (!events || !events.length) {
     return (
       <p className="rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 px-4 py-3 text-sm text-zinc-500">
-        Aún no hay movimientos registrados para esta orden.
+        Aún no hay movimientos registrados para este pedido.
       </p>
     );
   }
@@ -185,7 +189,7 @@ function OrderTimeline({ events }) {
 function Chevron({ expanded }) {
   return (
     <span
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-zinc-200/90 bg-zinc-50 text-zinc-500 shadow-sm transition-all duration-200 ease-out group-hover:border-[#0c9dcf]/35 group-hover:bg-sky-50/80 group-hover:text-[#0c9dcf] ${
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-zinc-200/90 bg-zinc-50 text-zinc-500 shadow-sm transition-all duration-200 ease-out group-hover:border-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)] group-hover:bg-[color-mix(in_srgb,var(--mp-primary)_8%,#fafafa)] group-hover:text-[color:var(--mp-primary)] ${
         expanded ? "rotate-180" : ""
       }`}
       aria-hidden
@@ -277,9 +281,9 @@ export default function MisPedidosView() {
         </Link>
       </nav>
 
-      <h1 className="mt-8 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">Órdenes</h1>
+      <h1 className="mt-8 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">Mis pedidos</h1>
       <p className="mt-2 max-w-xl text-sm text-zinc-600">
-        Consulta el estado y abre una orden para ver el historial detallado.
+        Consulta el estado y abre un pedido para ver el historial detallado.
       </p>
 
       {err ? (
@@ -296,10 +300,7 @@ export default function MisPedidosView() {
           className={`mt-8 ${ROUNDED_CONTROL} border border-zinc-200 bg-zinc-50/80 px-5 py-8 text-center shadow-sm`}
         >
           <p className="text-sm text-zinc-600">No tienes pedidos todavía.</p>
-          <Link
-            href="/"
-            className="mt-4 inline-flex items-center justify-center rounded-full bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-800"
-          >
+          <Link href="/" className={`${marketplacePrimaryBtn} mt-4 px-5 py-2.5 text-sm font-semibold`}>
             Ver centros y catálogo
           </Link>
         </div>
@@ -372,7 +373,7 @@ export default function MisPedidosView() {
                 {expanded ? (
                   <div
                     id={panelId}
-                    className="border-t border-zinc-100 bg-gradient-to-b from-zinc-50/40 to-white px-4 pb-5 pt-4 sm:px-5 sm:pb-6"
+                    className="border-t border-zinc-100 bg-zinc-50/80 px-4 pb-5 pt-4 sm:px-5 sm:pb-6"
                   >
                     <div className="grid gap-6 sm:grid-cols-1">
                       <div className="rounded-xl border border-zinc-100 bg-white/90 p-4 shadow-sm">

@@ -50,45 +50,55 @@ function writeStorage(items) {
   localStorage.setItem(cartStorageKey(), JSON.stringify(sanitizeCartItems(items)));
 }
 
-function readPeriod() {
-  if (typeof window === "undefined") return defaultRentalPeriod();
+/** Período global antiguo: se copia a cada línea sin fechas y luego se deja de usar. */
+function readLegacyPeriod() {
+  if (typeof window === "undefined") return null;
   try {
     const raw = localStorage.getItem(periodStorageKey());
-    if (!raw) return defaultRentalPeriod();
+    if (!raw) return null;
     const p = JSON.parse(raw);
     if (p?.start_date && p?.end_date) return p;
   } catch {
     /* fallthrough */
   }
-  return defaultRentalPeriod();
+  return null;
 }
 
-function writePeriod(p) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(periodStorageKey(), JSON.stringify(p));
+function migrateItemsWithLegacyPeriod(items, legacy) {
+  const fallback = legacy?.start_date && legacy?.end_date ? legacy : defaultRentalPeriod();
+  return items.map((i) => {
+    if (typeof i.start_date === "string" && typeof i.end_date === "string") return i;
+    return {
+      ...i,
+      start_date: fallback.start_date,
+      end_date: fallback.end_date,
+    };
+  });
 }
 
 const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
-  const [rentalPeriod, setRentalPeriodState] = useState(defaultRentalPeriod);
 
   useEffect(() => {
     clearLegacyCartKeys();
-    setItems(readStorage());
-    setRentalPeriodState(readPeriod());
+    const legacy = readLegacyPeriod();
+    let loaded = readStorage();
+    const migrated = migrateItemsWithLegacyPeriod(loaded, legacy);
+    if (JSON.stringify(migrated) !== JSON.stringify(loaded)) {
+      writeStorage(migrated);
+    }
+    try {
+      localStorage.removeItem(periodStorageKey());
+    } catch {
+      /* ignore */
+    }
+    setItems(migrated);
   }, []);
 
-  const setRentalPeriod = useCallback((next) => {
-    setRentalPeriodState((prev) => {
-      const merged = typeof next === "function" ? next(prev) : next;
-      writePeriod(merged);
-      return merged;
-    });
-  }, []);
-
-  const addItem = useCallback((space) => {
+  const addItem = useCallback((space, range) => {
+    if (!range?.start_date || !range?.end_date) return;
     const detailLine =
       typeof space.venue_zone === "string" && space.venue_zone.trim() !== ""
         ? space.venue_zone.trim()
@@ -109,10 +119,23 @@ export function CartProvider({ children }) {
             code: space.code,
             title: space.title,
             monthly_price_usd: String(space.monthly_price_usd),
+            start_date: range.start_date,
+            end_date: range.end_date,
             ...(centerName ? { shopping_center_name: centerName } : {}),
             ...(detailLine ? { detail_line: detailLine } : {}),
           },
         ]);
+      writeStorage(next);
+      return next;
+    });
+  }, []);
+
+  const updateItemDates = useCallback((id, range) => {
+    if (!range?.start_date || !range?.end_date) return;
+    setItems((prev) => {
+      const next = prev.map((x) =>
+        x.id === id ? { ...x, start_date: range.start_date, end_date: range.end_date } : x,
+      );
       writeStorage(next);
       return next;
     });
@@ -134,13 +157,12 @@ export function CartProvider({ children }) {
   const value = useMemo(
     () => ({
       items,
-      rentalPeriod,
-      setRentalPeriod,
       addItem,
+      updateItemDates,
       removeItem,
       clear,
     }),
-    [items, rentalPeriod, setRentalPeriod, addItem, removeItem, clear],
+    [items, addItem, updateItemDates, removeItem, clear],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

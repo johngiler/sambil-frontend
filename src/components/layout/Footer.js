@@ -16,27 +16,68 @@ export function Footer() {
   const { me, isClient, isAdmin } = useAuth();
   const { workspace, displayName } = useWorkspace();
   const showMarketplaceCart = !me || isClient;
-  const footerLogo = workspace?.logo_mark_url || workspace?.logo_url;
+  /** Solo isotipo del API (`logo_mark_url`); si no viene, no se muestra imagen. */
+  const footerIsotypeUrl =
+    typeof workspace?.logo_mark_url === "string" &&
+    workspace.logo_mark_url.trim() !== ""
+      ? workspace.logo_mark_url.trim()
+      : null;
+  const legalName =
+    typeof workspace?.legal_name === "string" &&
+    workspace.legal_name.trim() !== ""
+      ? workspace.legal_name.trim()
+      : null;
+  const supportEmail =
+    typeof workspace?.support_email === "string" &&
+    workspace.support_email.trim() !== ""
+      ? workspace.support_email.trim()
+      : null;
+  const phone =
+    typeof workspace?.phone === "string" && workspace.phone.trim() !== ""
+      ? workspace.phone.trim()
+      : null;
+  const country =
+    typeof workspace?.country === "string" && workspace.country.trim() !== ""
+      ? workspace.country.trim()
+      : null;
+  const city =
+    typeof workspace?.city === "string" && workspace.city.trim() !== ""
+      ? workspace.city.trim()
+      : null;
+  const showLegalColumn = Boolean(
+    legalName || supportEmail || phone || country || city,
+  );
+  const showOperacionColumn = Boolean(me && isAdmin);
+  const navColCount =
+    1 + (showOperacionColumn ? 1 : 0) + (showLegalColumn ? 1 : 0);
+  const navGridClass =
+    navColCount <= 1
+      ? "grid flex-1 grid-cols-1 gap-8 sm:gap-10"
+      : navColCount === 2
+        ? "grid flex-1 grid-cols-1 gap-8 min-[380px]:grid-cols-2 sm:gap-10 lg:gap-12"
+        : "grid flex-1 grid-cols-1 gap-8 min-[380px]:grid-cols-2 sm:gap-10 lg:grid-cols-3 lg:gap-10 xl:gap-12";
 
   return (
     <footer className="relative mt-auto bg-zinc-950 text-zinc-400">
       <div
-        className="mp-brand-gradient-h h-1 w-full"
+        className="mp-isotype-gradient-line h-1 w-full shrink-0"
         aria-hidden
       />
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
         <div className="flex flex-col gap-10 sm:gap-12 lg:flex-row lg:items-start lg:justify-between lg:gap-16">
           <div className="flex max-w-lg flex-col items-start gap-4 min-[480px]:flex-row min-[480px]:items-center sm:gap-6">
-            <div className="flex shrink-0 items-center justify-center">
-              <img
-                src={footerLogo ? normalizeMediaUrlForUi(footerLogo) : "/icon.svg"}
-                alt={displayName}
-                width={100}
-                height={100}
-                className="h-[4.5rem] w-auto max-w-[5.5rem] object-contain sm:h-[5rem] sm:max-w-[6rem]"
-                decoding="async"
-              />
-            </div>
+            {footerIsotypeUrl ? (
+              <div className="flex h-[100px] w-[100px] shrink-0 items-center justify-center">
+                <img
+                  src={normalizeMediaUrlForUi(footerIsotypeUrl)}
+                  alt=""
+                  width={100}
+                  height={100}
+                  className="max-h-[100px] max-w-[100px] object-contain"
+                  decoding="async"
+                />
+              </div>
+            ) : null}
             <div className="min-w-0">
               <p className="text-lg font-semibold tracking-tight text-white">
                 {displayName}{" "}
@@ -50,7 +91,7 @@ export function Footer() {
             </div>
           </div>
 
-          <div className="grid flex-1 grid-cols-1 gap-8 min-[380px]:grid-cols-2 sm:gap-10 lg:max-w-md lg:gap-12">
+          <div className={navGridClass}>
             <div>
               <h3 className={sectionTitle}>Explorar</h3>
               <ul className="mt-4 flex flex-col gap-3">
@@ -75,7 +116,7 @@ export function Footer() {
                 ) : null}
               </ul>
             </div>
-            {me && isAdmin ? (
+            {showOperacionColumn ? (
               <div>
                 <h3 className={sectionTitle}>Operación</h3>
                 <ul className="mt-4 flex flex-col gap-3">
@@ -93,13 +134,76 @@ export function Footer() {
                 </ul>
               </div>
             ) : null}
+            {showLegalColumn ? (
+              <div>
+                <h3 className={sectionTitle}>Datos de contacto</h3>
+                <dl className="mt-4 space-y-3 text-sm">
+                  {legalName ? (
+                    <div>
+                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Razón social
+                      </dt>
+                      <dd className="mt-1 leading-relaxed text-zinc-300">
+                        {legalName}
+                      </dd>
+                    </div>
+                  ) : null}
+                  {supportEmail ? (
+                    <div>
+                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Correo
+                      </dt>
+                      <dd className="mt-1">
+                        <a
+                          href={`mailto:${supportEmail}`}
+                          className={linkClass}
+                        >
+                          {supportEmail}
+                        </a>
+                      </dd>
+                    </div>
+                  ) : null}
+                  {phone ? (
+                    <div>
+                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Teléfono
+                      </dt>
+                      <dd className="mt-1">
+                        <a
+                          href={`tel:${phone.replace(/\s/g, "")}`}
+                          className={linkClass}
+                        >
+                          {phone}
+                        </a>
+                      </dd>
+                    </div>
+                  ) : null}
+                  {country ? (
+                    <div>
+                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                        País
+                      </dt>
+                      <dd className="mt-1 leading-relaxed text-zinc-300">{country}</dd>
+                    </div>
+                  ) : null}
+                  {city ? (
+                    <div>
+                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Ciudad
+                      </dt>
+                      <dd className="mt-1 leading-relaxed text-zinc-300">{city}</dd>
+                    </div>
+                  ) : null}
+                </dl>
+              </div>
+            ) : null}
           </div>
         </div>
 
         <div className="mt-12 border-t border-white/[0.08] pt-8">
           <p className="text-xs text-zinc-500">
-            © {new Date().getFullYear()} {displayName} · Marketplace de publicidad en
-            centros comerciales.
+            © {new Date().getFullYear()} {displayName} · Marketplace de
+            publicidad en centros comerciales.
           </p>
         </div>
       </div>

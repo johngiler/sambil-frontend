@@ -8,7 +8,8 @@ import {
   useState,
 } from "react";
 
-import { apiUrl } from "@/services/api";
+import { workspaceSlugRequestHeaders } from "@/lib/tenant";
+import { apiUrl, parseJsonText } from "@/services/api";
 
 const WorkspaceContext = createContext(undefined);
 
@@ -18,10 +19,13 @@ const WorkspaceContext = createContext(undefined);
  * @property {string} name
  * @property {string} [legal_name]
  * @property {string} [marketplace_title]
- * @property {string} [marketplace_tagline]
+ * @property {string} [marketplace_tagline] Eslogan opcional (API; el front puede mostrarlo más adelante).
  * @property {string} [primary_color]
  * @property {string} [secondary_color]
  * @property {string} [support_email]
+ * @property {string} [phone]
+ * @property {string} [country]
+ * @property {string} [city]
  * @property {string|null} [logo_url]
  * @property {string|null} [logo_mark_url]
  * @property {string|null} [favicon_url]
@@ -29,8 +33,10 @@ const WorkspaceContext = createContext(undefined);
 
 export function WorkspaceProvider({ children }) {
   const [workspace, setWorkspace] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [workspaceStatus, setWorkspaceStatus] = useState(
+    /** @type {'loading' | 'ready' | 'missing' | 'error'} */ ("loading"),
+  );
+  const [workspaceFetchError, setWorkspaceFetchError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,26 +44,46 @@ export function WorkspaceProvider({ children }) {
       try {
         const res = await fetch(apiUrl("/api/workspace/current/"), {
           cache: "no-store",
+          headers: { ...workspaceSlugRequestHeaders() },
         });
+        const text = await res.text();
+        const data = parseJsonText(text);
         if (!res.ok) {
           if (!cancelled) {
-            setError(res.status);
             setWorkspace(null);
+            if (res.status === 404) {
+              setWorkspaceStatus("missing");
+              setWorkspaceFetchError(null);
+            } else {
+              setWorkspaceStatus("error");
+              const detail =
+                data && typeof data === "object" && !Array.isArray(data) && data.detail != null
+                  ? String(data.detail)
+                  : `Error ${res.status}`;
+              setWorkspaceFetchError(detail);
+            }
           }
           return;
         }
-        const data = await res.json();
+        if (!data || typeof data !== "object" || Array.isArray(data)) {
+          if (!cancelled) {
+            setWorkspace(null);
+            setWorkspaceStatus("error");
+            setWorkspaceFetchError("Respuesta inválida del servidor.");
+          }
+          return;
+        }
         if (!cancelled) {
           setWorkspace(data);
-          setError(null);
+          setWorkspaceStatus("ready");
+          setWorkspaceFetchError(null);
         }
       } catch (e) {
         if (!cancelled) {
-          setError(e instanceof Error ? e.message : String(e));
           setWorkspace(null);
+          setWorkspaceStatus("error");
+          setWorkspaceFetchError(e instanceof Error ? e.message : String(e));
         }
-      } finally {
-        if (!cancelled) setLoading(false);
       }
     })();
     return () => {
@@ -71,14 +97,17 @@ export function WorkspaceProvider({ children }) {
     return t || workspace.name || "Marketplace";
   }, [workspace]);
 
+  const loading = workspaceStatus === "loading";
+
   const value = useMemo(
     () => ({
       workspace,
       loading,
-      error,
+      workspaceStatus,
+      workspaceFetchError,
       displayName,
     }),
-    [workspace, loading, error, displayName],
+    [workspace, workspaceStatus, workspaceFetchError, displayName],
   );
 
   return (

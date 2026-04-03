@@ -79,7 +79,7 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
         <div className="mt-auto border-t border-zinc-200 p-3 lg:mt-4">
           <Link
             href="/"
-            className={`block ${ROUNDED_CONTROL} px-3 py-2 text-center text-sm font-medium text-[#0c9dcf] hover:bg-zinc-200/60`}
+            className={`block ${ROUNDED_CONTROL} px-3 py-2 text-center text-sm font-medium text-zinc-900 hover:bg-zinc-200/60`}
             onClick={() => setMobileOpen(false)}
           >
             Volver al marketplace

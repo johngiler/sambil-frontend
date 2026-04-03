@@ -1,7 +1,5 @@
 import { Geist_Mono, Plus_Jakarta_Sans } from "next/font/google";
 
-import { Footer } from "@/components/layout/Footer";
-import { Header } from "@/components/layout/Header";
 import { Providers } from "@/components/layout/Providers";
 
 import "./globals.css";
@@ -36,11 +34,7 @@ export default function RootLayout({ children }) {
         data-mp-app="marketplace"
         data-mp-build="catalog-v2-checkout"
       >
-        <Providers>
-          <Header />
-          <main className="min-w-0 flex-1">{children}</main>
-          <Footer />
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -9,18 +9,18 @@ export function adminDetailEmpty(text) {
   return <span className="text-sm text-zinc-400">Sin información</span>;
 }
 
-/** Fila de tabla: celda con gradiente + tarjeta interior (panel del acordeón). */
-export function AdminAccordionRowPanel({ colSpan, panelId, children }) {
+/** Fila de tabla: celda de panel expandido + tarjeta interior (acordeón). */
+export function AdminAccordionRowPanel({ colSpan, panelId, children, fullWidthContent = false }) {
   return (
     <tr className="border-b border-zinc-100">
       <td
         colSpan={colSpan}
-        className="bg-gradient-to-br from-zinc-50/95 via-white to-sky-50/35 p-4 sm:p-5"
+        className="bg-zinc-50/90 p-4 sm:p-5"
         id={panelId}
         role="region"
       >
         <div
-          className={`mx-auto max-w-5xl ${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-5 shadow-sm ring-1 ring-zinc-100/70 sm:p-6`}
+          className={`mx-auto w-full ${fullWidthContent ? "" : "max-w-5xl"} ${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-5 shadow-sm ring-1 ring-zinc-100/70 sm:p-6`}
         >
           {children}
         </div>
@@ -30,17 +30,21 @@ export function AdminAccordionRowPanel({ colSpan, panelId, children }) {
 }
 
 /**
+ * @param {string} [badgeText] — opcional; vacío u omitido = sin pastilla
  * @param {string} [titleLabel]
  * @param {React.ReactNode} titleLine — texto principal junto al badge
  * @param {string} [hint] — esquina derecha en sm+
  */
 export function AdminAccordionDetailHeader({ badgeText, titleLabel, titleLine, hint }) {
+  const showBadge = badgeText != null && String(badgeText).trim() !== "";
   return (
     <header className="flex flex-col gap-3 border-b border-zinc-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="inline-flex items-center rounded-[10px] bg-zinc-900 px-3 py-1.5 font-mono text-sm font-semibold text-white tabular-nums">
-          {badgeText}
-        </span>
+        {showBadge ? (
+          <span className="inline-flex items-center rounded-[10px] bg-zinc-900 px-3 py-1.5 font-mono text-sm font-semibold text-white tabular-nums">
+            {badgeText}
+          </span>
+        ) : null}
         <div className="min-w-0">
           {titleLabel ? (
             <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">{titleLabel}</p>
@@ -65,7 +69,7 @@ export function AdminDetailSection({ panelId, sectionId, title, children }) {
         id={sid}
         className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.12em] text-[#0b7aa8]"
       >
-        <span className="h-2 w-2 shrink-0 rounded-full bg-[#0c9dcf]" aria-hidden />
+        <span className="mp-bg-dot-brand h-2 w-2 shrink-0 rounded-full" aria-hidden />
         {title}
       </h3>
       {children}

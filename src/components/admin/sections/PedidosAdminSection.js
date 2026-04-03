@@ -52,6 +52,22 @@ const ORDER_STATUS = [
 
 const ORDER_STATUS_FILTER_OPTIONS = [{ v: "all", l: "Todos los estados" }, ...ORDER_STATUS];
 
+function formatPedidoAlta(iso) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("es-VE", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
+function clientDisplayName(o) {
+  return (
+    o.client_detail?.company_name ||
+    o.client_company_name ||
+    ""
+  ).trim();
+}
+
 export function PedidosAdminSection() {
   const { authReady, accessToken } = useAuth();
   const [orders, setOrders] = useState([]);
@@ -174,7 +190,7 @@ export function PedidosAdminSection() {
               id="pedidos-filter-q"
               value={filterQ}
               onChange={setFilterQ}
-              placeholder="Número de pedido, empresa…"
+              placeholder="Buscar por empresa…"
             />
             <AdminFilterSelect
               id="pedidos-filter-status"
@@ -214,11 +230,10 @@ export function PedidosAdminSection() {
             <thead className="bg-zinc-50 text-xs uppercase text-zinc-500">
               <tr>
                 <th className="w-10 px-2 py-3" aria-hidden />
-                <th className="px-3 py-2">ID</th>
+                <th className="px-3 py-2">Alta</th>
                 <th className="px-3 py-2">Cliente</th>
                 <th className="px-3 py-2">Estado</th>
                 <th className="px-3 py-2">Total USD</th>
-                <th className="px-3 py-2">Creada</th>
               </tr>
             </thead>
             <tbody>
@@ -236,10 +251,12 @@ export function PedidosAdminSection() {
                         controlsId={panelId}
                       />
                     </td>
-                    <td className="px-3 py-2 font-mono">#{o.id}</td>
+                    <td className="whitespace-nowrap px-3 py-2 text-xs text-zinc-600">
+                      {formatPedidoAlta(o.created_at)}
+                    </td>
                     <td className="max-w-[12rem] px-3 py-2">
-                      <span className="line-clamp-2" title={o.client_company_name || String(o.client)}>
-                        {o.client_company_name || `ID ${o.client}`}
+                      <span className="line-clamp-2" title={clientDisplayName(o) || undefined}>
+                        {clientDisplayName(o) || "—"}
                       </span>
                     </td>
                     <td className="px-3 py-2">
@@ -255,25 +272,19 @@ export function PedidosAdminSection() {
                       </div>
                     </td>
                     <td className="px-3 py-2 tabular-nums">{o.total_amount}</td>
-                    <td className="px-3 py-2 text-xs text-zinc-500">
-                      {o.created_at ? new Date(o.created_at).toLocaleString("es-VE") : "—"}
-                    </td>
                   </tr>
                   {open ? (
-                    <AdminAccordionRowPanel colSpan={6} panelId={panelId}>
+                    <AdminAccordionRowPanel colSpan={5} panelId={panelId} fullWidthContent>
                       <AdminAccordionDetailHeader
-                        badgeText={`#${o.id}`}
+                        badgeText={formatPedidoAlta(o.created_at)}
                         titleLabel="Pedido"
-                        titleLine={o.client_company_name || `Cliente ID ${o.client}`}
+                        titleLine={clientDisplayName(o) || "Sin nombre de empresa"}
                         hint="Resumen y líneas del pedido"
                       />
 
-                      <div className="mt-5 grid gap-6 lg:grid-cols-2 lg:gap-8">
+                      <div className="mt-5 grid w-full gap-6 lg:grid-cols-2 lg:gap-8">
                         <AdminDetailSection panelId={panelId} sectionId="meta" title="Datos del pedido">
                           <AdminDetailInset>
-                            <AdminDetailField label="ID cliente">
-                              <span className="font-mono">{o.client}</span>
-                            </AdminDetailField>
                             <AdminDetailField label="Total">
                               <span className="tabular-nums font-medium text-zinc-900">{o.total_amount}</span>
                             </AdminDetailField>
@@ -306,7 +317,19 @@ export function PedidosAdminSection() {
                                     key={it.id}
                                     className={`${ROUNDED_CONTROL} border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-800`}
                                   >
-                                    <span className="font-mono">Toma #{it.ad_space}</span>
+                                    {it.ad_space_code ? (
+                                      <span className="font-mono">{it.ad_space_code}</span>
+                                    ) : it.ad_space_title ? (
+                                      <span className="font-medium text-zinc-900">{it.ad_space_title}</span>
+                                    ) : (
+                                      <span className="text-zinc-600">Toma</span>
+                                    )}
+                                    {it.ad_space_code && it.ad_space_title ? (
+                                      <>
+                                        {" · "}
+                                        <span className="font-medium text-zinc-900">{it.ad_space_title}</span>
+                                      </>
+                                    ) : null}
                                     {" · "}
                                     {it.start_date} → {it.end_date}
                                     {" · "}
@@ -314,6 +337,60 @@ export function PedidosAdminSection() {
                                   </li>
                                 ))}
                               </ul>
+                            )}
+                          </AdminDetailInset>
+                        </AdminDetailSection>
+                      </div>
+
+                      <div className="mt-6 w-full min-w-0">
+                        <AdminDetailSection panelId={panelId} sectionId="client" title="Cliente (empresa)">
+                          <AdminDetailInset className="w-full min-w-0">
+                            {o.client_detail ? (
+                              <div className="grid w-full min-w-0 grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 sm:gap-y-5">
+                                <AdminDetailField label="Empresa">
+                                  {o.client_detail.company_name || adminDetailEmpty("")}
+                                </AdminDetailField>
+                                <AdminDetailField label="Teléfono">
+                                  {o.client_detail.phone || adminDetailEmpty("")}
+                                </AdminDetailField>
+                                <AdminDetailField label="RIF">
+                                  <span className="font-mono text-zinc-800">
+                                    {o.client_detail.rif || adminDetailEmpty("")}
+                                  </span>
+                                </AdminDetailField>
+                                <AdminDetailField label="Dirección">
+                                  {o.client_detail.address || adminDetailEmpty("")}
+                                </AdminDetailField>
+                                <AdminDetailField label="Contacto">
+                                  {o.client_detail.contact_name || adminDetailEmpty("")}
+                                </AdminDetailField>
+                                <AdminDetailField label="Ciudad">
+                                  {o.client_detail.city || adminDetailEmpty("")}
+                                </AdminDetailField>
+                                <AdminDetailField label="Correo">
+                                  {o.client_detail.email ? (
+                                    <a
+                                      href={`mailto:${encodeURIComponent(o.client_detail.email)}`}
+                                      className="break-all font-medium text-zinc-900 underline-offset-2 hover:underline"
+                                    >
+                                      {o.client_detail.email}
+                                    </a>
+                                  ) : (
+                                    adminDetailEmpty("")
+                                  )}
+                                </AdminDetailField>
+                                <AdminDetailField label="Estado en sistema">
+                                  <span className="capitalize">{o.client_detail.status || "—"}</span>
+                                </AdminDetailField>
+                              </div>
+                            ) : (
+                              <div className="grid w-full grid-cols-1 sm:grid-cols-2">
+                                <div className="sm:col-span-2">
+                                  <AdminDetailField label="Empresa">
+                                    {o.client_company_name || adminDetailEmpty("")}
+                                  </AdminDetailField>
+                                </div>
+                              </div>
                             )}
                           </AdminDetailInset>
                         </AdminDetailSection>

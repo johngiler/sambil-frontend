@@ -64,6 +64,8 @@ export function AuthProvider({ children }) {
 
       if (cancelled) return;
       setMe(m);
+      // Tras fetchMe (p. ej. 403 → clearTokens), alinear estado con almacenamiento.
+      setAccessTokenState(getAccessToken());
 
       if (m) {
         const c = await fetchMyCompany(getAccessToken());
@@ -112,8 +114,9 @@ export function AuthProvider({ children }) {
     }
     const m = await fetchMe(t);
     setMe(m);
+    setAccessTokenState(getAccessToken());
     if (m) {
-      const c = await fetchMyCompany(t);
+      const c = await fetchMyCompany(getAccessToken());
       setCompany(c === undefined ? null : c);
     } else {
       setCompany(undefined);
@@ -121,7 +124,10 @@ export function AuthProvider({ children }) {
     return m;
   }, []);
 
-  /** Solo `/api/auth/me/`: el JWT puede llevar un rol obsoleto tras cambios en panel. */
+  /**
+   * Rol desde `/api/auth/me/` (fuente de verdad). Nivel 1 (solo Django) no obtiene `me` (403) y se limpia sesión.
+   * Nivel 2: admin; nivel 3: client.
+   */
   const role = me?.role ?? null;
   const isAdmin = role === "admin";
   const isClient = role === "client";

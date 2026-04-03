@@ -388,7 +388,7 @@ export function ClientesAdminSection() {
                 const linkedUsersText = formatLinkedUsersDisplay(c);
                 return (
                   <Fragment key={c.id}>
-                    <tr className="border-b border-zinc-100 transition-colors hover:bg-sky-50/40">
+                    <tr className="border-b border-zinc-100 transition-colors hover:bg-zinc-50/70">
                       <td className="px-2 py-2.5">
                         <AdminAccordionToggle
                           expanded={open}
@@ -431,7 +431,7 @@ export function ClientesAdminSection() {
                     {open ? (
                       <AdminAccordionRowPanel colSpan={7} panelId={panelId}>
                         <AdminAccordionDetailHeader
-                          badgeText={`ID ${c.id}`}
+                          badgeText={typeof c.rif === "string" && c.rif.trim() !== "" ? c.rif.trim() : undefined}
                           titleLabel="Cliente en sistema"
                           titleLine={c.company_name}
                           hint="Datos de contacto y ubicación"
@@ -454,7 +454,7 @@ export function ClientesAdminSection() {
                                 {c.email?.trim() ? (
                                   <a
                                     href={`mailto:${c.email.trim()}`}
-                                    className="break-all font-medium text-[#0c9dcf] underline-offset-2 hover:underline"
+                                    className="break-all font-medium text-zinc-900 underline-offset-2 hover:underline"
                                   >
                                     {c.email.trim()}
                                   </a>

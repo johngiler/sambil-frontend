@@ -23,16 +23,18 @@ import { MarketplaceBrand } from "@/components/layout/MarketplaceBrand";
 import { UserAccountMenu } from "@/components/layout/UserAccountMenu";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 
-const navLink = `mp-ring-brand inline-flex min-h-11 min-w-11 shrink-0 items-center gap-2 ${ROUNDED_CONTROL} px-2.5 text-sm font-medium text-zinc-600 transition-colors duration-200 ease-out hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-none sm:min-h-0 sm:min-w-0 sm:px-2 sm:py-1`;
+const navLinkShell = `mp-ring-brand inline-flex min-h-11 min-w-11 shrink-0 items-center gap-2 ${ROUNDED_CONTROL} px-2.5 text-sm font-medium transition-colors duration-200 ease-out focus-visible:outline-none sm:min-h-0 sm:min-w-0 sm:px-2 sm:py-1`;
+
+const navLink = `${navLinkShell} text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900`;
 
 const panelBtn =
-  "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-white/40 bg-[linear-gradient(115deg,#2f246b_0%,#5f1d64_22%,#90215c_40%,#ea4822_58%,#e97a01_74%,#eeab23_88%,#d97706_100%)] px-3.5 py-2 text-sm font-semibold text-white shadow-[0_2px_16px_rgba(47,36,107,0.38)] transition-all duration-200 ease-out hover:border-white/55 hover:bg-[linear-gradient(115deg,#3a3585_0%,#6f2474_22%,#a0286c_40%,#ec5a30_58%,#f08912_74%,#f2bc32_88%,#c2410c_100%)] hover:shadow-[0_4px_22px_rgba(234,72,34,0.28)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#ea4822] focus-visible:ring-offset-2 sm:min-h-0";
+  "mp-isotype-panel-btn inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold text-white sm:min-h-0";
 
 const mobileRow =
   "mp-ring-brand-inset flex min-h-12 w-full items-center gap-3 border-b border-zinc-100 px-4 py-3 text-base font-medium text-zinc-800 transition-colors duration-200 ease-out hover:bg-zinc-50 focus-visible:outline-none active:bg-zinc-100";
 
 const mobilePanelBtn =
-  "mx-4 mt-2 flex min-h-12 items-center justify-center gap-2 rounded-full border border-white/40 bg-[linear-gradient(115deg,#2f246b_0%,#5f1d64_22%,#90215c_40%,#ea4822_58%,#e97a01_74%,#eeab23_88%,#d97706_100%)] px-4 text-base font-semibold text-white shadow-md transition-all duration-200 ease-out hover:opacity-95 active:scale-[0.98]";
+  "mp-isotype-panel-btn mx-4 mt-2 flex min-h-12 items-center justify-center gap-2 rounded-full px-4 text-base font-semibold text-white";
 
 const DRAWER_MS = 300;
 
@@ -44,11 +46,11 @@ export function Header() {
   const catalogActive = path === "/" || path.startsWith("/m/") || path.startsWith("/catalog");
   const cartActive = path.startsWith("/cart");
   const ordersActive = path.startsWith("/cuenta/pedidos");
-  /** Activo: degradado isotipo (no gris como identidad de marca). */
+  /** Activo: fondo oscuro; texto e iconos en blanco (no mezclar con `navLink` para evitar `text-zinc-600` de Tailwind). */
   const navItem = (active) =>
     active
-    ? `${navLink} bg-[linear-gradient(115deg,#2f246b_0%,#5f1d64_22%,#90215c_40%,#ea4822_58%,#e97a01_74%,#eeab23_88%,#d97706_100%)] text-white shadow-sm hover:opacity-[0.92] hover:text-white`
-    : navLink;
+      ? `${navLinkShell} bg-zinc-800 text-white shadow-sm ring-1 ring-zinc-700/60 hover:bg-zinc-700 hover:text-white [&_svg]:text-white`
+      : navLink;
   /** Carrito visible para invitados y clientes; no para admin. */
   const showMarketplaceCart = !me || isClient;
   const [menuOpen, setMenuOpen] = useState(false);
@@ -167,7 +169,7 @@ export function Header() {
                 {authReady && me && isClient ? (
                   <Link href="/cuenta/pedidos" className={mobileRow} onClick={closeMenu}>
                     <IconPay className="text-zinc-500" />
-                    Órdenes
+                    Mis pedidos
                   </Link>
                 ) : null}
                 {authReady && me ? (
@@ -177,7 +179,7 @@ export function Header() {
                     </div>
                     <Link href="/cuenta/perfil" className={mobileRow} onClick={closeMenu}>
                       <IconUser className="text-zinc-500" />
-                      Perfil
+                      Mi perfil
                     </Link>
                     {isClient ? (
                       <Link href="/cuenta" className={mobileRow} onClick={closeMenu}>
@@ -223,8 +225,9 @@ export function Header() {
       : null;
 
   return (
-    <header className="sticky top-0 z-40 border-b border-zinc-200/80 bg-white/90 backdrop-blur-md transition-shadow duration-300 ease-out supports-[backdrop-filter]:bg-white/85">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6 sm:py-2.5">
+    <header className="sticky top-0 z-40">
+      <div className="border-b border-zinc-200/60 bg-white/80 shadow-[0_1px_0_rgba(255,255,255,0.65)_inset] backdrop-blur-md backdrop-saturate-150 supports-[backdrop-filter]:bg-white/70">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 sm:py-3.5">
         <Link
           href="/"
           className={`mp-ring-brand flex min-w-0 shrink-0 items-center py-0.5 transition-opacity duration-200 hover:opacity-90 focus-visible:outline-none ${ROUNDED_CONTROL} active:scale-[0.98]`}
@@ -253,9 +256,9 @@ export function Header() {
             </Link>
           ) : null}
           {authReady && me && isClient ? (
-            <Link href="/cuenta/pedidos" className={navItem(ordersActive)}>
+            <Link href="/cuenta/pedidos" className={navItem(ordersActive)} aria-label="Mis pedidos">
               <IconPay />
-              <span className="whitespace-nowrap">Órdenes</span>
+              <span className="whitespace-nowrap">Mis pedidos</span>
             </Link>
           ) : null}
           {authReady && me ? (
@@ -292,7 +295,9 @@ export function Header() {
         >
           {menuOpen ? <IconClose /> : <IconMenu />}
         </button>
+        </div>
       </div>
+      <div className="mp-isotype-gradient-line h-1 w-full shrink-0" aria-hidden />
 
       {mobileLayer}
     </header>

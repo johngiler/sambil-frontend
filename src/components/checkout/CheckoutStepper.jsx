@@ -27,7 +27,7 @@ export function CheckoutStepper({ step }) {
               {s.label}
               {active ? (
                 <span
-                  className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[#d98e32]"
+                  className="absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-[color:var(--mp-primary)]"
                   aria-hidden
                 />
               ) : null}

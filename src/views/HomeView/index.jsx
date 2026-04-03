@@ -1,30 +1,11 @@
-import { HomeMallCatalogClient } from "@/components/home/HomeMallCatalogClient";
+import { HomeSpacesCatalogClient } from "@/components/home/HomeSpacesCatalogClient";
 
-/** Portada del marketplace (listado de centros). */
+/** Portada del marketplace (tomas con búsqueda y filtro por ciudad). */
 export default function HomeView() {
   return (
-    <div className="min-h-[calc(100vh-8rem)] bg-zinc-50">
-      <div
-        className="mp-brand-gradient-h h-1.5 w-full"
-        aria-hidden
-      />
+    <div className="min-h-[calc(100vh-8rem)] bg-transparent">
       <div className="mx-auto max-w-7xl px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-10 lg:px-8">
-        <header className="max-w-2xl">
-          <span className="inline-flex rounded-full border border-orange-200/90 bg-gradient-to-r from-orange-50/95 to-amber-50/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-orange-950 shadow-sm ring-1 ring-orange-100/60">
-            Marketplace · Venezuela
-          </span>
-          <h1 className="mt-5 text-balance text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl md:text-4xl">
-            Elige un centro comercial
-          </h1>
-          <p className="mt-4 text-sm leading-relaxed text-zinc-600 sm:text-base">
-            Texto orientativo:{" "}
-            <span className="font-semibold text-zinc-800">Disponible</span> significa catálogo listo para reservar;{" "}
-            <span className="font-semibold text-zinc-800">Próximamente</span>, centro activo sin catálogo público aún.
-            Los datos reales están en las tarjetas de abajo (búsqueda y filtros).
-          </p>
-        </header>
-
-        <HomeMallCatalogClient />
+        <HomeSpacesCatalogClient />
       </div>
     </div>
   );

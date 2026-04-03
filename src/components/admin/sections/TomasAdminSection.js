@@ -477,7 +477,7 @@ export function TomasAdminSection() {
                 const panelId = `toma-extra-${s.id}`;
                 return (
                   <Fragment key={s.id}>
-                    <tr className="border-b border-zinc-100 transition-colors hover:bg-sky-50/40">
+                    <tr className="border-b border-zinc-100 transition-colors hover:bg-zinc-50/70">
                       <td className="px-2 py-2.5">
                         <AdminAccordionToggle
                           expanded={open}
@@ -502,8 +502,8 @@ export function TomasAdminSection() {
                       <td className="max-w-[10rem] truncate px-3 py-2.5 font-medium text-zinc-900" title={s.title}>
                         {s.title}
                       </td>
-                      <td className="max-w-[8rem] truncate px-3 py-2.5 text-xs text-zinc-600" title={s.shopping_center_name}>
-                        {s.shopping_center_name || s.shopping_center}
+                      <td className="max-w-[8rem] truncate px-3 py-2.5 text-xs text-zinc-600" title={s.shopping_center_name || undefined}>
+                        {s.shopping_center_name || "—"}
                       </td>
                       <td className="px-3 py-2.5 capitalize text-zinc-700">{s.status}</td>
                       <td className="px-3 py-2">
@@ -517,7 +517,7 @@ export function TomasAdminSection() {
                     {open ? (
                       <AdminAccordionRowPanel colSpan={7} panelId={panelId}>
                         <AdminAccordionDetailHeader
-                          badgeText={`ID ${s.id}`}
+                          badgeText={s.code || "—"}
                           titleLabel="Toma en catálogo"
                           titleLine={
                             <p className="truncate text-sm font-medium text-zinc-900">
@@ -535,8 +535,19 @@ export function TomasAdminSection() {
                           <AdminDetailSection panelId={panelId} sectionId="gen" title="Datos generales">
                             <AdminDetailInset>
                               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                                <AdminDetailField label="Centro (ID)">
-                                  <span className="font-mono">{s.shopping_center}</span>
+                                <AdminDetailField label="Centro comercial">
+                                  {s.shopping_center_name ? (
+                                    <>
+                                      <span className="font-medium text-zinc-900">{s.shopping_center_name}</span>
+                                      {s.shopping_center_city ? (
+                                        <span className="mt-0.5 block text-xs text-zinc-500">
+                                          {s.shopping_center_city}
+                                        </span>
+                                      ) : null}
+                                    </>
+                                  ) : (
+                                    adminDetailEmpty("")
+                                  )}
                                 </AdminDetailField>
                                 <AdminDetailField label="Tipo">{spaceTypeLabel(s.type)}</AdminDetailField>
                                 <AdminDetailField label="Estado">
@@ -637,10 +648,13 @@ export function TomasAdminSection() {
               <p className="mt-1 font-mono text-sm text-zinc-800">{selected.code}</p>
             </div>
             <div>
-              <p className={adminLabel}>Centro</p>
-              <p className="mt-1 text-sm text-zinc-800">
-                {selected.shopping_center_name || selected.shopping_center}
+              <p className={adminLabel}>Centro comercial</p>
+              <p className="mt-1 text-sm font-medium text-zinc-900">
+                {selected.shopping_center_name || "—"}
               </p>
+              {selected.shopping_center_city ? (
+                <p className="mt-0.5 text-xs text-zinc-500">{selected.shopping_center_city}</p>
+              ) : null}
             </div>
             <div>
               <p className={adminLabel}>Tipo</p>
@@ -853,7 +867,7 @@ export function TomasAdminSection() {
               <input
                 id="s-double"
                 type="checkbox"
-                className="size-4 rounded border-zinc-300 text-[#0c9dcf] focus:ring-[#0c9dcf]/30"
+                className="size-4 rounded border-zinc-300 accent-[var(--mp-primary)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--mp-primary)_30%,transparent)]"
                 checked={doubleSided}
                 onChange={(e) => setDoubleSided(e.target.checked)}
               />

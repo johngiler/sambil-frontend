@@ -1,3 +1,5 @@
+import { workspaceSlugRequestHeaders } from "@/lib/tenant";
+
 /**
  * Base del API. En producción: NEXT_PUBLIC_API_URL obligatorio.
  * En desarrollo en el navegador, fallback a :8000 si falta la var.
@@ -48,12 +50,32 @@ export function mediaAbsoluteUrl(maybeRelative) {
 
 /**
  * Normaliza URL de imagen para el navegador (evita `localhost` vs `127.0.0.1` en dev y mezcla de hosts).
+ * En desarrollo, si el API devolvió una URL absoluta con otro host (p. ej. `sambil.localhost:8000` tras el admin)
+ * pero `NEXT_PUBLIC_API_URL` apunta a `127.0.0.1`, `next/image` rechaza el host y la imagen se rompe.
+ * Para rutas bajo `/media/` se fuerza el origen de `apiBase()`.
  * @param {string | null | undefined} url
  */
 export function normalizeMediaUrlForUi(url) {
   const abs = mediaAbsoluteUrl(url);
   if (!abs) return "";
   if (process.env.NODE_ENV !== "development") return abs;
+  try {
+    const u = new URL(abs);
+    const isMediaPath =
+      u.pathname === "/media" || u.pathname.startsWith("/media/");
+    if (isMediaPath) {
+      const baseStr = apiBase().replace(/\/$/, "");
+      if (baseStr) {
+        const b = new URL(baseStr.match(/^https?:\/\//i) ? baseStr : `http://${baseStr}`);
+        u.protocol = b.protocol;
+        u.hostname = b.hostname;
+        u.port = b.port;
+        return u.toString();
+      }
+    }
+  } catch {
+    /* ignore */
+  }
   return abs.replace(/^http:\/\/localhost(?::8000)?(?=\/|$)/i, "http://127.0.0.1:8000");
 }
 
@@ -196,94 +218,105 @@ export async function getSpace(id) {
   return fetchJsonFirst(paths);
 }
 
-export async function getCenters() {
-  const paths = ["/api/centers/", "/api/catalog/centers/"];
-  for (const path of paths) {
-    try {
-      return await fetchAllPagesWithJson(fetchJson, path);
-    } catch {
-      /* try next */
-    }
-  }
-  return [];
-}
-
 /**
- * Cliente fetch sin caché (navegador).
- * @param {string} path
+ * Valida rango de fechas contra reservas y bloques (misma regla que al enviar la orden).
+ * @param {string | number} spaceId
+ * @param {{ start_date: string, end_date: string }} range ISO date (YYYY-MM-DD)
+ * @returns {Promise<{ ok: boolean, detail?: string }>}
  */
-async function fetchJsonClientNoStore(path) {
-  const res = await fetch(apiUrl(path), {
-    headers: { "Content-Type": "application/json" },
-    cache: "no-store",
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(t || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-async function fetchAllPagesClient(firstPath) {
-  const all = [];
-  let path = firstPath;
-  while (path) {
-    const data = await fetchJsonClientNoStore(path);
-    const p = parsePaginatedResponse(data);
-    all.push(...p.results);
-    path = p.next ? drfNextToRelativePath(p.next) : null;
-  }
-  return all;
-}
-
-/**
- * Todos los centros con catálogo disponible (texto intro portada).
- * @returns {Promise<Array<Record<string, unknown>>>}
- */
-export async function fetchCentersCatalogAvailableAll() {
-  const qs = "?catalog_status=available&page_size=100";
-  const paths = [`/api/centers/${qs}`, `/api/catalog/centers/${qs}`];
-  for (const path of paths) {
-    try {
-      return await fetchAllPagesClient(path);
-    } catch {
-      /* try next */
-    }
-  }
-  return [];
-}
-
-/**
- * Portada: listado paginado con filtros en el servidor.
- * @param {{ search?: string, catalogStatus?: string, location?: string, page?: number }} params
- * @returns {Promise<{ results: Array<Record<string, unknown>>, count: number, next: string | null, previous: string | null }>}
- */
-export async function getCentersCatalogPage({
-  search = "",
-  catalogStatus = "all",
-  location = "all",
-  page = 1,
-} = {}) {
-  const params = new URLSearchParams();
-  params.set("page", String(page));
-  if (search.trim()) params.set("search", search.trim());
-  if (catalogStatus && catalogStatus !== "all") params.set("catalog_status", catalogStatus);
-  if (location && location !== "all") params.set("location", location);
-  const qs = `?${params.toString()}`;
-  const paths = [`/api/centers/${qs}`, `/api/catalog/centers/${qs}`];
+export async function postSpaceRentalRangeCheck(spaceId, { start_date, end_date }) {
+  const body = JSON.stringify({ start_date, end_date });
+  const headers = {
+    "Content-Type": "application/json",
+    ...workspaceSlugRequestHeaders(),
+  };
+  const sid = encodeURIComponent(String(spaceId));
+  const paths = [`/api/spaces/${sid}/check-rental-range/`, `/api/catalog/spaces/${sid}/check-rental-range/`];
   let last = null;
   for (const path of paths) {
     try {
       const res = await fetch(apiUrl(path), {
-        headers: { "Content-Type": "application/json" },
+        method: "POST",
+        headers,
+        body,
         cache: "no-store",
       });
+      const parsed = await parseFetchResponse(res);
+      if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
+      return /** @type {{ ok: boolean, detail?: string }} */ (parsed.data);
+    } catch (e) {
+      last = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+  throw last ?? new Error("No hubo respuesta del servicio");
+}
+
+/**
+ * Portada: tomas paginadas con búsqueda y filtro por ciudad del centro.
+ * @param {{ search?: string, city?: string, page?: number, pageSize?: number }} params
+ * @returns {Promise<{ results: Array<Record<string, unknown>>, count: number, next: string | null, previous: string | null }>}
+ */
+export async function getSpacesCatalogPage({
+  search = "",
+  city = "",
+  page = 1,
+  pageSize = 20,
+} = {}) {
+  const params = new URLSearchParams();
+  params.set("page", String(page));
+  if (pageSize && pageSize !== 20) params.set("page_size", String(pageSize));
+  if (search.trim()) params.set("search", search.trim());
+  if (city.trim()) params.set("city", city.trim());
+  const qs = `?${params.toString()}`;
+  const paths = [`/api/spaces/${qs}`, `/api/catalog/spaces/${qs}`];
+  const headers = {
+    "Content-Type": "application/json",
+    ...workspaceSlugRequestHeaders(),
+  };
+  let last = null;
+  for (const path of paths) {
+    try {
+      const res = await fetch(apiUrl(path), { headers, cache: "no-store" });
       if (!res.ok) {
         const t = await res.text();
         throw new Error(t || `HTTP ${res.status}`);
       }
       const data = await res.json();
       return parsePaginatedResponse(data);
+    } catch (e) {
+      last = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+  throw last ?? new Error("No hubo respuesta del servicio");
+}
+
+/**
+ * Conteos por ciudad para pills (respeta la misma búsqueda que el listado).
+ * @param {{ search?: string }} params
+ * @returns {Promise<{ total: number, items: Array<{ city: string, count: number, label?: string }> }>}
+ */
+export async function getSpacesLocationFacets({ search = "" } = {}) {
+  const params = new URLSearchParams();
+  if (search.trim()) params.set("search", search.trim());
+  const q = params.toString();
+  const suffix = q ? `?${q}` : "";
+  const paths = [
+    `/api/spaces/location-facets/${suffix}`,
+    `/api/catalog/spaces/location-facets/${suffix}`,
+  ];
+  const headers = {
+    "Content-Type": "application/json",
+    ...workspaceSlugRequestHeaders(),
+  };
+  let last = null;
+  for (const path of paths) {
+    try {
+      const res = await fetch(apiUrl(path), { headers, cache: "no-store" });
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || `HTTP ${res.status}`);
+      }
+      return await res.json();
     } catch (e) {
       last = e instanceof Error ? e : new Error(String(e));
     }
@@ -303,6 +336,94 @@ export async function getCenterByCode(code) {
 export function errorMessageFromParsed({ data, text, status }) {
   if (typeof data === "object" && data !== null) return JSON.stringify(data);
   return text || `HTTP ${status}`;
+}
+
+/**
+ * Mensaje legible desde cuerpo 400 de `/api/auth/validate-password/` u otros con clave `password`.
+ * @param {unknown} data
+ */
+export function formatPasswordPolicyErrorBody(data) {
+  if (data == null || typeof data !== "object") {
+    return "La contraseña no cumple las reglas de seguridad.";
+  }
+  const p = /** @type {Record<string, unknown>} */ (data).password;
+  if (Array.isArray(p)) {
+    const s = p.map(String).filter(Boolean).join(" ");
+    return s || "La contraseña no cumple las reglas de seguridad.";
+  }
+  if (typeof p === "string" && p.trim()) return p.trim();
+  return "La contraseña no cumple las reglas de seguridad.";
+}
+
+/** Comprueba la contraseña con las mismas reglas que el backend (checkout / registro). */
+export async function postValidatePassword(password) {
+  const res = await fetch(apiUrl("/api/auth/validate-password/"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...workspaceSlugRequestHeaders(),
+    },
+    body: JSON.stringify({ password }),
+    cache: "no-store",
+  });
+  const parsed = await parseFetchResponse(res);
+  if (!parsed.ok) throw new Error(formatPasswordPolicyErrorBody(parsed.data));
+  return parsed.data;
+}
+
+/**
+ * Comprueba si el correo puede usarse al crear cuenta en checkout invitado (paso datos).
+ * @param {string} email
+ * @returns {Promise<{ available: boolean, detail?: string, code?: string }>}
+ */
+export async function postGuestCheckoutEmailAvailable(email) {
+  const res = await fetch(apiUrl("/api/checkout/guest/check-email/"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...workspaceSlugRequestHeaders(),
+    },
+    body: JSON.stringify({ email }),
+    cache: "no-store",
+  });
+  const parsed = await parseFetchResponse(res);
+  if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
+  return /** @type {{ available: boolean, detail?: string, code?: string }} */ (parsed.data);
+}
+
+/**
+ * Checkout sin sesión: empresa + orden enviada; opcional crear usuario marketplace.
+ * @param {Record<string, unknown>} body
+ */
+export async function postGuestCheckout(body) {
+  const res = await fetch(apiUrl("/api/checkout/guest/"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...workspaceSlugRequestHeaders(),
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  const parsed = await parseFetchResponse(res);
+  if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
+  return parsed.data;
+}
+
+/** Activa cuenta con enlace del correo (tras aprobar orden). */
+export async function postActivateClientAccount({ token, password }) {
+  const res = await fetch(apiUrl("/api/auth/activate-client/"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...workspaceSlugRequestHeaders(),
+    },
+    body: JSON.stringify({ token, password }),
+    cache: "no-store",
+  });
+  const parsed = await parseFetchResponse(res);
+  if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
+  return parsed.data;
 }
 
 export async function postJson(path, body, options = {}) {

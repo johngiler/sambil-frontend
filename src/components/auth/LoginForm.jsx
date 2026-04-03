@@ -6,7 +6,10 @@ import { useEffect, useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
+import { getAccessToken } from "@/lib/authStorage";
+import { postLoginRedirectPath } from "@/lib/postLoginRedirect";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
+import { fetchMe } from "@/services/authApi";
 
 const fieldBase = `mp-login-field mp-form-field-accent min-h-11 w-full ${ROUNDED_CONTROL} border border-zinc-200 bg-zinc-50/80 px-3.5 py-2.5 text-base text-zinc-900 shadow-inner shadow-zinc-100/50 transition-[border-color,box-shadow,background-color] duration-200 ease-out placeholder:text-zinc-400 focus:bg-white focus:outline-none sm:min-h-10 sm:text-sm`;
 
@@ -90,7 +93,7 @@ function LoginShell({ children }) {
 export default function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const nextPath = params.get("next") || "/";
+  const nextPath = params.get("next") || "";
 
   const { login, me, authReady } = useAuth();
   const [username, setUsername] = useState("");
@@ -101,8 +104,8 @@ export default function LoginForm() {
 
   useEffect(() => {
     if (!authReady || !me) return;
-    const safe = nextPath.startsWith("/") ? nextPath : "/";
-    router.replace(safe);
+    const target = postLoginRedirectPath({ role: me.role ?? null, nextPath });
+    router.replace(target);
   }, [authReady, me, nextPath, router]);
 
   if (!authReady) {
@@ -136,8 +139,9 @@ export default function LoginForm() {
     setLoading(true);
     try {
       await login(username.trim(), password);
-      const safe = nextPath.startsWith("/") ? nextPath : "/";
-      window.location.assign(safe);
+      const m = await fetchMe(getAccessToken());
+      const target = postLoginRedirectPath({ role: m?.role ?? null, nextPath });
+      window.location.assign(target);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al iniciar sesión");
     } finally {
@@ -161,7 +165,7 @@ export default function LoginForm() {
           </div>
           <Link
             href="/"
-            className="shrink-0 text-xs font-medium text-zinc-500 underline-offset-4 transition-colors hover:text-[var(--mp-primary)] hover:underline"
+            className="shrink-0 text-xs font-medium text-zinc-900 underline-offset-4 transition-colors hover:underline"
           >
             ← Catálogo
           </Link>

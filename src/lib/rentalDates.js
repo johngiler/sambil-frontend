@@ -36,6 +36,27 @@ export function lineSubtotal(monthlyUsd, startStr, endStr) {
   return Math.round(n * months * 100) / 100;
 }
 
-export function cartTotalUsd(items, startStr, endStr) {
-  return items.reduce((sum, row) => sum + lineSubtotal(row.monthly_price_usd, startStr, endStr), 0);
+/** Suma subtotales usando `start_date` / `end_date` de cada línea del carrito. */
+export function cartTotalUsd(items) {
+  if (!Array.isArray(items)) return 0;
+  return items.reduce((sum, row) => {
+    if (typeof row.start_date !== "string" || typeof row.end_date !== "string") return sum;
+    return sum + lineSubtotal(row.monthly_price_usd, row.start_date, row.end_date);
+  }, 0);
+}
+
+/** Fechas presentes y contrato ≥ 5 meses (regla checkout). */
+export function cartItemDatesValidForCheckout(item) {
+  if (!item || typeof item.start_date !== "string" || typeof item.end_date !== "string") return false;
+  return contractMonthsInclusive(item.start_date, item.end_date) >= 5;
+}
+
+export function cartAllItemsMeetCheckoutRules(items) {
+  return Array.isArray(items) && items.length > 0 && items.every(cartItemDatesValidForCheckout);
+}
+
+/** Subtotal de una línea o null si no cumple mínimo / faltan fechas. */
+export function cartLineSubtotalOrNull(item) {
+  if (!cartItemDatesValidForCheckout(item)) return null;
+  return lineSubtotal(item.monthly_price_usd, item.start_date, item.end_date);
 }

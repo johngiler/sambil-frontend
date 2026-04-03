@@ -15,8 +15,8 @@ const ACCENT_RING = "border-[#d98e32] text-[#b45309] ring-1 ring-[#d98e32]/35";
 const DISABLED = "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300";
 
 /**
- * Selector de rango de meses dentro del año de disponibilidad del API (referencia plantilla).
- * Cada clic amplía el rango para incluir ese mes (contiguo automático entre mínimo y máximo elegidos).
+ * Selector de rango de meses dentro del año de disponibilidad del API.
+ * Cada clic amplía el rango para incluir ese mes (mínimo y máximo elegidos).
  * @param {{
  *   availabilityYear: number,
  *   monthsOccupied?: unknown,
@@ -73,17 +73,32 @@ export function SpaceMonthRangePicker({
   const subtotal =
     meetsMin && Number.isFinite(price) ? Math.round(price * spanMonths * 100) / 100 : null;
 
+  const rangeLabel =
+    lo != null && hi != null
+      ? `${MONTH_SHORT_ES[lo - 1]} – ${MONTH_SHORT_ES[hi - 1]} ${availabilityYear}`
+      : null;
+
   return (
-    <div className="space-y-4">
-      <div>
-        <p className="text-sm font-semibold text-zinc-900">Selecciona meses</p>
-        <p className="mt-1 text-xs text-zinc-500">
-          Elige meses en {availabilityYear} para formar el período. Cada nuevo clic amplía el rango. Contrato
-          mínimo: {minMonths} meses. Los meses deshabilitados tienen reservas o bloqueos.
-        </p>
+    <div className="space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm font-semibold text-zinc-900">Calendario de meses</p>
+        <div className="flex flex-wrap items-center gap-4 text-[11px] text-zinc-500">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm border border-zinc-200 bg-white" aria-hidden />
+            Disponible
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-zinc-100 ring-1 ring-zinc-200/80" aria-hidden />
+            No disponible
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="h-2.5 w-2.5 rounded-sm bg-orange-50 ring-1 ring-[#d98e32]/40" aria-hidden />
+            En tu selección
+          </span>
+        </div>
       </div>
 
-      <div className="grid grid-cols-6 gap-2 sm:gap-2.5">
+      <div className="grid grid-cols-4 gap-2 sm:gap-2.5" role="group" aria-label={`Meses de ${availabilityYear}`}>
         {MONTH_SHORT_ES.map((label, i) => {
           const m = i + 1;
           const blocked = occ[i];
@@ -94,12 +109,13 @@ export function SpaceMonthRangePicker({
               type="button"
               disabled={blocked}
               onClick={() => onMonthClick(m)}
+              aria-pressed={inRange}
               className={`min-h-11 rounded-xl border text-xs font-semibold transition-colors sm:min-h-10 ${
                 blocked
                   ? DISABLED
                   : inRange
                     ? `${ACCENT_RING} bg-orange-50/90`
-                    : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:bg-zinc-50"
+                    : "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50"
               }`}
             >
               {label}
@@ -108,40 +124,59 @@ export function SpaceMonthRangePicker({
         })}
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           type="button"
           onClick={reset}
-          className="text-xs font-semibold text-zinc-500 underline-offset-4 hover:text-zinc-800 hover:underline"
+          className="text-sm font-semibold text-zinc-600 underline-offset-4 hover:text-zinc-900 hover:underline"
         >
           Limpiar selección
         </button>
       </div>
 
       <div
-        className={`flex flex-wrap items-center justify-between gap-3 ${ROUNDED_CONTROL} border border-zinc-200 bg-zinc-50 px-4 py-3`}
+        className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${ROUNDED_CONTROL} border border-zinc-200 bg-zinc-50 px-4 py-4 sm:px-5`}
       >
-        <span className="text-sm text-zinc-600">
-          {rangeValid ? (
-            <>
-              <span className="font-semibold tabular-nums text-zinc-900">{spanMonths}</span>{" "}
-              {spanMonths === 1 ? "mes" : "meses"}
-            </>
-          ) : (
-            "Sin rango"
-          )}
-        </span>
-        <span className="text-lg font-semibold tabular-nums text-[#c2410c]">
-          {subtotal != null ? `$${subtotal.toLocaleString("en-US")}` : "—"}
-        </span>
+        <div className="min-w-0 space-y-1">
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Rango elegido</p>
+          <p className="text-sm font-medium text-zinc-900">
+            {rangeLabel ? (
+              <>
+                {rangeLabel}
+                <span className="ml-2 tabular-nums text-zinc-600">
+                  ({spanMonths} {spanMonths === 1 ? "mes" : "meses"} en calendario)
+                </span>
+              </>
+            ) : (
+              <span className="text-zinc-500">Toca los meses de inicio y fin; el rango se completa entre ambos.</span>
+            )}
+          </p>
+        </div>
+        <div className="shrink-0 text-right">
+          <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Total estimado</p>
+          <p className="text-xl font-semibold tabular-nums text-[#c2410c] sm:text-2xl">
+            {subtotal != null
+              ? new Intl.NumberFormat("es-VE", {
+                  style: "currency",
+                  currency: "USD",
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 2,
+                }).format(subtotal)
+              : "—"}
+          </p>
+          {subtotal != null ? (
+            <p className="mt-0.5 text-[11px] text-zinc-500">Precio mensual × meses del rango</p>
+          ) : null}
+        </div>
       </div>
 
       {rangeValid && touchesBlocked ? (
-        <p className="text-sm text-red-600">El rango incluye meses no disponibles. Ajusta la selección.</p>
+        <p className="text-sm font-medium text-red-600">El rango incluye meses no disponibles. Ajusta la selección.</p>
       ) : null}
       {rangeValid && !touchesBlocked && !meetsMin ? (
         <p className="text-sm text-amber-800">
-          Selecciona al menos {minMonths} meses de calendario para poder añadir al carrito.
+          Amplía la selección hasta cubrir al menos <strong>{minMonths} meses</strong> de calendario (puedes tocar meses
+          sueltos; el rango siempre es continuo de principio a fin).
         </p>
       ) : null}
     </div>

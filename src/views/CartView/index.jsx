@@ -4,7 +4,7 @@ import Link from "next/link";
 
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartProvider";
-import { useWorkspace } from "@/context/WorkspaceContext";
+import { IconRowEdit, IconRowTrash } from "@/components/admin/rowActionIcons";
 import { EmptyState, EmptyStateIconCart } from "@/components/ui/EmptyState";
 import {
   formatUsdInteger,
@@ -13,49 +13,47 @@ import {
   totalWithIva,
 } from "@/lib/marketplacePricing";
 import { contractMonthShortLabels } from "@/lib/rentalMonthPills";
-import { cartTotalUsd, contractMonthsInclusive } from "@/lib/rentalDates";
+import {
+  marketplacePrimaryBtn,
+  marketplaceSecondaryBtn,
+} from "@/lib/marketplaceActionButtons";
+import {
+  cartAllItemsMeetCheckoutRules,
+  cartLineSubtotalOrNull,
+  cartTotalUsd,
+} from "@/lib/rentalDates";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 
-const accent = "text-[#d98e32]";
+const accent = "mp-text-brand";
 
 const cardShell = `${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 shadow-sm sm:p-5`;
 
 export default function CartView() {
   const { authReady, me, isClient, isAdmin } = useAuth();
-  const { items, removeItem, clear, rentalPeriod, setRentalPeriod } = useCart();
-  const { displayName } = useWorkspace();
+  const { items, removeItem, clear } = useCart();
 
-  const months =
-    rentalPeriod.start_date && rentalPeriod.end_date
-      ? contractMonthsInclusive(rentalPeriod.start_date, rentalPeriod.end_date)
-      : 0;
-  const meetsMin = months >= 5;
-  const subtotal = meetsMin ? cartTotalUsd(items, rentalPeriod.start_date, rentalPeriod.end_date) : 0;
+  const meetsMin = cartAllItemsMeetCheckoutRules(items);
+  const subtotal = meetsMin ? cartTotalUsd(items) : 0;
   const iva = ivaFromSubtotal(subtotal);
   const grandTotal = totalWithIva(subtotal);
-  const monthPills =
-    rentalPeriod.start_date && rentalPeriod.end_date
-      ? contractMonthShortLabels(rentalPeriod.start_date, rentalPeriod.end_date)
-      : [];
 
   if (authReady && me && isAdmin) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
         <h1 className="text-balance text-2xl font-bold text-zinc-900 sm:text-3xl">Carrito</h1>
         <p className="mt-4 text-zinc-600">
-          El carrito del marketplace está pensado para visitantes sin sesión. Como administrador, crea y
-          gestiona pedidos desde el panel.
+          Este proceso no está disponible para tu cuenta. Usa el acceso que te corresponde o vuelve al inicio.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
           <Link
             href="/dashboard"
-            className={`inline-flex min-h-11 items-center justify-center ${ROUNDED_CONTROL} bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800`}
+            className={`${marketplacePrimaryBtn} min-h-11 px-5 py-2.5 text-sm font-semibold`}
           >
-            Ir al panel
+            Continuar
           </Link>
           <Link
             href="/"
-            className="inline-flex min-h-11 items-center text-sm font-medium text-zinc-700 underline-offset-4 hover:underline"
+            className={`${marketplaceSecondaryBtn} min-h-11 px-5 py-2.5 text-sm font-medium`}
           >
             Volver al inicio
           </Link>
@@ -64,16 +62,17 @@ export default function CartView() {
     );
   }
 
-  if (authReady && me) {
+  if (authReady && me && !isClient) {
     return (
       <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
         <h1 className="text-balance text-2xl font-bold text-zinc-900 sm:text-3xl">Carrito</h1>
         <p className="mt-4 text-zinc-600">
-          El carrito del marketplace solo aplica sin iniciar sesión. Si necesitas ayuda, contacta a soporte.
+          El carrito del marketplace es para clientes o para quien envía una solicitud sin iniciar sesión. Si necesitas
+          ayuda, contacta a soporte.
         </p>
         <Link
           href="/"
-          className={`mt-8 inline-flex min-h-11 items-center justify-center ${ROUNDED_CONTROL} bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800`}
+          className={`${marketplacePrimaryBtn} mt-8 min-h-11 px-5 py-2.5 text-sm font-semibold`}
         >
           Volver al inicio
         </Link>
@@ -86,85 +85,36 @@ export default function CartView() {
       <h1 className="text-balance text-2xl font-bold text-zinc-900 sm:text-3xl">
         Carrito{items.length > 0 ? ` (${items.length})` : ""}
       </h1>
-      <p className="mt-2 text-sm text-zinc-600">
-        Selección en este navegador. El período de contrato aplica a todas las líneas (mínimo 5 meses de
-        calendario).
-      </p>
-
-      {items.length > 0 && authReady && !me ? (
-        <p className={`mt-4 ${ROUNDED_CONTROL} border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-700`}>
-          Para enviar la reserva necesitas credenciales que te asigne {displayName}. Cuando las tengas, puedes{" "}
-          <Link
-            href="/login?next=/checkout"
-            className="font-semibold text-zinc-900 underline-offset-4 hover:underline"
-          >
-            iniciar sesión
-          </Link>{" "}
-          antes del pago.
-        </p>
-      ) : null}
-
-      {items.length > 0 ? (
-        <div className={`mt-8 ${cardShell}`}>
-          <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-zinc-400">Período de contrato</p>
-          <div className="mt-3 grid grid-cols-1 gap-4 min-[420px]:grid-cols-2">
-            <label className="flex min-w-0 flex-col gap-1 text-sm">
-              <span className="text-zinc-500">Inicio</span>
-              <input
-                type="date"
-                value={rentalPeriod.start_date}
-                onChange={(e) =>
-                  setRentalPeriod((p) => ({ ...p, start_date: e.target.value }))
-                }
-                className={`min-h-11 w-full min-w-0 ${ROUNDED_CONTROL} border border-zinc-200 bg-zinc-50/80 px-3 py-2.5 text-base text-zinc-900 transition-[border-color,box-shadow] duration-200 ease-out focus:border-[#d98e32]/50 focus:outline-none focus:ring-2 focus:ring-[#d98e32]/20 sm:min-h-0 sm:py-2 sm:text-sm`}
-              />
-            </label>
-            <label className="flex min-w-0 flex-col gap-1 text-sm">
-              <span className="text-zinc-500">Fin</span>
-              <input
-                type="date"
-                value={rentalPeriod.end_date}
-                onChange={(e) =>
-                  setRentalPeriod((p) => ({ ...p, end_date: e.target.value }))
-                }
-                className={`min-h-11 w-full min-w-0 ${ROUNDED_CONTROL} border border-zinc-200 bg-zinc-50/80 px-3 py-2.5 text-base text-zinc-900 transition-[border-color,box-shadow] duration-200 ease-out focus:border-[#d98e32]/50 focus:outline-none focus:ring-2 focus:ring-[#d98e32]/20 sm:min-h-0 sm:py-2 sm:text-sm`}
-              />
-            </label>
-          </div>
-          <p className="mt-3 text-sm text-zinc-600">
-            Meses cubiertos: <span className="font-semibold text-zinc-900">{months}</span>
-            {!meetsMin ? (
-              <span className="mt-1 block text-amber-800 sm:mt-0 sm:ml-2 sm:inline">
-                (mínimo 5 para continuar)
-              </span>
-            ) : null}
-          </p>
-        </div>
-      ) : null}
 
       {items.length === 0 ? (
         <div className="mt-10">
           <EmptyState
             icon={<EmptyStateIconCart />}
             title="Tu carrito está vacío"
-            description="Añade tomas desde el catálogo de un centro. Todo se guarda en este navegador hasta que envíes la solicitud."
+            description="Explora el catálogo y añade tomas con el período que necesites."
             action={
               <Link
                 href="/"
-                className={`inline-flex min-h-11 items-center justify-center ${ROUNDED_CONTROL} bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800 sm:min-h-0`}
+                className={`${marketplacePrimaryBtn} min-h-11 px-5 py-2.5 text-sm font-semibold sm:min-h-0`}
               >
-                Ver centros
+                Ir al catálogo
               </Link>
             }
           />
         </div>
       ) : (
+        <>
+          <p className="mt-6 text-sm leading-relaxed text-zinc-600">
+            Cada toma tiene <strong className="font-medium text-zinc-800">sus propias fechas</strong> de contrato. El icono
+            de lápiz abre el detalle; allí pulsa <span className="whitespace-nowrap">«Guardar fechas de esta toma»</span>.
+          </p>
         <ul className="mt-6 space-y-4">
           {items.map((item) => {
-            const line =
-              meetsMin
-                ? cartTotalUsd([item], rentalPeriod.start_date, rentalPeriod.end_date)
-                : null;
+            const line = cartLineSubtotalOrNull(item);
+            const monthPills =
+              typeof item.start_date === "string" && typeof item.end_date === "string"
+                ? contractMonthShortLabels(item.start_date, item.end_date)
+                : [];
             const center =
               typeof item.shopping_center_name === "string" ? item.shopping_center_name : "";
             const detail =
@@ -208,20 +158,40 @@ export default function CartView() {
                     ) : (
                       <p className="text-sm text-zinc-400">—</p>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => removeItem(item.id)}
-                      className={`shrink-0 text-sm font-semibold text-red-600 underline-offset-4 hover:underline`}
-                    >
-                      Quitar
-                    </button>
+                    <div className="flex shrink-0 items-center gap-0.5 sm:gap-1">
+                      <Link
+                        href={`/catalog/${item.id}`}
+                        className="mp-ring-brand inline-flex shrink-0 items-center justify-center rounded-[15px] border border-transparent p-2 text-[color:var(--mp-primary)] transition-colors hover:border-[color-mix(in_srgb,var(--mp-primary)_28%,#e4e4e7)] hover:bg-[color-mix(in_srgb,var(--mp-primary)_10%,#fff)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)]"
+                        aria-label="Editar fechas de reserva"
+                      >
+                        <IconRowEdit />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.id)}
+                        className={`inline-flex shrink-0 items-center justify-center rounded-[15px] border border-transparent p-2 text-red-600 transition-colors hover:border-red-200/90 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)]`}
+                        aria-label="Quitar del carrito"
+                      >
+                        <IconRowTrash />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </li>
             );
           })}
         </ul>
+        </>
       )}
+
+      {items.length > 0 && !meetsMin ? (
+        <p
+          className={`mt-6 ${ROUNDED_CONTROL} border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950`}
+        >
+          Alguna línea no tiene fechas válidas o no llega a 5 meses. Usa el icono de <strong className="font-medium">lápiz</strong>,
+          ajusta el calendario y <strong className="font-medium">Guardar fechas de esta toma</strong>, o vacía el carrito.
+        </p>
+      ) : null}
 
       {items.length > 0 ? (
         <div className={`mt-6 ${cardShell}`}>
@@ -249,10 +219,10 @@ export default function CartView() {
           <Link
             href={meetsMin ? "/checkout" : "#"}
             aria-disabled={!meetsMin}
-            className={`mt-6 flex min-h-12 w-full items-center justify-center ${ROUNDED_CONTROL} text-center text-base font-semibold transition-colors ${
-              meetsMin
-                ? "bg-zinc-900 text-white hover:bg-zinc-800"
-                : "cursor-not-allowed bg-zinc-200 text-zinc-500"
+            className={`${marketplacePrimaryBtn} mt-6 flex min-h-12 w-full items-center justify-center text-center text-base font-semibold ${
+              !meetsMin
+                ? "pointer-events-none !bg-none bg-zinc-200 text-zinc-500 shadow-none hover:brightness-100"
+                : ""
             }`}
             onClick={(e) => {
               if (!meetsMin) e.preventDefault();

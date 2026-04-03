@@ -11,7 +11,7 @@ export function AdminAccordionToggle({ expanded, onToggle, rowId, controlsId }) 
         e.stopPropagation();
         onToggle();
       }}
-      className={`inline-flex ${ROUNDED_CONTROL} p-1.5 text-zinc-500 transition hover:bg-zinc-200/70 hover:text-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c9dcf]/35`}
+      className={`inline-flex ${ROUNDED_CONTROL} p-1.5 text-zinc-500 transition hover:bg-zinc-200/70 hover:text-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)]`}
       aria-expanded={expanded}
       aria-controls={controlsId}
       id={rowId ? `accordion-trigger-${rowId}` : undefined}

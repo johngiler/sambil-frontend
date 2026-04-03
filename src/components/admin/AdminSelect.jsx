@@ -35,8 +35,8 @@ export function AdminSelect({
 
   const r = inModal ? 10 : 15;
   const minH = compact ? 34 : 40;
-  const focusBorder = "rgba(12, 157, 207, 0.5)";
-  const focusRing = "0 0 0 2px rgba(12, 157, 207, 0.15)";
+  const focusBorder = "color-mix(in srgb, var(--mp-primary) 50%, #d4d4d8)";
+  const focusRing = "0 0 0 2px color-mix(in srgb, var(--mp-primary) 15%, transparent)";
 
   const styles = {
     control: (base, state) => ({
@@ -65,7 +65,11 @@ export function AdminSelect({
       ...b,
       borderRadius: Math.max(0, r - 4),
       fontSize: compact ? "0.8125rem" : "0.875rem",
-      backgroundColor: state.isSelected ? "#0c9dcf" : state.isFocused ? "#f4f4f5" : "#fff",
+      backgroundColor: state.isSelected
+        ? "var(--mp-primary)"
+        : state.isFocused
+          ? "color-mix(in srgb, var(--mp-primary) 6%, #f4f4f5)"
+          : "#fff",
       color: state.isSelected ? "#fff" : "#18181b",
       cursor: "pointer",
     }),
@@ -75,7 +79,7 @@ export function AdminSelect({
     indicatorSeparator: () => ({ display: "none" }),
     dropdownIndicator: (b, state) => ({
       ...b,
-      color: state.isFocused ? "#0c9dcf" : "#71717a",
+      color: state.isFocused ? "var(--mp-primary)" : "#71717a",
       padding: compact ? 4 : 6,
     }),
     ...menuPortal,

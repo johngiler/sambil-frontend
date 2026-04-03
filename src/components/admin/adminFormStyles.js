@@ -12,10 +12,10 @@ export const adminPrimaryBtn =
 export const adminCreateBtnLabel = "leading-none";
 
 export const adminSecondaryBtn =
-  "inline-flex cursor-pointer items-center justify-center rounded-[15px] border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50 disabled:cursor-not-allowed";
+  "inline-flex cursor-pointer items-center justify-center rounded-[15px] border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_32%,transparent)] disabled:cursor-not-allowed";
 
 export const adminPanelCard =
-  "rounded-[15px] border border-sky-100/90 bg-gradient-to-br from-sky-50/50 via-white to-white p-5 shadow-sm ring-1 ring-sky-100/40 sm:p-6";
+  "rounded-[15px] border border-zinc-200/90 bg-white p-5 shadow-sm sm:p-6";
 
 /** Icono junto al título de sección: caja fija y contenido centrado (evita que el SVG quede arriba al estirarse la fila). */
 export const adminSectionHeaderIconWrap =

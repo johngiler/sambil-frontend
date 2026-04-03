@@ -19,7 +19,7 @@ export function AdminShell({ children }) {
   if (!isAdmin) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <p className="text-zinc-700">No tienes permiso para el panel.</p>
+        <p className="text-zinc-700">No tienes permiso para acceder aquí.</p>
         <Link href="/" className="mt-4 inline-block font-medium text-zinc-900 underline">
           Inicio
         </Link>

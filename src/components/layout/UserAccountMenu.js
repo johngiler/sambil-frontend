@@ -81,7 +81,7 @@ export function UserAccountMenu({ me, logout, onNavigate, showMiEmpresa = false 
         >
           <Link href={perfilHref} role="menuitem" className={menuItem} onClick={handleNav}>
             <IconUser className="text-zinc-400" />
-            Perfil
+            Mi perfil
           </Link>
           {showMiEmpresa ? (
             <>
@@ -91,7 +91,7 @@ export function UserAccountMenu({ me, logout, onNavigate, showMiEmpresa = false 
               </Link>
               <Link href="/cuenta/pedidos" role="menuitem" className={menuItem} onClick={handleNav}>
                 <IconPay className="text-zinc-400" />
-                Órdenes
+                Mis pedidos
               </Link>
             </>
           ) : null}

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvailabilityBar";
+import { IconCart } from "@/components/layout/navIcons";
 import { normalizeMediaUrlForUi } from "@/services/api";
 
 function formatUsdMonthly(n) {
@@ -15,27 +16,47 @@ function formatUsdMonthly(n) {
 }
 
 /**
- * Tarjeta de toma en catálogo de centro (referencia: precio acento, badge ciudad, franja de 12 meses).
+ * Tarjeta de toma en catálogo de centro (precio acento, badge ciudad, franja de 12 meses).
+ * @param {{ space: Record<string, unknown>, availabilityLabel?: "free" | "occupied", showFooterLink?: boolean, inCart?: boolean }} props
  */
-export function SpaceCard({ space }) {
-  const cover = normalizeMediaUrlForUi(
-    typeof space.cover_image === "string" ? space.cover_image : "",
-  );
-  const city = typeof space.shopping_center_name === "string" ? space.shopping_center_name : "";
+function coverImageSrc(coverImage) {
+  if (typeof coverImage === "string" && coverImage.trim() !== "") return coverImage;
+  if (
+    coverImage &&
+    typeof coverImage === "object" &&
+    typeof coverImage.url === "string" &&
+    coverImage.url.trim() !== ""
+  ) {
+    return coverImage.url;
+  }
+  return "";
+}
+
+export function SpaceCard({ space, availabilityLabel = "free", showFooterLink = true, inCart = false }) {
+  const cover = normalizeMediaUrlForUi(coverImageSrc(space.cover_image));
+  const cityRaw =
+    typeof space.shopping_center_city === "string" && space.shopping_center_city.trim() !== ""
+      ? space.shopping_center_city.trim()
+      : typeof space.shopping_center_name === "string"
+        ? space.shopping_center_name
+        : "";
+  const city = cityRaw;
   const desc =
-    typeof space.venue_zone === "string" && space.venue_zone.trim() !== ""
-      ? space.venue_zone
-      : typeof space.location_description === "string"
-        ? space.location_description
-        : typeof space.type === "string"
-          ? space.type
-          : "";
+    typeof space.description === "string" && space.description.trim() !== ""
+      ? space.description.trim()
+      : typeof space.venue_zone === "string" && space.venue_zone.trim() !== ""
+        ? space.venue_zone
+        : typeof space.location_description === "string"
+          ? space.location_description
+          : typeof space.type === "string"
+            ? space.type
+            : "";
 
   return (
     <article className="group overflow-hidden rounded-2xl bg-white shadow-[0_1px_2px_rgba(0,0,0,0.05)] ring-1 ring-zinc-200/80 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-8px_rgba(0,0,0,0.15)] hover:ring-zinc-300">
       <Link
         href={`/catalog/${space.id}`}
-        className="block rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#009ce0] focus-visible:ring-offset-2"
+        className="mp-ring-brand block rounded-2xl focus-visible:outline-none"
       >
         <div className="relative aspect-[4/3] bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-900">
           {cover ? (
@@ -57,6 +78,12 @@ export function SpaceCard({ space }) {
               {city}
             </span>
           ) : null}
+          {inCart ? (
+            <span className="absolute right-2.5 top-2.5 inline-flex max-w-[min(100%-4rem,9.5rem)] items-center gap-1 rounded-full bg-[var(--mp-secondary)] px-2.5 py-1 text-[10px] font-semibold leading-tight text-white shadow-[0_2px_10px_rgba(234,88,12,0.45)] ring-1 ring-white/35">
+              <IconCart className="h-3 w-3 shrink-0 text-white" aria-hidden />
+              <span className="truncate">En carrito</span>
+            </span>
+          ) : null}
         </div>
         <div className="p-4">
           <div className="flex items-start justify-between gap-3">
@@ -71,11 +98,16 @@ export function SpaceCard({ space }) {
             <p className="mt-1.5 line-clamp-2 break-words text-sm text-zinc-500">{desc}</p>
           ) : null}
           <div className="mt-4">
-            <SpaceMonthAvailabilityBar monthsOccupied={space.months_occupied} />
+            <SpaceMonthAvailabilityBar
+              monthsOccupied={space.months_occupied}
+              labelMetric={availabilityLabel}
+            />
           </div>
-          <span className="mt-3 inline-block text-sm font-semibold text-zinc-800 underline-offset-4 group-hover:underline">
-            Ver detalle
-          </span>
+          {showFooterLink ? (
+            <span className="mt-3 inline-block text-sm font-semibold text-zinc-800 underline-offset-4 group-hover:underline">
+              Ver detalle
+            </span>
+          ) : null}
         </div>
       </Link>
     </article>

@@ -26,7 +26,7 @@ const filterLabelClass =
   "mb-2 block text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-400";
 
 const searchInputClass =
-  "mt-0 w-full min-h-[40px] rounded-xl border border-zinc-200/90 bg-white py-2 pl-10 pr-3 text-sm text-zinc-900 shadow-sm outline-none transition-[border-color,box-shadow,background-color] placeholder:text-zinc-400 focus:border-[#0c9dcf]/45 focus:bg-white focus:ring-2 focus:ring-[#0c9dcf]/12";
+  "mp-admin-field-brand mt-0 w-full min-h-[40px] rounded-xl border border-zinc-200/90 bg-white py-2 pl-10 pr-3 text-sm text-zinc-900 shadow-sm outline-none transition-[border-color,box-shadow,background-color] placeholder:text-zinc-400 focus:bg-white focus:outline-none";
 
 function SearchIcon({ className }) {
   return (
@@ -107,7 +107,7 @@ export function AdminFilterSelect({ id, label, value, onChange, options }) {
 }
 
 const filterClearActionBase =
-  "group inline-flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-100/80 hover:text-[#0c9dcf] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0c9dcf]/25 focus-visible:ring-offset-2";
+  "mp-ring-brand group inline-flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-100/80 hover:text-[color:var(--mp-primary)] focus-visible:outline-none";
 
 /**
  * Acción compacta tipo enlace + icono (portada, estados vacíos, etc.).
@@ -119,10 +119,10 @@ const filterClearActionBase =
 export function FilterClearAction({ onClick, className = "", label = "Limpiar filtros" }) {
   return (
     <button type="button" onClick={onClick} className={`${filterClearActionBase} py-2 sm:py-1.5 sm:pl-1 sm:pr-2 ${className}`}>
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-100/90 text-zinc-400 transition-colors group-hover:bg-[#0c9dcf]/12 group-hover:text-[#0c9dcf]">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-100/90 text-zinc-400 transition-colors group-hover:bg-[color-mix(in_srgb,var(--mp-primary)_12%,transparent)] group-hover:text-[color:var(--mp-primary)]">
         <FilterResetIcon className="block" />
       </span>
-      <span className="border-b border-transparent pb-px transition-[border-color] group-hover:border-[#0c9dcf]/40">
+      <span className="border-b border-transparent pb-px transition-[border-color] group-hover:border-[color-mix(in_srgb,var(--mp-primary)_40%,transparent)]">
         {label}
       </span>
     </button>
@@ -151,11 +151,8 @@ export function AdminFilterClearButton({ onClick, show = true }) {
 /** Contenedor de filtros encima de la tabla. */
 export function AdminFiltersRow({ children }) {
   return (
-    <div className="group mb-5 mt-5 flex flex-col gap-3 overflow-hidden rounded-2xl border border-zinc-200/90 bg-gradient-to-br from-white via-white to-zinc-50/90 shadow-[0_2px_12px_rgba(15,23,42,0.05)] ring-1 ring-zinc-900/[0.04] transition-[box-shadow,border-color] duration-200 hover:border-zinc-200 hover:shadow-[0_8px_28px_rgba(15,23,42,0.07)]">
-      <div
-        className="h-1 w-full shrink-0 bg-gradient-to-r from-[#2c2c81]/90 via-[#a0034e]/85 to-[#0c9dcf]/90"
-        aria-hidden
-      />
+    <div className="group mb-5 mt-5 flex flex-col gap-3 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.05)] transition-[box-shadow,border-color] duration-200 hover:border-zinc-200 hover:shadow-[0_8px_28px_rgba(15,23,42,0.07)]">
+      <div className="mp-admin-filters-top-accent" aria-hidden />
       <div className="px-4 pb-4 sm:px-5 sm:pb-5">
         <div className="flex min-w-0 flex-col gap-4 rounded-xl border border-zinc-200/60 bg-zinc-50/50 p-4 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-6 sm:gap-y-4 sm:p-5">
           {children}
@@ -175,7 +172,7 @@ export function AdminFilterResultHint({ shown, total, noun }) {
   if (shown === total) return null;
   return (
     <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-zinc-200/90 bg-white px-3 py-1.5 text-xs font-medium text-zinc-600 shadow-sm">
-      <span className="inline-block size-1.5 shrink-0 rounded-full bg-[#0c9dcf]" aria-hidden />
+      <span className="mp-bg-dot-brand inline-block size-1.5 shrink-0 rounded-full" aria-hidden />
       Mostrando <span className="tabular-nums font-semibold text-zinc-800">{shown}</span> de{" "}
       <span className="tabular-nums font-semibold text-zinc-800">{total}</span> {noun}
     </p>

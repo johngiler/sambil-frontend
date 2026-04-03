@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { SpaceCard } from "@/components/space/SpaceCard";
+import { SpaceCardWithCart } from "@/components/space/SpaceCardWithCart";
 import { EmptyState, EmptyStateIconPhoto } from "@/components/ui/EmptyState";
 import { getMallMeta } from "@/lib/catalog";
 import { getCenterByCode, getSpaces } from "@/services/api";
@@ -39,13 +39,13 @@ export default async function MallSpacesView({ centerCode }) {
   const spaces = await getSpaces(upper);
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] bg-zinc-50/80">
+    <div className="min-h-[calc(100vh-8rem)] bg-transparent">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
         <Link
           href="/"
           className="inline-flex text-sm font-medium text-zinc-500 transition-colors duration-200 ease-out hover:text-zinc-900"
         >
-          ← Todos los centros
+          ← Volver al catálogo
         </Link>
         <h1 className="mt-6 text-balance break-words text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl md:text-4xl">
           {meta.title}
@@ -56,14 +56,14 @@ export default async function MallSpacesView({ centerCode }) {
           <div className="mt-10">
             <EmptyState
               icon={<EmptyStateIconPhoto />}
-              title="No hay espacios publicados en este centro"
-              description="Por ahora no hay tomas disponibles. Puedes cargarlas desde el panel de administración o volver más tarde."
+              title="No hay tomas publicadas aquí"
+              description="Por ahora no hay tomas disponibles en esta ubicación. Vuelve al catálogo o intenta más tarde."
             />
           </div>
         ) : (
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-6">
             {spaces.map((s) => (
-              <SpaceCard key={s.id} space={s} />
+              <SpaceCardWithCart key={s.id} space={s} />
             ))}
           </div>
         )}

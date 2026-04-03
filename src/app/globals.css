@@ -28,16 +28,119 @@
   --mp-scrollbar-track: transparent;
   --mp-scrollbar-thumb: rgba(24, 24, 27, 0.14);
   --mp-scrollbar-thumb-hover: color-mix(in srgb, var(--mp-primary) 48%, transparent);
+  /**
+   * Degradado isotipo 115°: uso restringido en producto a:
+   * - botón «Panel» (Header),
+   * - línea bajo el header global,
+   * - línea sobre el footer global.
+   * No reutilizar en otros botones, CTAs ni franjas de página.
+   */
+  --mp-isotype-gradient: linear-gradient(
+    115deg,
+    #2f246b 0%,
+    #5f1d64 22%,
+    #90215c 40%,
+    #ea4822 58%,
+    #e97a01 74%,
+    #eeab23 88%,
+    #d97706 100%
+  );
+  --mp-isotype-gradient-hover: linear-gradient(
+    115deg,
+    #3a3585 0%,
+    #6f2474 22%,
+    #a0286c 40%,
+    #ec5a30 58%,
+    #f08912 74%,
+    #f2bc32 88%,
+    #c2410c 100%
+  );
+  /**
+   * Portada (`/`): aire claro, transición suave; toque de marca muy ligero (sin barro ni contraste fuerte).
+   */
+  --mp-home-hero-gradient: linear-gradient(
+      to bottom,
+      color-mix(in srgb, #18181b 2.5%, transparent) 0%,
+      transparent 42%
+    ),
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--mp-primary) 4.5%, #ffffff) 0%,
+      color-mix(in srgb, var(--mp-primary) 2%, #fafafa) 38%,
+      #fafafa 72%,
+      #fafafa 100%
+    );
+  --mp-home-hero-gradient-height: clamp(11rem, 34vh, 22rem);
 }
 
-/* Franjas de marca (header de página, pie). */
-.mp-brand-gradient-h {
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--mp-primary) 32%, #2c2c81),
-    color-mix(in srgb, var(--mp-primary) 45%, var(--mp-secondary)),
-    color-mix(in srgb, var(--mp-secondary) 28%, var(--mp-primary))
-  );
+/* Franja isotipo bajo header / sobre footer: mismo degradado que el botón Panel; grosor visible (no hairline RGBA). */
+.mp-isotype-gradient-line {
+  display: block;
+  width: 100%;
+  flex-shrink: 0;
+  background-image: var(--mp-isotype-gradient);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+/* Botón «Panel»: único relleno con degradado isotipo en la UI. */
+.mp-isotype-panel-btn {
+  border: 1px solid rgb(255 255 255 / 0.4);
+  background-image: var(--mp-isotype-gradient);
+  box-shadow: 0 2px 16px rgba(47, 36, 107, 0.38);
+  transition:
+    border-color 0.2s ease-out,
+    box-shadow 0.2s ease-out,
+    transform 0.2s ease-out;
+}
+
+.mp-isotype-panel-btn:hover {
+  border-color: rgb(255 255 255 / 0.55);
+  background-image: var(--mp-isotype-gradient-hover);
+  box-shadow: 0 4px 22px rgba(234, 72, 34, 0.28);
+}
+
+.mp-isotype-panel-btn:active {
+  transform: scale(0.98);
+}
+
+.mp-isotype-panel-btn:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px #ea4822;
+}
+
+/* CTA única en pantallas fallback Publivalla (sin degradado). */
+.mp-publivalla-fallback-cta {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  background-color: transparent;
+  padding: 0.5rem 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: rgb(228 228 231);
+  transition:
+    background-color 0.2s ease-out,
+    border-color 0.2s ease-out,
+    color 0.2s ease-out;
+}
+
+.mp-publivalla-fallback-cta:hover {
+  border-color: rgb(255 255 255 / 0.35);
+  background-color: rgb(255 255 255 / 0.06);
+  color: #fff;
+}
+
+.mp-publivalla-fallback-cta:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow:
+    0 0 0 2px #09090b,
+    0 0 0 4px color-mix(in srgb, var(--mp-primary) 45%, transparent);
 }
 
 /* Acento en formularios marketplace (login, búsqueda, etc.). */
@@ -52,6 +155,38 @@
   box-shadow:
     0 0 0 2px var(--background),
     0 0 0 4px color-mix(in srgb, var(--mp-primary) 40%, transparent);
+}
+
+/**
+ * Foco en paginación y chips similares: mezcla primary + secondary (tenant).
+ * Evita el anillo azul por defecto del navegador: combinar con `outline-none` en el control.
+ */
+.mp-pagination-focus:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--background),
+    0 0 0 4px color-mix(
+      in srgb,
+      var(--mp-primary) 50%,
+      color-mix(in srgb, var(--mp-secondary) 32%, transparent)
+    );
+}
+
+/* Texto / punto de acento según tenant (sustituye hex fijo #0c9dcf en vistas). */
+.mp-text-brand {
+  color: var(--mp-primary);
+}
+
+.mp-bg-dot-brand {
+  background-color: var(--mp-primary);
+}
+
+/* Franja superior del bloque de filtros admin (`AdminFiltersRow`): 3px, tenant. */
+.mp-admin-filters-top-accent {
+  width: 100%;
+  flex-shrink: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--mp-primary), var(--mp-secondary));
 }
 
 /* Fila ancha (drawer): anillo interior, equivalente a ring-inset. */
@@ -149,9 +284,16 @@ html {
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
   font-family: var(--font-jakarta), system-ui, sans-serif;
+  background-color: #fafafa;
+}
+
+body.mp-home-hero-bg {
+  background-image: var(--mp-home-hero-gradient);
+  background-repeat: no-repeat;
+  background-position: top center;
+  background-size: 100% var(--mp-home-hero-gradient-height);
 }
 
 /* Scrollbars: cuerpo y cualquier contenedor con overflow (Firefox). */
@@ -187,6 +329,15 @@ body {
 }
 
 @layer base {
+  /* Enlaces: sin azul del navegador; negro. Las utilidades (`text-white`, `text-zinc-400`, etc.) siguen aplicando sobre el `<a>`. */
+  a {
+    color: var(--foreground);
+  }
+
+  a:visited {
+    color: var(--foreground);
+  }
+
   button:not(:disabled),
   input[type="submit"]:not(:disabled),
   input[type="button"]:not(:disabled),

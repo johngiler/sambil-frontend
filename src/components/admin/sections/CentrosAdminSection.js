@@ -451,7 +451,7 @@ export function CentrosAdminSection() {
                   const panelId = `centro-extra-${c.id}`;
                   return (
                     <Fragment key={c.id}>
-                      <tr className="border-b border-zinc-100 transition-colors hover:bg-sky-50/40">
+                      <tr className="border-b border-zinc-100 transition-colors hover:bg-zinc-50/70">
                         <td className="px-2 py-2.5">
                           <AdminAccordionToggle
                             expanded={open}
@@ -503,7 +503,11 @@ export function CentrosAdminSection() {
                       {open ? (
                         <AdminAccordionRowPanel colSpan={7} panelId={panelId}>
                           <AdminAccordionDetailHeader
-                            badgeText={`ID ${c.id}`}
+                            badgeText={
+                              typeof c.code === "string" && c.code.trim() !== ""
+                                ? c.code.trim().toUpperCase()
+                                : undefined
+                            }
                             titleLabel="Centro en sistema"
                             titleLine={
                               <p className="truncate text-sm font-medium text-zinc-900">
@@ -556,7 +560,7 @@ export function CentrosAdminSection() {
                                   {c.contact_email?.trim() ? (
                                     <a
                                       href={`mailto:${c.contact_email.trim()}`}
-                                      className="font-medium text-[#0c9dcf] underline-offset-2 hover:underline"
+                                      className="font-medium text-zinc-900 underline-offset-2 hover:underline"
                                     >
                                       {c.contact_email.trim()}
                                     </a>
@@ -574,7 +578,7 @@ export function CentrosAdminSection() {
                                       }
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="font-medium text-[#0c9dcf] underline-offset-2 hover:underline"
+                                      className="font-medium text-zinc-900 underline-offset-2 hover:underline"
                                     >
                                       {c.website.trim()}
                                     </a>

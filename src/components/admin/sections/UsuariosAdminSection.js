@@ -1,6 +1,13 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import {
   AdminAccordionDetailHeader,
@@ -35,7 +42,12 @@ import { usersAdminListPath } from "@/lib/adminListQuery";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
-import { authFetch, authFetchAllPages, authFetchForm, mediaAbsoluteUrl } from "@/services/authApi";
+import {
+  authFetch,
+  authFetchAllPages,
+  authFetchForm,
+  mediaAbsoluteUrl,
+} from "@/services/authApi";
 import {
   AdminFilterClearButton,
   AdminFiltersRow,
@@ -45,12 +57,48 @@ import {
 } from "@/components/admin/AdminListFilters";
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
 
+function IconEye({ className }) {
+  return (
+    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconEyeOff({ className }) {
+  return (
+    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const ROLE_OPTIONS = [
   { v: "client", l: "Cliente marketplace" },
-  { v: "admin", l: "Administrador" },
+  { v: "admin", l: "Administrador marketplace" },
 ];
 
-const ROLE_FILTER_OPTIONS = [{ v: "all", l: "Todos los roles" }, ...ROLE_OPTIONS];
+const ROLE_FILTER_OPTIONS = [
+  { v: "all", l: "Todos los roles" },
+  ...ROLE_OPTIONS,
+];
 
 function roleLabel(role) {
   const o = ROLE_OPTIONS.find((x) => x.v === role);
@@ -77,6 +125,7 @@ export function UsuariosAdminSection() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showUserPassword, setShowUserPassword] = useState(false);
   const [role, setRole] = useState("client");
   const [linkedClientId, setLinkedClientId] = useState("");
   const [clientRows, setClientRows] = useState([]);
@@ -87,7 +136,9 @@ export function UsuariosAdminSection() {
   const fileRef = useRef(null);
 
   const reload = useCallback(async () => {
-    const d = await authFetch(usersAdminListPath(page, debouncedFilterQ, filterRole));
+    const d = await authFetch(
+      usersAdminListPath(page, debouncedFilterQ, filterRole),
+    );
     const { results, count } = parsePaginatedResponse(d);
     setRows(results);
     setTotalCount(count);
@@ -105,10 +156,12 @@ export function UsuariosAdminSection() {
   const clientSelectOptions = useMemo(() => {
     const base = [{ v: "", l: "Sin empresa vinculada" }];
     return base.concat(
-      clientRows.map((c) => ({
-        v: String(c.id),
-        l: `${c.company_name} · ID ${c.id}`,
-      })),
+      clientRows.map((c) => {
+        const name = typeof c.company_name === "string" ? c.company_name.trim() : "";
+        const rif = typeof c.rif === "string" ? c.rif.trim() : "";
+        const l = rif && name ? `${name} · ${rif}` : name || rif || "Sin nombre";
+        return { v: String(c.id), l };
+      }),
     );
   }, [clientRows]);
 
@@ -120,7 +173,8 @@ export function UsuariosAdminSection() {
         await reload();
         await reloadClients();
       } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : "Error al cargar");
+        if (!cancelled)
+          setErr(e instanceof Error ? e.message : "Error al cargar");
       } finally {
         if (!cancelled) setReady(true);
       }
@@ -148,6 +202,7 @@ export function UsuariosAdminSection() {
     setUsername("");
     setEmail("");
     setPassword("");
+    setShowUserPassword(false);
     setRole("client");
     setLinkedClientId("");
     setCoverFile(null);
@@ -193,6 +248,12 @@ export function UsuariosAdminSection() {
     setMsg("");
     try {
       if (modal === "create") {
+        if (role === "client" && (!linkedClientId || linkedClientId === "")) {
+          setErr(
+            "Selecciona la empresa vinculada para el rol cliente marketplace.",
+          );
+          return;
+        }
         if (password.length < 8) {
           setErr("La contraseña debe tener al menos 8 caracteres.");
           return;
@@ -205,7 +266,10 @@ export function UsuariosAdminSection() {
           fd.append("role", role);
           fd.append("cover_image", coverFile);
           if (role === "client") fd.append("client_id", linkedClientId || "");
-          await authFetchForm("/api/admin/users/", { method: "POST", formData: fd });
+          await authFetchForm("/api/admin/users/", {
+            method: "POST",
+            formData: fd,
+          });
         } else {
           await authFetch("/api/admin/users/", {
             method: "POST",
@@ -215,13 +279,23 @@ export function UsuariosAdminSection() {
               password,
               role,
               ...(role === "client"
-                ? { client_id: linkedClientId ? parseInt(linkedClientId, 10) : null }
+                ? {
+                    client_id: linkedClientId
+                      ? parseInt(linkedClientId, 10)
+                      : null,
+                  }
                 : {}),
             },
           });
         }
         setMsg("Usuario creado.");
       } else if (modal === "edit" && selected) {
+        if (role === "client" && (!linkedClientId || linkedClientId === "")) {
+          setErr(
+            "Selecciona la empresa vinculada para el rol cliente marketplace.",
+          );
+          return;
+        }
         if (password && password.length < 8) {
           setErr("La contraseña debe tener al menos 8 caracteres.");
           return;
@@ -232,8 +306,12 @@ export function UsuariosAdminSection() {
           fd.append("role", role);
           if (password.trim()) fd.append("password", password.trim());
           fd.append("cover_image", coverFile);
-          if (role === "client") fd.append("client_id", linkedClientId ? linkedClientId : "");
-          await authFetchForm(`/api/admin/users/${selected.id}/`, { method: "PATCH", formData: fd });
+          if (role === "client")
+            fd.append("client_id", linkedClientId ? linkedClientId : "");
+          await authFetchForm(`/api/admin/users/${selected.id}/`, {
+            method: "PATCH",
+            formData: fd,
+          });
         } else {
           const body = {
             email: email.trim(),
@@ -241,8 +319,14 @@ export function UsuariosAdminSection() {
           };
           if (password.trim()) body.password = password.trim();
           if (pendingClearCover) body.cover_image = null;
-          if (role === "client") body.client_id = linkedClientId ? parseInt(linkedClientId, 10) : null;
-          await authFetch(`/api/admin/users/${selected.id}/`, { method: "PATCH", body });
+          if (role === "client")
+            body.client_id = linkedClientId
+              ? parseInt(linkedClientId, 10)
+              : null;
+          await authFetch(`/api/admin/users/${selected.id}/`, {
+            method: "PATCH",
+            body,
+          });
         }
         setMsg("Usuario actualizado.");
         if (me && selected.id === me.id) {
@@ -278,7 +362,8 @@ export function UsuariosAdminSection() {
   }
 
   const readOnly = modal === "view";
-  const existingCover = selected?.cover_image && !pendingClearCover ? selected.cover_image : null;
+  const existingCover =
+    selected?.cover_image && !pendingClearCover ? selected.cover_image : null;
 
   useEffect(() => {
     setExpandedId(null);
@@ -309,10 +394,18 @@ export function UsuariosAdminSection() {
       </div>
 
       {msg ? (
-        <p className={`mt-4 ${ROUNDED_CONTROL} bg-emerald-50 px-3 py-2 text-sm text-emerald-900`}>{msg}</p>
+        <p
+          className={`mt-4 ${ROUNDED_CONTROL} bg-emerald-50 px-3 py-2 text-sm text-emerald-900`}
+        >
+          {msg}
+        </p>
       ) : null}
       {err ? (
-        <p className={`mt-4 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}>{err}</p>
+        <p
+          className={`mt-4 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}
+        >
+          {err}
+        </p>
       ) : null}
 
       {totalCount === 0 && !filtersActive ? (
@@ -365,139 +458,162 @@ export function UsuariosAdminSection() {
           ) : null}
 
           {rows.length > 0 ? (
-        <div className={`mt-6 ${adminTableCard}`}>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-zinc-100 bg-zinc-50/90">
-                  <th className="w-8 px-2 py-3" aria-hidden />
-                  <th className="px-2 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Foto
-                  </th>
-                  <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Usuario
-                  </th>
-                  <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Email
-                  </th>
-                  <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Rol
-                  </th>
-                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((u) => {
-                const isSelf = u.id === me?.id;
-                const open = expandedId === u.id;
-                const panelId = `usuario-extra-${u.id}`;
-                return (
-                  <Fragment key={u.id}>
-                    <tr className="border-b border-zinc-100 transition-colors hover:bg-sky-50/40">
-                      <td className="px-2 py-2.5">
-                        <AdminAccordionToggle
-                          expanded={open}
-                          onToggle={() => setExpandedId(open ? null : u.id)}
-                          rowId={u.id}
-                          controlsId={panelId}
-                        />
-                      </td>
-                      <td className="px-2 py-2">
-                        <div className="flex h-11 w-11 overflow-hidden rounded-full border border-zinc-100 bg-zinc-100">
-                          {u.cover_image ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                              src={mediaAbsoluteUrl(u.cover_image)}
-                              alt=""
-                              className="h-full w-full object-cover"
-                            />
-                          ) : null}
-                        </div>
-                      </td>
-                      <td className="px-3 py-2.5 font-medium text-zinc-900">
-                        {u.username}
-                        {isSelf ? (
-                          <span className="ml-2 text-xs font-normal text-[#0c9dcf]">Tu sesión</span>
-                        ) : null}
-                      </td>
-                      <td className="max-w-[12rem] truncate px-3 py-2.5 text-zinc-600" title={u.email}>
-                        {u.email || "—"}
-                      </td>
-                      <td className="px-3 py-2.5 text-zinc-700">{roleLabel(u.role)}</td>
-                      <td className="px-3 py-2">
-                        <AdminRowActions
-                          onView={() => openView(u)}
-                          onEdit={() => openEdit(u)}
-                          onDelete={() => askDeleteUser(u)}
-                          showDelete={!isSelf}
-                          deleteDisabledTitle="No puedes eliminar tu propio usuario"
-                        />
-                      </td>
+            <div className={`mt-6 ${adminTableCard}`}>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead>
+                    <tr className="border-b border-zinc-100 bg-zinc-50/90">
+                      <th className="w-8 px-2 py-3" aria-hidden />
+                      <th className="px-2 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        Foto
+                      </th>
+                      <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        Usuario
+                      </th>
+                      <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        Email
+                      </th>
+                      <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        Rol
+                      </th>
+                      <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                        Acciones
+                      </th>
                     </tr>
-                    {open ? (
-                      <AdminAccordionRowPanel colSpan={6} panelId={panelId}>
-                        <AdminAccordionDetailHeader
-                          badgeText={`ID ${u.id}`}
-                          titleLabel="Usuario"
-                          titleLine={
-                            <p className="truncate text-sm font-medium text-zinc-900">
-                              {u.username}
-                              {isSelf ? (
-                                <span className="ml-2 text-xs font-normal text-[#0c9dcf]">Tu sesión</span>
-                              ) : null}
-                            </p>
-                          }
-                          hint="Permisos y alta en el sistema"
-                        />
-
-                        <div className="mt-5">
-                          <AdminDetailSection panelId={panelId} sectionId="account" title="Cuenta y permisos">
-                            <AdminDetailInset>
-                              <div className="grid gap-4 sm:grid-cols-2">
-                                <AdminDetailField label="Rol">{roleLabel(u.role)}</AdminDetailField>
-                                <AdminDetailField label="Email">
-                                  {u.email?.trim() ? (
-                                    <a
-                                      href={`mailto:${u.email.trim()}`}
-                                      className="break-all font-medium text-[#0c9dcf] underline-offset-2 hover:underline"
-                                    >
-                                      {u.email.trim()}
-                                    </a>
-                                  ) : (
-                                    adminDetailEmpty("")
-                                  )}
-                                </AdminDetailField>
-                                <AdminDetailField label="Equipo interno">{u.is_staff ? "Sí" : "No"}</AdminDetailField>
-                                <AdminDetailField label="Acceso total">{u.is_superuser ? "Sí" : "No"}</AdminDetailField>
-                                <AdminDetailField label="Fecha de alta">
-                                  {u.date_joined
-                                    ? new Date(u.date_joined).toLocaleString("es-VE")
-                                    : adminDetailEmpty("")}
-                                </AdminDetailField>
-                                {u.role === "client" ? (
-                                  <AdminDetailField label="Empresa vinculada">
-                                    {u.client_company_name
-                                      ? `${u.client_company_name} (ID ${u.client_id})`
-                                      : adminDetailEmpty("")}
-                                  </AdminDetailField>
+                  </thead>
+                  <tbody>
+                    {rows.map((u) => {
+                      const isSelf = u.id === me?.id;
+                      const open = expandedId === u.id;
+                      const panelId = `usuario-extra-${u.id}`;
+                      return (
+                        <Fragment key={u.id}>
+                          <tr className="border-b border-zinc-100 transition-colors hover:bg-zinc-50/70">
+                            <td className="px-2 py-2.5">
+                              <AdminAccordionToggle
+                                expanded={open}
+                                onToggle={() =>
+                                  setExpandedId(open ? null : u.id)
+                                }
+                                rowId={u.id}
+                                controlsId={panelId}
+                              />
+                            </td>
+                            <td className="px-2 py-2">
+                              <div className="flex h-11 w-11 overflow-hidden rounded-full border border-zinc-100 bg-zinc-100">
+                                {u.cover_image ? (
+                                  /* eslint-disable-next-line @next/next/no-img-element */
+                                  <img
+                                    src={mediaAbsoluteUrl(u.cover_image)}
+                                    alt=""
+                                    className="h-full w-full object-cover"
+                                  />
                                 ) : null}
                               </div>
-                            </AdminDetailInset>
-                          </AdminDetailSection>
-                        </div>
-                      </AdminAccordionRowPanel>
-                    ) : null}
-                  </Fragment>
-                );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                            </td>
+                            <td className="px-3 py-2.5 font-medium text-zinc-900">
+                              {u.username}
+                              {isSelf ? (
+                                <span className="mp-text-brand ml-2 text-xs font-normal">
+                                  Tu sesión
+                                </span>
+                              ) : null}
+                            </td>
+                            <td
+                              className="max-w-[12rem] truncate px-3 py-2.5 text-zinc-600"
+                              title={u.email}
+                            >
+                              {u.email || "—"}
+                            </td>
+                            <td className="px-3 py-2.5 text-zinc-700">
+                              {roleLabel(u.role)}
+                            </td>
+                            <td className="px-3 py-2">
+                              <AdminRowActions
+                                onView={() => openView(u)}
+                                onEdit={() => openEdit(u)}
+                                onDelete={() => askDeleteUser(u)}
+                                showDelete={!isSelf}
+                                deleteDisabledTitle="No puedes eliminar tu propio usuario"
+                              />
+                            </td>
+                          </tr>
+                          {open ? (
+                            <AdminAccordionRowPanel
+                              colSpan={6}
+                              panelId={panelId}
+                            >
+                              <AdminAccordionDetailHeader
+                                titleLabel="Usuario"
+                                titleLine={
+                                  <p className="truncate text-sm font-medium text-zinc-900">
+                                    {u.username}
+                                    {isSelf ? (
+                                      <span className="mp-text-brand ml-2 text-xs font-normal">
+                                        Tu sesión
+                                      </span>
+                                    ) : null}
+                                  </p>
+                                }
+                                hint="Permisos y alta en el sistema"
+                              />
+
+                              <div className="mt-5">
+                                <AdminDetailSection
+                                  panelId={panelId}
+                                  sectionId="account"
+                                  title="Cuenta y permisos"
+                                >
+                                  <AdminDetailInset>
+                                    <div className="grid gap-4 sm:grid-cols-2">
+                                      <AdminDetailField label="Rol">
+                                        {roleLabel(u.role)}
+                                      </AdminDetailField>
+                                      <AdminDetailField label="Email">
+                                        {u.email?.trim() ? (
+                                          <a
+                                            href={`mailto:${u.email.trim()}`}
+                                            className="break-all font-medium text-zinc-900 underline-offset-2 hover:underline"
+                                          >
+                                            {u.email.trim()}
+                                          </a>
+                                        ) : (
+                                          adminDetailEmpty("")
+                                        )}
+                                      </AdminDetailField>
+                                      <AdminDetailField label="Fecha de alta">
+                                        {u.date_joined
+                                          ? new Date(
+                                              u.date_joined,
+                                            ).toLocaleString("es-VE")
+                                          : adminDetailEmpty("")}
+                                      </AdminDetailField>
+                                      {u.role === "client" ? (
+                                        <AdminDetailField label="Empresa vinculada">
+                                          {u.client_company_name
+                                            ? u.client_company_name
+                                            : adminDetailEmpty("")}
+                                        </AdminDetailField>
+                                      ) : null}
+                                    </div>
+                                  </AdminDetailInset>
+                                </AdminDetailSection>
+                              </div>
+                            </AdminAccordionRowPanel>
+                          ) : null}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           ) : null}
-          <AdminListPagination page={page} totalCount={totalCount} onPageChange={setPage} />
+          <AdminListPagination
+            page={page}
+            totalCount={totalCount}
+            onPageChange={setPage}
+          />
         </>
       )}
 
@@ -516,19 +632,35 @@ export function UsuariosAdminSection() {
         footer={
           readOnly ? (
             <div className="flex justify-end gap-2">
-              <button type="button" className={adminSecondaryBtn} onClick={closeModal}>
+              <button
+                type="button"
+                className={adminSecondaryBtn}
+                onClick={closeModal}
+              >
                 Cerrar
               </button>
-              <button type="button" className={adminPrimaryBtn} onClick={() => openEdit(selected)}>
+              <button
+                type="button"
+                className={adminPrimaryBtn}
+                onClick={() => openEdit(selected)}
+              >
                 Editar
               </button>
             </div>
           ) : (
             <div className="flex flex-wrap justify-end gap-2">
-              <button type="button" className={adminSecondaryBtn} onClick={closeModal}>
+              <button
+                type="button"
+                className={adminSecondaryBtn}
+                onClick={closeModal}
+              >
                 Cancelar
               </button>
-              <button type="button" className={adminPrimaryBtn} onClick={submitSave}>
+              <button
+                type="button"
+                className={adminPrimaryBtn}
+                onClick={submitSave}
+              >
                 {modal === "create" ? "Crear" : "Guardar"}
               </button>
             </div>
@@ -538,27 +670,29 @@ export function UsuariosAdminSection() {
         {readOnly && selected ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <CoverImageField readOnly variant="avatar" existingUrl={selected.cover_image} />
+              <CoverImageField
+                readOnly
+                variant="avatar"
+                existingUrl={selected.cover_image}
+              />
             </div>
             <div>
               <p className={adminLabel}>Usuario</p>
-              <p className="mt-1 font-mono text-sm font-medium text-zinc-900">{selected.username}</p>
+              <p className="mt-1 font-mono text-sm font-medium text-zinc-900">
+                {selected.username}
+              </p>
             </div>
             <div>
               <p className={adminLabel}>Rol</p>
-              <p className="mt-1 text-sm text-zinc-800">{roleLabel(selected.role)}</p>
+              <p className="mt-1 text-sm text-zinc-800">
+                {roleLabel(selected.role)}
+              </p>
             </div>
             <div className="sm:col-span-2">
               <p className={adminLabel}>Email</p>
-              <p className="mt-1 text-sm text-zinc-800">{selected.email || "—"}</p>
-            </div>
-            <div>
-              <p className={adminLabel}>Equipo interno</p>
-              <p className="mt-1 text-sm text-zinc-800">{selected.is_staff ? "Sí" : "No"}</p>
-            </div>
-            <div>
-              <p className={adminLabel}>Acceso total</p>
-              <p className="mt-1 text-sm text-zinc-800">{selected.is_superuser ? "Sí" : "No"}</p>
+              <p className="mt-1 text-sm text-zinc-800">
+                {selected.email || "—"}
+              </p>
             </div>
             <div className="sm:col-span-2">
               <p className={adminLabel}>Alta</p>
@@ -572,9 +706,7 @@ export function UsuariosAdminSection() {
               <div className="sm:col-span-2">
                 <p className={adminLabel}>Empresa vinculada</p>
                 <p className="mt-1 text-sm text-zinc-800">
-                  {selected.client_company_name
-                    ? `${selected.client_company_name} (ID ${selected.client_id})`
-                    : "—"}
+                  {selected.client_company_name ? selected.client_company_name : "—"}
                 </p>
               </div>
             ) : null}
@@ -613,7 +745,9 @@ export function UsuariosAdminSection() {
                 autoComplete="off"
               />
               {modal === "edit" ? (
-                <p className="mt-1 text-xs text-zinc-500">El nombre de usuario no se puede cambiar.</p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  El nombre de usuario no se puede cambiar.
+                </p>
               ) : null}
             </div>
             <div className="sm:col-span-2">
@@ -631,19 +765,40 @@ export function UsuariosAdminSection() {
             </div>
             <div className="sm:col-span-2">
               <label className={adminLabel} htmlFor="u-pass">
-                {modal === "create" ? "Contraseña inicial" : "Nueva contraseña (opcional)"}
+                {modal === "create"
+                  ? "Contraseña inicial"
+                  : "Nueva contraseña (opcional)"}
               </label>
-              <input
-                id="u-pass"
-                type="password"
-                className={adminField}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required={modal === "create"}
-                minLength={modal === "create" ? 8 : undefined}
-                autoComplete="new-password"
-                placeholder={modal === "edit" ? "Dejar vacío para no cambiar" : ""}
-              />
+              <div className="relative">
+                <input
+                  id="u-pass"
+                  type={showUserPassword ? "text" : "password"}
+                  className={`${adminField} pr-11`}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required={modal === "create"}
+                  minLength={modal === "create" ? 8 : undefined}
+                  autoComplete="new-password"
+                  placeholder={
+                    modal === "edit" ? "Dejar vacío para no cambiar" : ""
+                  }
+                />
+                <button
+                  type="button"
+                  className="mp-ring-brand absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-[15px] text-zinc-500 transition-colors hover:bg-zinc-100/80 hover:text-zinc-800 focus:outline-none"
+                  aria-label={
+                    showUserPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                  }
+                  aria-pressed={showUserPassword}
+                  onClick={() => setShowUserPassword((v) => !v)}
+                >
+                  {showUserPassword ? (
+                    <IconEyeOff className="shrink-0" />
+                  ) : (
+                    <IconEye className="shrink-0" />
+                  )}
+                </button>
+              </div>
             </div>
             <div className="sm:col-span-2">
               <label className={adminLabel} htmlFor="u-role">
@@ -662,8 +817,9 @@ export function UsuariosAdminSection() {
                 aria-label="Rol de usuario"
               />
               <p className="mt-1 text-xs text-zinc-500">
-                Los administradores pueden gestionar el panel y crear usuarios. Si cambias el rol, la persona
-                puede necesitar cerrar sesión e iniciar de nuevo para que se apliquen los permisos.
+                Los administradores pueden gestionar el panel y crear usuarios.
+                Si cambias el rol, la persona puede necesitar cerrar sesión e
+                iniciar de nuevo para que se apliquen los permisos.
               </p>
             </div>
             {role === "client" ? (
@@ -675,7 +831,9 @@ export function UsuariosAdminSection() {
                   id="u-client"
                   options={clientSelectOptions}
                   value={linkedClientId}
-                  onChange={(v) => setLinkedClientId(v != null && v !== "" ? String(v) : "")}
+                  onChange={(v) =>
+                    setLinkedClientId(v != null && v !== "" ? String(v) : "")
+                  }
                   inModal
                   isSearchable
                   placeholder="Buscar por razón social o ID…"
@@ -683,13 +841,14 @@ export function UsuariosAdminSection() {
                 />
                 {clientRows.length === 0 ? (
                   <p className="mt-1 text-xs text-amber-800">
-                    No hay fichas en Clientes. Crea primero una empresa en la sección Clientes para poder
-                    seleccionarla aquí.
+                    No hay fichas en Clientes. Crea primero una empresa en la
+                    sección Clientes para poder seleccionarla aquí.
                   </p>
                 ) : (
                   <p className="mt-1 text-xs text-zinc-500">
-                    Vincula la ficha de empresa al usuario. Un usuario → una empresa; la misma empresa puede tener
-                    varios usuarios.
+                    Obligatorio para este rol. El workspace del owner se toma de
+                    la empresa. Un usuario → una empresa; la misma empresa puede
+                    tener varios usuarios.
                   </p>
                 )}
               </div>
@@ -710,8 +869,10 @@ export function UsuariosAdminSection() {
       >
         <p>
           ¿Eliminar al usuario{" "}
-          <span className="font-semibold text-zinc-900">&quot;{pendingDeleteUser?.username}&quot;</span>? Esta acción no se
-          puede deshacer.
+          <span className="font-semibold text-zinc-900">
+            &quot;{pendingDeleteUser?.username}&quot;
+          </span>
+          ? Esta acción no se puede deshacer.
         </p>
       </AdminConfirmDialog>
     </div>

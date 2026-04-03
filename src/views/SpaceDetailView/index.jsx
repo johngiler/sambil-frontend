@@ -3,7 +3,35 @@ import { notFound } from "next/navigation";
 
 import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvailabilityBar";
 import { SpaceDetailReservationActions } from "@/components/catalog/SpaceDetailReservationActions";
+import { SPACE_STATUS, SPACE_TYPES } from "@/components/admin/adminConstants";
 import { getSpace } from "@/services/api";
+
+function labelFromChoices(choices, value) {
+  if (value == null || String(value).trim() === "") return null;
+  const v = String(value).trim();
+  const row = choices.find((c) => c.v === v);
+  return row?.l ?? v;
+}
+
+function formatUsdMonthly(n) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return "—";
+  return new Intl.NumberFormat("es-VE", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  }).format(x);
+}
+
+function SpecRow({ label, children }) {
+  if (children == null || children === "") return null;
+  return (
+    <div className="flex flex-col gap-0.5 border-b border-zinc-100 py-3 last:border-b-0 last:pb-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+      <dt className="shrink-0 text-xs font-semibold uppercase tracking-wide text-zinc-500">{label}</dt>
+      <dd className="min-w-0 text-sm font-medium text-zinc-900">{children}</dd>
+    </div>
+  );
+}
 
 export default async function SpaceDetailView({ spaceId }) {
   let space;
@@ -17,67 +45,99 @@ export default async function SpaceDetailView({ spaceId }) {
     notFound();
   }
 
-  const backHref = `/m/${space.shopping_center_code}`;
+  const backHref = "/";
+  const typeLabel = labelFromChoices(SPACE_TYPES, space.type);
+  const statusLabel = labelFromChoices(SPACE_STATUS, space.status) ?? space.status;
+  const year = Number(space.availability_year) || new Date().getFullYear();
+  const city =
+    typeof space.shopping_center_city === "string" && space.shopping_center_city.trim() !== ""
+      ? space.shopping_center_city.trim()
+      : null;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
       <Link
         href={backHref}
-        className="inline-flex min-h-11 items-center text-sm font-medium text-zinc-500 transition-colors duration-200 ease-out hover:text-zinc-900 sm:min-h-0"
+        className="group inline-flex min-h-11 items-center gap-2 text-sm font-medium text-zinc-500 transition-colors duration-200 hover:text-zinc-900 sm:min-h-0"
       >
-        ← Espacios en este centro
+        <span className="transition-transform duration-200 group-hover:-translate-x-0.5" aria-hidden>
+          ←
+        </span>
+        <span>Volver al catálogo</span>
       </Link>
-      <p className="mt-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 sm:mt-6">
-        {space.code}
-      </p>
-      <h1 className="mt-2 break-words text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">
-        {space.title}
-      </h1>
-      <p className="mt-2 break-words text-zinc-600">
-        {space.shopping_center_name} · {space.type}
-      </p>
-      <p className="mt-6 flex flex-wrap items-baseline gap-x-2 text-2xl font-semibold tabular-nums text-zinc-900 sm:text-3xl">
-        <span className="text-[#c2410c]">${space.monthly_price_usd}</span>
-        <span className="text-base font-normal text-zinc-500">/ mes (USD)</span>
-      </p>
-      <div className="mt-4 max-w-md">
-        <SpaceMonthAvailabilityBar monthsOccupied={space.months_occupied} />
-      </div>
-      {space.description ? (
-        <p className="mt-6 text-zinc-700">{space.description}</p>
-      ) : null}
-      <dl className="mt-8 grid gap-2 text-sm text-zinc-600">
-        {space.width ? (
-          <div>
-            <dt className="font-medium text-zinc-900">Dimensions</dt>
-            <dd>
-              {space.width} × {space.height}
-            </dd>
+
+      <div className="mt-8 grid gap-10 lg:mt-10 lg:grid-cols-12 lg:gap-12">
+        <div className="lg:col-span-7">
+          <p className="font-mono text-xs font-medium uppercase tracking-wider text-zinc-400">{space.code}</p>
+          <h1 className="mt-2 break-words text-3xl font-semibold tracking-tight text-zinc-950 sm:text-4xl">
+            {space.title}
+          </h1>
+          <p className="mt-3 text-base text-zinc-600">
+            <span className="font-medium text-zinc-800">{space.shopping_center_name}</span>
+            {city ? <span className="text-zinc-400"> · {city}</span> : null}
+            {typeLabel ? (
+              <>
+                <span className="text-zinc-400"> · </span>
+                <span>{typeLabel}</span>
+              </>
+            ) : null}
+          </p>
+
+          <div className="mt-8 rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm sm:p-6">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Precio mensual</p>
+            <p className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className="text-3xl font-semibold tabular-nums text-[#c2410c] sm:text-4xl">
+                {formatUsdMonthly(space.monthly_price_usd)}
+              </span>
+              <span className="text-sm text-zinc-500">USD / mes, antes de impuestos si aplican</span>
+            </p>
+            <div className="mt-5 border-t border-zinc-100 pt-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                Disponibilidad en {year}
+              </p>
+              <p className="mt-1 text-xs text-zinc-500">
+                Franja por meses: naranja = ocupado o bloqueado; gris claro = libre.
+              </p>
+              <div className="mt-3 max-w-lg">
+                <SpaceMonthAvailabilityBar monthsOccupied={space.months_occupied} labelMetric="occupied" />
+              </div>
+            </div>
           </div>
-        ) : null}
-        {space.material ? (
-          <div>
-            <dt className="font-medium text-zinc-900">Material</dt>
-            <dd>{space.material}</dd>
-          </div>
-        ) : null}
-        {space.location_description ? (
-          <div>
-            <dt className="font-medium text-zinc-900">Location</dt>
-            <dd>{space.location_description}</dd>
-          </div>
-        ) : null}
-        {space.level ? (
-          <div>
-            <dt className="font-medium text-zinc-900">Level</dt>
-            <dd>{space.level}</dd>
-          </div>
-        ) : null}
-        <div>
-          <dt className="font-medium text-zinc-900">Status</dt>
-          <dd className="capitalize">{space.status}</dd>
+
+          {space.description ? (
+            <div className="mt-8">
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Descripción</h2>
+              <p className="mt-2 text-[15px] leading-relaxed text-zinc-700 sm:text-base">{space.description}</p>
+            </div>
+          ) : null}
         </div>
-      </dl>
+
+        <aside className="lg:col-span-5">
+          <div className="rounded-2xl border border-zinc-200/90 bg-zinc-50/80 p-5 sm:p-6">
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Ficha técnica</h2>
+            <dl className="mt-2">
+              {space.width != null && space.height != null ? (
+                <SpecRow label="Dimensiones (m)">
+                  {space.width} × {space.height}
+                </SpecRow>
+              ) : null}
+              {space.material ? <SpecRow label="Material">{space.material}</SpecRow> : null}
+              {space.location_description ? (
+                <SpecRow label="Ubicación en el centro">{space.location_description}</SpecRow>
+              ) : null}
+              {space.venue_zone ? <SpecRow label="Zona comercial">{space.venue_zone}</SpecRow> : null}
+              {space.level ? <SpecRow label="Nivel">{space.level}</SpecRow> : null}
+              {space.quantity != null && Number(space.quantity) > 1 ? (
+                <SpecRow label="Cantidad de unidades">{space.quantity}</SpecRow>
+              ) : null}
+              <SpecRow label="Estado">
+                <span className="capitalize">{statusLabel}</span>
+              </SpecRow>
+            </dl>
+          </div>
+        </aside>
+      </div>
+
       <SpaceDetailReservationActions space={space} />
     </div>
   );

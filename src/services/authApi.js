@@ -5,6 +5,7 @@ import {
   parseFetchResponse,
   parsePaginatedResponse,
 } from "@/services/api";
+import { workspaceSlugRequestHeaders } from "@/lib/tenant";
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "@/lib/authStorage";
 import { decodeJwtPayload } from "@/lib/jwtDecode";
 
@@ -17,6 +18,9 @@ function humanizeLoginError(detail) {
   ) {
     return "Usuario o contraseña incorrectos.";
   }
+  if (raw.includes("Sesión no válida") && raw.includes("Inicia sesión")) {
+    return "Sesión no válida. Inicia sesión de nuevo.";
+  }
   return raw || "Credenciales inválidas";
 }
 
@@ -26,6 +30,7 @@ async function fetchWithAuth(path, { method = "GET", body, token } = {}) {
     method,
     headers: {
       "Content-Type": "application/json",
+      ...workspaceSlugRequestHeaders(),
       ...(t ? { Authorization: `Bearer ${t}` } : {}),
     },
     body: body !== undefined && body !== null ? JSON.stringify(body) : undefined,
@@ -40,7 +45,10 @@ export async function loginRequest(username, password) {
   try {
     res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...workspaceSlugRequestHeaders(),
+      },
       body: JSON.stringify({ username, password }),
       cache: "no-store",
     });
@@ -69,7 +77,10 @@ export async function refreshAccessToken() {
   if (!refresh) return null;
   const res = await fetch(apiUrl("/api/auth/token/refresh/"), {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...workspaceSlugRequestHeaders(),
+    },
     body: JSON.stringify({ refresh }),
     cache: "no-store",
   });
@@ -90,9 +101,18 @@ export async function fetchMe(accessToken) {
   const token = accessToken ?? getAccessToken();
   if (!token) return null;
   const res = await fetch(apiUrl("/api/auth/me/"), {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...workspaceSlugRequestHeaders(),
+    },
     cache: "no-store",
   });
+  // 403: cuenta no autorizada en el marketplace (p. ej. solo Django / plataforma).
+  // No limpiar en 401 aquí: el refresh del access sigue en AuthContext.
+  if (res.status === 403) {
+    clearTokens();
+    return null;
+  }
   if (!res.ok) return null;
   return res.json();
 }
@@ -105,6 +125,7 @@ export async function patchMe(body, { token } = {}) {
     method: "PATCH",
     headers: {
       ...(isForm ? {} : { "Content-Type": "application/json" }),
+      ...workspaceSlugRequestHeaders(),
       ...(t ? { Authorization: `Bearer ${t}` } : {}),
     },
     body: isForm ? body : JSON.stringify(body),
@@ -130,7 +151,10 @@ export async function fetchMyCompany(accessToken) {
   const token = accessToken ?? getAccessToken();
   if (!token) return undefined;
   const res = await fetch(apiUrl("/api/me/company/"), {
-    headers: { Authorization: `Bearer ${token}` },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...workspaceSlugRequestHeaders(),
+    },
     cache: "no-store",
   });
   if (res.status === 204) return null;
@@ -173,6 +197,7 @@ export async function authFetchForm(path, { method = "POST", formData, token } =
   const res = await fetch(apiUrl(path), {
     method,
     headers: {
+      ...workspaceSlugRequestHeaders(),
       ...(t ? { Authorization: `Bearer ${t}` } : {}),
     },
     body: formData,
