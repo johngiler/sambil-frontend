@@ -56,21 +56,65 @@
     #c2410c 100%
   );
   /**
-   * Portada (`/`): aire claro, transición suave; toque de marca muy ligero (sin barro ni contraste fuerte).
+   * Portada (`/`): retícula de rombos (±45°) + halos radiales + base.
+   * Las dos familias de líneas finas se cruzan y forman diamantes; marca del tenant en baja opacidad.
    */
-  --mp-home-hero-gradient: linear-gradient(
+  --mp-home-hero-gradient:
+    linear-gradient(
       to bottom,
-      color-mix(in srgb, #18181b 2.5%, transparent) 0%,
-      transparent 42%
+      color-mix(in srgb, #ffffff 52%, transparent) 0%,
+      transparent 34%
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0,
+      transparent 20px,
+      color-mix(in srgb, var(--mp-secondary) 11%, transparent) 20px,
+      color-mix(in srgb, var(--mp-secondary) 11%, transparent) 21px
+    ),
+    repeating-linear-gradient(
+      45deg,
+      transparent 0,
+      transparent 20px,
+      color-mix(in srgb, var(--mp-primary) 12%, transparent) 20px,
+      color-mix(in srgb, var(--mp-primary) 12%, transparent) 21px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0,
+      transparent 56px,
+      color-mix(in srgb, var(--mp-primary) 3.5%, transparent) 56px,
+      color-mix(in srgb, var(--mp-primary) 3.5%, transparent) 57px
+    ),
+    repeating-linear-gradient(
+      45deg,
+      transparent 0,
+      transparent 56px,
+      color-mix(in srgb, var(--mp-secondary) 2.8%, transparent) 56px,
+      color-mix(in srgb, var(--mp-secondary) 2.8%, transparent) 57px
+    ),
+    radial-gradient(
+      ellipse 95% 80% at 2% 18%,
+      color-mix(in srgb, var(--mp-primary) 10%, transparent) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 88% 72% at 100% 4%,
+      color-mix(in srgb, var(--mp-secondary) 7%, transparent) 0%,
+      transparent 50%
     ),
     linear-gradient(
       to right,
-      color-mix(in srgb, var(--mp-primary) 4.5%, #ffffff) 0%,
-      color-mix(in srgb, var(--mp-primary) 2%, #fafafa) 38%,
-      #fafafa 72%,
-      #fafafa 100%
+      color-mix(in srgb, var(--mp-primary) 4.5%, #fafafa) 0%,
+      #fafafa 30%,
+      color-mix(in srgb, var(--mp-primary) 2.4%, #fafafa) 52%,
+      color-mix(in srgb, var(--mp-secondary) 1.8%, #fafafa) 100%
     );
-  --mp-home-hero-gradient-height: clamp(11rem, 34vh, 22rem);
+  --mp-home-hero-gradient-height: clamp(
+    calc(15rem - 15px),
+    calc(48vh - 15px),
+    calc(32rem - 15px)
+  );
 }
 
 /* Franja isotipo bajo header / sobre footer: mismo degradado que el botón Panel; grosor visible (no hairline RGBA). */
@@ -326,6 +370,18 @@ body.mp-home-hero-bg {
 
 *::-webkit-scrollbar-corner {
   background: transparent;
+}
+
+/* Fila de chips u otros carruseles: scroll horizontal sin barra visible (Firefox + WebKit). */
+.mp-hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mp-hide-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 @layer base {

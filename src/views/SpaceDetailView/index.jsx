@@ -26,9 +26,9 @@ function formatUsdMonthly(n) {
 function SpecRow({ label, children }) {
   if (children == null || children === "") return null;
   return (
-    <div className="flex flex-col gap-0.5 border-b border-zinc-100 py-3 last:border-b-0 last:pb-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-      <dt className="shrink-0 text-xs font-semibold uppercase tracking-wide text-zinc-500">{label}</dt>
-      <dd className="min-w-0 text-sm font-medium text-zinc-900">{children}</dd>
+    <div className="border-b border-zinc-100 py-3 last:border-b-0 last:pb-0">
+      <dt className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{label}</dt>
+      <dd className="mt-1.5 min-w-0 break-words text-sm font-medium leading-relaxed text-zinc-900">{children}</dd>
     </div>
   );
 }
