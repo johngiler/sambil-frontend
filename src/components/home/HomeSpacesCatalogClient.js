@@ -295,7 +295,7 @@ export function HomeSpacesCatalogClient() {
           }
         />
       ) : (
-        <>
+        <div className="space-y-6">
           <ul className="grid list-none gap-[10px] p-0 sm:grid-cols-2 lg:grid-cols-4">
             {spaces.map((space) => (
               <li key={space.id}>
@@ -312,7 +312,7 @@ export function HomeSpacesCatalogClient() {
             totalCount={totalCount}
             onPageChange={setPage}
           />
-        </>
+        </div>
       )}
     </div>
   );
