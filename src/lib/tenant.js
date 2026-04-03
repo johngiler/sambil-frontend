@@ -7,6 +7,22 @@
 export const TENANT_RESERVED_SUBDOMAINS = new Set(["www", "api", "cdn"]);
 
 /**
+ * Extrae slug de `{slug}.{base}` cuando hay un solo subdominio.
+ * @param {string} host
+ * @param {string} base apex normalizado (p. ej. publivalla.com)
+ * @returns {string | null}
+ */
+function slugFromHostAndBase(host, base) {
+  if (!host || !base) return null;
+  if (host === base || host === `www.${base}`) return null;
+  const suf = `.${base}`;
+  if (!host.endsWith(suf)) return null;
+  const sub = host.slice(0, -suf.length);
+  if (!sub || sub.includes(".") || TENANT_RESERVED_SUBDOMAINS.has(sub)) return null;
+  return sub;
+}
+
+/**
  * @returns {string}
  */
 export function clientTenantSlug() {
@@ -15,7 +31,7 @@ export function clientTenantSlug() {
     return env || "local";
   }
   const host = window.location.hostname.toLowerCase();
-  const base = (process.env.NEXT_PUBLIC_TENANT_BASE_DOMAIN || "").trim().toLowerCase();
+  let base = (process.env.NEXT_PUBLIC_TENANT_BASE_DOMAIN || "").trim().toLowerCase();
 
   if (host.endsWith(".localhost") && host !== "localhost") {
     const sub = host.slice(0, -".localhost".length);
@@ -23,6 +39,14 @@ export function clientTenantSlug() {
       return sub;
     }
   }
+
+  // Sin apex en .env: si el host ya es *.publivalla.com, inferir apex (evita mandar X-Workspace-Slug del build equivocado).
+  if (!base && host.endsWith(".publivalla.com")) {
+    base = "publivalla.com";
+  }
+
+  const fromHost = slugFromHostAndBase(host, base);
+  if (fromHost) return fromHost;
 
   if (!base) {
     const env = (process.env.NEXT_PUBLIC_WORKSPACE_SLUG || "").trim().toLowerCase();
@@ -33,13 +57,7 @@ export function clientTenantSlug() {
     const env = (process.env.NEXT_PUBLIC_WORKSPACE_SLUG || "").trim().toLowerCase();
     return env || "local";
   }
-  const suf = `.${base}`;
-  if (host.endsWith(suf)) {
-    const sub = host.slice(0, -suf.length);
-    if (sub && !sub.includes(".") && !TENANT_RESERVED_SUBDOMAINS.has(sub)) {
-      return sub;
-    }
-  }
+
   const env = (process.env.NEXT_PUBLIC_WORKSPACE_SLUG || "").trim().toLowerCase();
   return env || "local";
 }
