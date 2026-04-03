@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvailabilityBar";
 import { IconCart } from "@/components/layout/navIcons";
-import { normalizeMediaUrlForUi } from "@/services/api";
+import { spaceCoverUrlForUi } from "@/lib/spaceCover";
 
 function formatUsdMonthly(n) {
   const x = Number(n);
@@ -19,21 +19,8 @@ function formatUsdMonthly(n) {
  * Tarjeta de toma en catálogo de centro (precio acento, badge ciudad, franja de 12 meses).
  * @param {{ space: Record<string, unknown>, availabilityLabel?: "free" | "occupied", showFooterLink?: boolean, inCart?: boolean }} props
  */
-function coverImageSrc(coverImage) {
-  if (typeof coverImage === "string" && coverImage.trim() !== "") return coverImage;
-  if (
-    coverImage &&
-    typeof coverImage === "object" &&
-    typeof coverImage.url === "string" &&
-    coverImage.url.trim() !== ""
-  ) {
-    return coverImage.url;
-  }
-  return "";
-}
-
 export function SpaceCard({ space, availabilityLabel = "free", showFooterLink = true, inCart = false }) {
-  const cover = normalizeMediaUrlForUi(coverImageSrc(space.cover_image));
+  const cover = spaceCoverUrlForUi(space);
   const cityRaw =
     typeof space.shopping_center_city === "string" && space.shopping_center_city.trim() !== ""
       ? space.shopping_center_city.trim()

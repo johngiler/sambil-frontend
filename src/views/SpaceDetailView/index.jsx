@@ -1,9 +1,11 @@
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvailabilityBar";
 import { SpaceDetailReservationActions } from "@/components/catalog/SpaceDetailReservationActions";
 import { SPACE_STATUS, SPACE_TYPES } from "@/components/admin/adminConstants";
+import { spaceCoverUrlForUi } from "@/lib/spaceCover";
 import { getSpace } from "@/services/api";
 
 function labelFromChoices(choices, value) {
@@ -53,6 +55,11 @@ export default async function SpaceDetailView({ spaceId }) {
     typeof space.shopping_center_city === "string" && space.shopping_center_city.trim() !== ""
       ? space.shopping_center_city.trim()
       : null;
+  const coverUrl = spaceCoverUrlForUi(space);
+  const coverAlt =
+    typeof space.title === "string" && space.title.trim() !== ""
+      ? `Imagen principal: ${space.title.trim()}`
+      : "Imagen principal del espacio publicitario";
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
@@ -82,6 +89,21 @@ export default async function SpaceDetailView({ spaceId }) {
               </>
             ) : null}
           </p>
+
+          {coverUrl ? (
+            <figure className="mt-8">
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-2xl border border-zinc-200/90 bg-zinc-100 shadow-sm ring-1 ring-zinc-200/60 sm:aspect-[16/9]">
+                <Image
+                  src={coverUrl}
+                  alt={coverAlt}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 1024px) 100vw, 520px"
+                  priority
+                />
+              </div>
+            </figure>
+          ) : null}
 
           <div className="mt-8 rounded-2xl border border-zinc-200/90 bg-white p-5 shadow-sm sm:p-6">
             <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Precio mensual</p>
