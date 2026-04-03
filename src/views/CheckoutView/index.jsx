@@ -764,7 +764,7 @@ export default function CheckoutView() {
                   onClick={() => (isGuest ? guestSubmit() : ensureCompanyThenSubmit())}
                   className={`${marketplacePrimaryBtn} min-h-11 flex-1 py-2.5 text-sm font-semibold`}
                 >
-                  {loading ? "Enviando…" : "Confirmar pago"}
+                  {loading ? "Enviando…" : "Enviar solicitud"}
                 </button>
               </div>
             </div>
