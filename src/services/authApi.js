@@ -172,6 +172,38 @@ export async function saveMyCompany(payload, { method = "POST", token } = {}) {
   return parsed.data;
 }
 
+/** Workspace del owner (solo rol admin marketplace). */
+export async function fetchMyWorkspace({ token } = {}) {
+  const t = token ?? getAccessToken();
+  if (!t) return null;
+  const res = await fetch(apiUrl("/api/me/workspace/"), {
+    headers: {
+      Authorization: `Bearer ${t}`,
+      ...workspaceSlugRequestHeaders(),
+    },
+    cache: "no-store",
+  });
+  if (res.status === 403) {
+    return null;
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    let detail = `Error ${res.status}`;
+    try {
+      const j = JSON.parse(text);
+      if (j && typeof j === "object" && j.detail != null) detail = String(j.detail);
+    } catch {
+      /* ignore */
+    }
+    throw new Error(detail);
+  }
+  return res.json();
+}
+
+export async function patchMyWorkspace(formData, { token } = {}) {
+  return authFetchForm("/api/me/workspace/", { method: "PATCH", formData, token });
+}
+
 export async function authFetch(path, { method = "GET", body, token } = {}) {
   const parsed = await fetchWithAuth(path, { method, body, token });
   if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));

@@ -33,7 +33,7 @@ function SectionTitle({ children, id }) {
 
 export default function PerfilView() {
   const router = useRouter();
-  const { authReady, me, accessToken, refreshUser, isClient } = useAuth();
+  const { authReady, me, accessToken, refreshUser, isAdmin, isClient } = useAuth();
   const fileRef = useRef(null);
 
   const [email, setEmail] = useState("");
@@ -167,6 +167,11 @@ export default function PerfilView() {
               Mis pedidos
             </Link>
           </>
+        ) : null}
+        {isAdmin ? (
+          <Link href="/cuenta/negocio" className={`${pillBase} ${pillInactive}`}>
+            Mi negocio
+          </Link>
         ) : null}
         <span className={`${pillBase} ${pillCurrent}`} aria-current="page">
           Mi perfil

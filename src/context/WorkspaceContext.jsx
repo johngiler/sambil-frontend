@@ -2,6 +2,7 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -38,58 +39,53 @@ export function WorkspaceProvider({ children }) {
   );
   const [workspaceFetchError, setWorkspaceFetchError] = useState(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(apiUrl("/api/workspace/current/"), {
-          cache: "no-store",
-          headers: { ...workspaceSlugRequestHeaders() },
-        });
-        const text = await res.text();
-        const data = parseJsonText(text);
-        if (!res.ok) {
-          if (!cancelled) {
-            setWorkspace(null);
-            if (res.status === 404) {
-              setWorkspaceStatus("missing");
-              setWorkspaceFetchError(null);
-            } else {
-              setWorkspaceStatus("error");
-              const detail =
-                data && typeof data === "object" && !Array.isArray(data) && data.detail != null
-                  ? String(data.detail)
-                  : `Error ${res.status}`;
-              setWorkspaceFetchError(detail);
-            }
-          }
-          return;
-        }
-        if (!data || typeof data !== "object" || Array.isArray(data)) {
-          if (!cancelled) {
-            setWorkspace(null);
-            setWorkspaceStatus("error");
-            setWorkspaceFetchError("Respuesta inválida del servidor.");
-          }
-          return;
-        }
-        if (!cancelled) {
-          setWorkspace(data);
-          setWorkspaceStatus("ready");
+  const reloadWorkspace = useCallback(async (signal) => {
+    try {
+      const res = await fetch(apiUrl("/api/workspace/current/"), {
+        cache: "no-store",
+        headers: { ...workspaceSlugRequestHeaders() },
+        ...(signal ? { signal } : {}),
+      });
+      const text = await res.text();
+      const data = parseJsonText(text);
+      if (!res.ok) {
+        setWorkspace(null);
+        if (res.status === 404) {
+          setWorkspaceStatus("missing");
           setWorkspaceFetchError(null);
-        }
-      } catch (e) {
-        if (!cancelled) {
-          setWorkspace(null);
+        } else {
           setWorkspaceStatus("error");
-          setWorkspaceFetchError(e instanceof Error ? e.message : String(e));
+          const detail =
+            data && typeof data === "object" && !Array.isArray(data) && data.detail != null
+              ? String(data.detail)
+              : `Error ${res.status}`;
+          setWorkspaceFetchError(detail);
         }
+        return;
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        setWorkspace(null);
+        setWorkspaceStatus("error");
+        setWorkspaceFetchError("Respuesta inválida del servidor.");
+        return;
+      }
+      setWorkspace(data);
+      setWorkspaceStatus("ready");
+      setWorkspaceFetchError(null);
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setWorkspace(null);
+      setWorkspaceStatus("error");
+      setWorkspaceFetchError(e instanceof Error ? e.message : String(e));
+    }
   }, []);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    setWorkspaceStatus("loading");
+    void reloadWorkspace(ac.signal);
+    return () => ac.abort();
+  }, [reloadWorkspace]);
 
   const displayName = useMemo(() => {
     if (!workspace) return "Marketplace";
@@ -106,8 +102,9 @@ export function WorkspaceProvider({ children }) {
       workspaceStatus,
       workspaceFetchError,
       displayName,
+      reloadWorkspace,
     }),
-    [workspace, workspaceStatus, workspaceFetchError, displayName],
+    [workspace, workspaceStatus, workspaceFetchError, displayName, reloadWorkspace],
   );
 
   return (

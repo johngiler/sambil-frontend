@@ -20,7 +20,13 @@ const menuDanger = `${menuItem} text-red-700 hover:bg-red-50 focus:bg-red-50`;
 
 const triggerClass = `mp-ring-brand inline-flex min-h-11 max-w-[14rem] shrink-0 items-center gap-2 ${ROUNDED_CONTROL} border border-transparent px-2.5 text-sm font-medium text-zinc-600 transition-colors duration-200 ease-out hover:border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 focus-visible:outline-none sm:min-h-0 sm:py-1`;
 
-export function UserAccountMenu({ me, logout, onNavigate, showMiEmpresa = false }) {
+export function UserAccountMenu({
+  me,
+  logout,
+  onNavigate,
+  showMiEmpresa = false,
+  showMiNegocio = false,
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
@@ -83,6 +89,12 @@ export function UserAccountMenu({ me, logout, onNavigate, showMiEmpresa = false 
             <IconUser className="text-zinc-400" />
             Mi perfil
           </Link>
+          {showMiNegocio ? (
+            <Link href="/cuenta/negocio" role="menuitem" className={menuItem} onClick={handleNav}>
+              <IconBuilding className="text-zinc-400" />
+              Mi negocio
+            </Link>
+          ) : null}
           {showMiEmpresa ? (
             <>
               <Link href={empresaHref} role="menuitem" className={menuItem} onClick={handleNav}>

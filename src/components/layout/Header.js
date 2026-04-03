@@ -181,6 +181,12 @@ export function Header() {
                       <IconUser className="text-zinc-500" />
                       Mi perfil
                     </Link>
+                    {isAdmin ? (
+                      <Link href="/cuenta/negocio" className={mobileRow} onClick={closeMenu}>
+                        <IconBuilding className="text-zinc-500" />
+                        Mi negocio
+                      </Link>
+                    ) : null}
                     {isClient ? (
                       <Link href="/cuenta" className={mobileRow} onClick={closeMenu}>
                         <IconBuilding className="text-zinc-500" />
@@ -263,7 +269,12 @@ export function Header() {
           ) : null}
           {authReady && me ? (
             <>
-              <UserAccountMenu me={me} logout={logout} showMiEmpresa={isClient} />
+              <UserAccountMenu
+                me={me}
+                logout={logout}
+                showMiEmpresa={isClient}
+                showMiNegocio={isAdmin}
+              />
               {isAdmin ? (
                 <Link href="/dashboard" className={panelBtn} aria-label="Panel administración">
                   <IconPanel className="text-white" />
