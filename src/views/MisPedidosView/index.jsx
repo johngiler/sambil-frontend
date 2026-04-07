@@ -266,22 +266,7 @@ export default function MisPedidosView() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-      <nav className="flex flex-wrap gap-2 text-sm">
-        <Link
-          href="/cuenta"
-          className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white px-3 py-1.5 font-medium text-zinc-700 shadow-sm transition hover:border-[#d98e32]/40 hover:text-[#b45309]`}
-        >
-          Mi empresa
-        </Link>
-        <Link
-          href="/cuenta/perfil"
-          className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white px-3 py-1.5 font-medium text-zinc-700 shadow-sm transition hover:border-[#d98e32]/40 hover:text-[#b45309]`}
-        >
-          Mi perfil
-        </Link>
-      </nav>
-
-      <h1 className="mt-8 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">Mis pedidos</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">Mis pedidos</h1>
       <p className="mt-2 max-w-xl text-sm text-zinc-600">
         Consulta el estado y abre un pedido para ver el historial detallado.
       </p>

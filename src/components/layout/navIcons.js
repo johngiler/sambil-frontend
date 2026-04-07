@@ -198,6 +198,26 @@ export function IconUser({ className = "" }) {
   );
 }
 
+export function IconChevronLeft({ className = "" }) {
+  return (
+    <svg
+      className={`${iconClass} ${className}`}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        d="M15.75 19.5L8.25 12l7.5-7.5"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function IconLogout({ className = "" }) {
   return (
     <svg

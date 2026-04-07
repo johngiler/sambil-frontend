@@ -25,9 +25,13 @@ import {
   adminSecondaryBtn,
   adminTableCard,
 } from "@/components/admin/adminFormStyles";
-import { CLIENT_STATUS } from "@/components/admin/adminConstants";
+import {
+  CLIENT_STATUS,
+  clientStatusLabel,
+  clientStatusPillClassName,
+} from "@/components/admin/adminConstants";
 import { AdminSelect } from "@/components/admin/AdminSelect";
-import { IconAdminBriefcase } from "@/components/admin/adminIcons";
+import { IconAdminBriefcase, IconAdminUserPlus } from "@/components/admin/adminIcons";
 import { ClientesUsuariosSectionSkeleton } from "@/components/admin/skeletons/ClientesUsuariosSectionSkeleton";
 import { CoverImageField } from "@/components/admin/CoverImageField";
 import { useAuth } from "@/context/AuthContext";
@@ -47,6 +51,26 @@ import {
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
 
 const CLIENT_STATUS_FILTERS = [{ v: "all", l: "Todos los estados" }, ...CLIENT_STATUS];
+
+/** Pedidos vinculados (viene del listado admin con `orders_count`). */
+function clientOrdersCount(c) {
+  const n = c?.orders_count;
+  return typeof n === "number" && !Number.isNaN(n) ? n : 0;
+}
+
+function clientCanBeDeleted(c) {
+  return clientOrdersCount(c) === 0;
+}
+
+/** Sin usuarios marketplace vinculados y con correo en ficha. */
+function clientCanGenerateUser(c) {
+  if (c == null) return false;
+  const hasLinked =
+    (Array.isArray(c.linked_usernames) && c.linked_usernames.length > 0) ||
+    (Array.isArray(c.linked_user_ids) && c.linked_user_ids.length > 0);
+  const em = typeof c.email === "string" && c.email.trim() !== "";
+  return !hasLinked && em;
+}
 
 /** Texto de usuarios vinculados a la empresa (nombres de usuario, más legible que IDs). */
 function formatLinkedUsersDisplay(c) {
@@ -70,6 +94,7 @@ export function ClientesAdminSection() {
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [generatingClientId, setGeneratingClientId] = useState(null);
   const [filterQ, setFilterQ] = useState("");
   const [filterClientStatus, setFilterClientStatus] = useState("all");
   const [totalCount, setTotalCount] = useState(0);
@@ -82,7 +107,7 @@ export function ClientesAdminSection() {
   const [contactName, setContactName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [clStatus, setClStatus] = useState("pending");
+  const [clStatus, setClStatus] = useState("active");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [notes, setNotes] = useState("");
@@ -136,7 +161,7 @@ export function ClientesAdminSection() {
     setContactName("");
     setEmail("");
     setPhone("");
-    setClStatus("pending");
+    setClStatus("active");
     setAddress("");
     setCity("");
     setNotes("");
@@ -178,6 +203,38 @@ export function ClientesAdminSection() {
     setModal(null);
     setSelected(null);
     resetForm();
+  }
+
+  async function generateUserForClient(c) {
+    if (!c?.id || !clientCanGenerateUser(c)) return;
+    setErr("");
+    setMsg("");
+    setGeneratingClientId(c.id);
+    try {
+      const data = await authFetch(`/api/clients/${c.id}/generate-user/`, { method: "POST" });
+      const q = typeof data?.registration_query === "string" ? data.registration_query : "";
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const fullUrl = q && origin ? `${origin}/registro?${q}` : "";
+      if (fullUrl) {
+        try {
+          await navigator.clipboard.writeText(fullUrl);
+          setMsg(
+            `Usuario generado para ${data.email || c.email}. Enlace de registro copiado al portapapeles; compártelo con la empresa.`,
+          );
+        } catch {
+          setMsg(
+            `Usuario generado para ${data.email || c.email}. Copia manualmente este enlace: ${fullUrl}`,
+          );
+        }
+      } else {
+        setMsg(`Usuario generado para ${data?.email || c.email}.`);
+      }
+      await reload();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "No se pudo generar el usuario.");
+    } finally {
+      setGeneratingClientId(null);
+    }
   }
 
   async function submitSave() {
@@ -320,7 +377,7 @@ export function ClientesAdminSection() {
               id="clientes-filter-q"
               value={filterQ}
               onChange={setFilterQ}
-              placeholder="Empresa, RIF, correo, contacto…"
+              placeholder="Empresa, correo, contacto…"
             />
             <AdminFilterSelect
               id="clientes-filter-status"
@@ -368,7 +425,7 @@ export function ClientesAdminSection() {
                     Empresa
                   </th>
                   <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    RIF
+                    Email
                   </th>
                   <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Usuarios vinculados
@@ -412,19 +469,57 @@ export function ClientesAdminSection() {
                       <td className="max-w-[10rem] truncate px-3 py-2.5 font-medium text-zinc-900" title={c.company_name}>
                         {c.company_name}
                       </td>
-                      <td className="px-3 py-2.5 font-mono text-xs text-zinc-800">{c.rif}</td>
-                      <td
-                        className="max-w-[14rem] truncate px-3 py-2.5 text-zinc-700"
-                        title={linkedUsersText}
-                      >
-                        {linkedUsersText}
+                      <td className="max-w-[14rem] px-3 py-2.5 text-sm text-zinc-800">
+                        {c.email?.trim() ? (
+                          <a
+                            href={`mailto:${encodeURIComponent(c.email.trim())}`}
+                            className="block truncate font-medium text-zinc-900 underline-offset-2 hover:underline"
+                            title={c.email.trim()}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {c.email.trim()}
+                          </a>
+                        ) : (
+                          "—"
+                        )}
                       </td>
-                      <td className="px-3 py-2.5 capitalize text-zinc-700">{c.status}</td>
+                      <td className="max-w-[16rem] px-3 py-2 align-middle text-zinc-700">
+                        {clientCanGenerateUser(c) ? (
+                          <button
+                            type="button"
+                            className={`${adminSecondaryBtn} !justify-start gap-1.5 px-2.5 py-1.5 text-left text-xs font-semibold`}
+                            title="Crea usuario sin contraseña y copia el enlace para que definan su clave"
+                            disabled={generatingClientId === c.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void generateUserForClient(c);
+                            }}
+                          >
+                            <IconAdminUserPlus className="!h-4 !w-4 shrink-0" />
+                            <span className="min-w-0">
+                              {generatingClientId === c.id ? "Generando…" : "Generar usuario"}
+                            </span>
+                          </button>
+                        ) : (
+                          <span className="block truncate" title={linkedUsersText}>
+                            {linkedUsersText}
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${clientStatusPillClassName(c.status)}`}
+                        >
+                          {clientStatusLabel(c.status, c.status_label)}
+                        </span>
+                      </td>
                       <td className="px-3 py-2">
                         <AdminRowActions
                           onView={() => openView(c)}
                           onEdit={() => openEdit(c)}
-                            onDelete={() => askDeleteClient(c.id)}
+                          showDelete={clientCanBeDeleted(c)}
+                          deleteDisabledTitle="Tiene pedidos relacionados. Revisa la sección Pedidos antes de eliminar."
+                          onDelete={() => askDeleteClient(c.id)}
                         />
                       </td>
                     </tr>
@@ -444,7 +539,10 @@ export function ClientesAdminSection() {
                                 {linkedUsersText !== "—" ? (
                                   <span className="text-sm text-zinc-800">{linkedUsersText}</span>
                                 ) : (
-                                  <span className="text-sm text-zinc-400">Ninguno · vincular en Usuarios</span>
+                                  <span className="text-sm text-zinc-400">
+                                    Ninguno · usa «Generar usuario» en la columna Usuarios vinculados o crea la cuenta
+                                    en Usuarios
+                                  </span>
                                 )}
                               </AdminDetailField>
                               <AdminDetailField label="Persona de contacto">
@@ -538,7 +636,13 @@ export function ClientesAdminSection() {
             </div>
             <div>
               <p className={adminLabel}>Estado</p>
-              <p className="mt-1 text-sm capitalize text-zinc-800">{selected.status}</p>
+              <p className="mt-1">
+                <span
+                  className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${clientStatusPillClassName(selected.status)}`}
+                >
+                  {clientStatusLabel(selected.status, selected.status_label)}
+                </span>
+              </p>
             </div>
             <div>
               <p className={adminLabel}>Contacto</p>
@@ -548,8 +652,9 @@ export function ClientesAdminSection() {
               <p className={adminLabel}>Usuarios vinculados</p>
               <p className="mt-1 text-sm text-zinc-800">{formatLinkedUsersDisplay(selected)}</p>
               <p className="mt-1 text-xs text-zinc-500">
-                Solo lectura. Enlaza cuentas en la sección Usuarios: rol «Cliente marketplace» y la empresa
-                correspondiente. Varias cuentas pueden compartir la misma ficha.
+                Solo lectura. Puedes usar «Generar usuario» en la columna Usuarios vinculados (enlace para definir
+                contraseña) o enlazar cuentas en Usuarios con rol «Cliente marketplace». Varias cuentas pueden compartir
+                la misma ficha.
               </p>
             </div>
             <div>
@@ -633,7 +738,7 @@ export function ClientesAdminSection() {
                 id="cl-status"
                 options={CLIENT_STATUS}
                 value={clStatus}
-                onChange={(v) => setClStatus(v || "pending")}
+                onChange={(v) => setClStatus(v || "active")}
                 inModal
                 aria-label="Estado del cliente"
               />
@@ -718,7 +823,10 @@ export function ClientesAdminSection() {
           await executeDeleteClient(deleteTargetId);
         }}
       >
-        <p>¿Eliminar este cliente? No debe tener pedidos asociados.</p>
+        <p>
+          ¿Eliminar esta empresa del sistema? Solo aparece esta opción si no tiene pedidos vinculados. Esta acción no se
+          puede deshacer.
+        </p>
       </AdminConfirmDialog>
     </div>
   );

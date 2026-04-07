@@ -690,21 +690,21 @@ export function CentrosAdminSection() {
               <p className="mt-1 text-zinc-800">{selected.city || "—"}</p>
             </div>
             <div>
-              <p className={adminLabel}>Zona / barrio (titular portada)</p>
+              <p className={adminLabel}>Zona / barrio (titular en tarjetas)</p>
               <p className="mt-1 text-zinc-800">
                 {selected.district?.trim() || "—"}
               </p>
             </div>
             {selected.display_title ? (
               <div>
-                <p className={adminLabel}>Título en portada (calculado)</p>
+                <p className={adminLabel}>Título en tarjetas (calculado)</p>
                 <p className="mt-1 font-medium text-zinc-900">
                   {selected.display_title}
                 </p>
               </div>
             ) : null}
             <div>
-              <p className={adminLabel}>En portada del marketplace</p>
+              <p className={adminLabel}>En listado público de centros</p>
               <p className="mt-1 text-zinc-800">
                 {selected.on_homepage !== false ? "Sí" : "No"}
               </p>
@@ -744,7 +744,7 @@ export function CentrosAdminSection() {
               </p>
             </div>
             <div>
-              <p className={adminLabel}>Orden en portada</p>
+              <p className={adminLabel}>Orden en listado de centros</p>
               <p className="mt-1 tabular-nums text-zinc-800">
                 {selected.listing_order ?? 0}
               </p>
@@ -845,7 +845,7 @@ export function CentrosAdminSection() {
             </div>
             <div>
               <label className={adminLabel} htmlFor="c-district">
-                Zona / barrio (titular en portada)
+                Zona / barrio (titular en tarjetas)
               </label>
               <input
                 id="c-district"
@@ -863,7 +863,7 @@ export function CentrosAdminSection() {
                   checked={isActive}
                   onChange={(e) => setIsActive(e.target.checked)}
                 />
-                Centro activo (inactivo: sin catálogo de tomas ni reservas; puede listarse en portada)
+                Centro activo (inactivo: sin catálogo de tomas ni reservas en el marketplace)
               </label>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -877,7 +877,7 @@ export function CentrosAdminSection() {
                 Catálogo de reservas en marketplace (tomas públicas y ruta /m/…)
               </label>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="space-y-1">
               <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-800">
                 <input
                   type="checkbox"
@@ -885,12 +885,16 @@ export function CentrosAdminSection() {
                   checked={onHomepage}
                   onChange={(e) => setOnHomepage(e.target.checked)}
                 />
-                Listar en portada del marketplace
+                Incluir en listado público de centros
               </label>
+              <p className="ml-6 text-xs text-zinc-500">
+                La portada principal del sitio muestra tomas, no centros. Esto solo afecta el API de
+                centros y posibles integraciones.
+              </p>
             </div>
             <div>
               <label className={adminLabel} htmlFor="c-order">
-                Orden en portada
+                Orden en listado de centros
               </label>
               <input
                 id="c-order"
@@ -901,7 +905,7 @@ export function CentrosAdminSection() {
                 onChange={(e) => setListingOrder(e.target.value)}
               />
               <p className="mt-1 text-xs text-zinc-500">
-                Número menor = aparece antes.
+                Número menor = aparece antes en ese listado.
               </p>
             </div>
             <div>

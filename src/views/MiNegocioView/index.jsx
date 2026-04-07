@@ -18,6 +18,15 @@ const pillBase = `${ROUNDED_CONTROL} border px-3 py-1.5 text-sm font-medium shad
 const pillInactive = `border-zinc-200/90 bg-white text-zinc-700 hover:border-[color-mix(in_srgb,var(--mp-primary)_40%,transparent)] hover:text-[color:var(--mp-primary)]`;
 const pillCurrent = `border-[color-mix(in_srgb,var(--mp-primary)_45%,#d4d4d8)] bg-[color-mix(in_srgb,var(--mp-primary)_10%,color-mix(in_srgb,var(--mp-secondary)_5%,#fff))] font-semibold text-[color:var(--mp-primary)] ring-1 ring-[color-mix(in_srgb,var(--mp-primary)_18%,transparent)]`;
 
+const roleBadgeClass =
+  "inline-flex max-w-full shrink-0 items-center rounded-full border border-orange-200/90 bg-gradient-to-r from-orange-50/95 via-amber-50/80 to-white px-3 py-1 text-xs font-semibold text-orange-950 shadow-sm ring-1 ring-orange-100/70 sm:text-sm";
+
+function marketplaceRoleLabel(role) {
+  if (role === "admin") return "Administrador marketplace";
+  if (role === "client") return "Cliente marketplace";
+  return typeof role === "string" && role.trim() ? role : "";
+}
+
 const brandAccept =
   ".svg,image/svg+xml,image/png,image/jpeg,image/jpg,image/webp,image/gif,image/x-icon,.ico";
 
@@ -120,7 +129,7 @@ function FileBlock({
 
 export default function MiNegocioView() {
   const router = useRouter();
-  const { authReady, me, isAdmin, accessToken } = useAuth();
+  const { authReady, me, isAdmin, accessToken, role } = useAuth();
   const { reloadWorkspace } = useWorkspace();
 
   const [loadErr, setLoadErr] = useState("");
@@ -332,6 +341,7 @@ export default function MiNegocioView() {
   const logoExisting = removeLogo ? "" : logoUrl;
   const markExisting = removeLogoMark ? "" : logoMarkUrl;
   const favExisting = removeFavicon ? "" : faviconUrl;
+  const profileRoleBadge = marketplaceRoleLabel(role);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
@@ -346,7 +356,14 @@ export default function MiNegocioView() {
 
       <div className="relative mt-8 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white px-5 py-6 shadow-[0_2px_12px_rgba(15,23,42,0.06)] sm:px-6 sm:py-7">
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] mp-admin-filters-top-accent" aria-hidden />
-        <h1 className="text-balance text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">Mi negocio</h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-balance text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">Mi negocio</h1>
+          {profileRoleBadge ? (
+            <span className={roleBadgeClass} aria-label={`Rol: ${profileRoleBadge}`}>
+              {profileRoleBadge}
+            </span>
+          ) : null}
+        </div>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-600">
           Datos públicos del marketplace (marca, contacto y archivos). El identificador del sitio no se puede cambiar
           desde aquí.

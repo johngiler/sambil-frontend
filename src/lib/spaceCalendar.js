@@ -56,3 +56,23 @@ export const MONTH_SHORT_ES = [
   "Nov",
   "Dic",
 ];
+
+/**
+ * Límites de mes (1–12) si ambas fechas caen en `year`.
+ * @param {string} isoStart
+ * @param {string} isoEnd
+ * @param {number} year
+ * @returns {{ lo: number, hi: number } | null}
+ */
+export function monthBoundsFromIsoInYear(isoStart, isoEnd, year) {
+  if (typeof isoStart !== "string" || typeof isoEnd !== "string" || !isoStart || !isoEnd) return null;
+  const ys = Number(isoStart.slice(0, 4));
+  const ye = Number(isoEnd.slice(0, 4));
+  const sm = Number(isoStart.slice(5, 7));
+  const em = Number(isoEnd.slice(5, 7));
+  if (!Number.isFinite(ys) || !Number.isFinite(ye) || !Number.isFinite(sm) || !Number.isFinite(em)) return null;
+  if (ys !== year || ye !== year) return null;
+  const lo = Math.min(sm, em);
+  const hi = Math.max(sm, em);
+  return { lo, hi };
+}

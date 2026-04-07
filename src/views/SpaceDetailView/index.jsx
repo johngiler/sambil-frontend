@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 
 import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvailabilityBar";
 import { SpaceDetailReservationActions } from "@/components/catalog/SpaceDetailReservationActions";
-import { SPACE_STATUS, SPACE_TYPES } from "@/components/admin/adminConstants";
+import { SPACE_TYPES, spaceStatusLabel } from "@/components/admin/adminConstants";
 import { spaceCoverUrlForUi } from "@/lib/spaceCover";
 import { getSpace } from "@/services/api";
 
@@ -49,7 +49,7 @@ export default async function SpaceDetailView({ spaceId }) {
 
   const backHref = "/";
   const typeLabel = labelFromChoices(SPACE_TYPES, space.type);
-  const statusLabel = labelFromChoices(SPACE_STATUS, space.status) ?? space.status;
+  const statusLabel = spaceStatusLabel(space.status, space.status_label);
   const year = Number(space.availability_year) || new Date().getFullYear();
   const city =
     typeof space.shopping_center_city === "string" && space.shopping_center_city.trim() !== ""

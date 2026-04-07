@@ -115,6 +115,7 @@ export function UsuariosAdminSection() {
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [pendingDeleteUser, setPendingDeleteUser] = useState(null);
+  const [passwordLinkUserId, setPasswordLinkUserId] = useState(null);
   const [filterQ, setFilterQ] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [totalCount, setTotalCount] = useState(0);
@@ -241,6 +242,33 @@ export function UsuariosAdminSection() {
     setModal(null);
     setSelected(null);
     resetForm();
+  }
+
+  async function copyPasswordSetupLink(u) {
+    if (!u?.id || u.role !== "client" || u.has_usable_password !== false) return;
+    setErr("");
+    setMsg("");
+    setPasswordLinkUserId(u.id);
+    try {
+      const data = await authFetch(`/api/admin/users/${u.id}/password-setup-link/`, {
+        method: "POST",
+      });
+      const q = typeof data?.registration_query === "string" ? data.registration_query : "";
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const fullUrl = q && origin ? `${origin}/registro?${q}` : "";
+      if (fullUrl) {
+        try {
+          await navigator.clipboard.writeText(fullUrl);
+          setMsg("Enlace de registro copiado al portapapeles.");
+        } catch {
+          setMsg(`Copia manualmente este enlace: ${fullUrl}`);
+        }
+      }
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "No se pudo generar el enlace.");
+    } finally {
+      setPasswordLinkUserId(null);
+    }
   }
 
   async function submitSave() {
@@ -471,7 +499,7 @@ export function UsuariosAdminSection() {
                         Usuario
                       </th>
                       <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Email
+                        Empresa vinculada
                       </th>
                       <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                         Rol
@@ -520,10 +548,18 @@ export function UsuariosAdminSection() {
                               ) : null}
                             </td>
                             <td
-                              className="max-w-[12rem] truncate px-3 py-2.5 text-zinc-600"
-                              title={u.email}
+                              className="max-w-[11rem] truncate px-3 py-2.5 text-sm text-zinc-700"
+                              title={
+                                typeof u.client_company_name === "string" && u.client_company_name.trim()
+                                  ? u.client_company_name.trim()
+                                  : undefined
+                              }
                             >
-                              {u.email || "—"}
+                              {u.role === "client" && u.client_company_name?.trim() ? (
+                                <span className="font-medium text-zinc-900">{u.client_company_name.trim()}</span>
+                              ) : (
+                                "—"
+                              )}
                             </td>
                             <td className="px-3 py-2.5 text-zinc-700">
                               {roleLabel(u.role)}
@@ -535,6 +571,22 @@ export function UsuariosAdminSection() {
                                 onDelete={() => askDeleteUser(u)}
                                 showDelete={!isSelf}
                                 deleteDisabledTitle="No puedes eliminar tu propio usuario"
+                                trailing={
+                                  u.role === "client" && u.has_usable_password === false ? (
+                                    <button
+                                      type="button"
+                                      className={`${adminSecondaryBtn} ml-1 shrink-0 px-2 py-1.5 text-xs font-semibold`}
+                                      title="Copia el enlace para que el cliente defina su contraseña en /registro"
+                                      disabled={passwordLinkUserId === u.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        void copyPasswordSetupLink(u);
+                                      }}
+                                    >
+                                      {passwordLinkUserId === u.id ? "Copiando…" : "Copiar enlace"}
+                                    </button>
+                                  ) : null
+                                }
                               />
                             </td>
                           </tr>

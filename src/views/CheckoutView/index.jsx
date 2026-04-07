@@ -28,6 +28,7 @@ import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import {
   postGuestCheckout,
   postGuestCheckoutEmailAvailable,
+  postGuestCheckoutValidateDatos,
   postValidatePassword,
 } from "@/services/api";
 import { authFetch, saveMyCompany } from "@/services/authApi";
@@ -81,6 +82,60 @@ const PAYMENT_METHODS = [
   { id: "zelle", label: "Zelle" },
 ];
 
+/**
+ * Interpreta la respuesta de `/api/checkout/guest/validate-datos/` (sin efectos).
+ * @param {{ email: { client_exists: boolean, has_marketplace_account: boolean }, company: { client_exists: boolean, has_marketplace_account: boolean }, same_client: boolean }} d
+ */
+function interpretGuestCheckoutValidateDatos(d) {
+  const emailBlockMsg =
+    "Este correo ya está asociado a una cuenta de cliente en este sitio. Inicia sesión para completar tu reserva.";
+  const companyBlockMsg =
+    "Esta razón social ya está registrada con una cuenta de cliente en este sitio. Inicia sesión o corrige el nombre si es otra empresa.";
+
+  if (d.email.has_marketplace_account) {
+    return {
+      emailBlock: emailBlockMsg,
+      emailNotice: "",
+      companyBlock: "",
+      companyNotice: "",
+      blocked: true,
+    };
+  }
+  if (d.company.has_marketplace_account && !d.same_client) {
+    return {
+      emailBlock: "",
+      emailNotice: "",
+      companyBlock: companyBlockMsg,
+      companyNotice: "",
+      blocked: true,
+    };
+  }
+
+  let emailNotice = "";
+  let companyNotice = "";
+  if (d.same_client && d.email.client_exists) {
+    emailNotice =
+      "Este correo y esta razón social ya están registrados como una misma empresa. Al enviar se actualizarán los datos de contacto con lo que indicaste arriba.";
+  } else {
+    if (d.email.client_exists) {
+      emailNotice =
+        "Este correo ya figura como empresa registrada. Al enviar la solicitud se actualizarán los datos de contacto con lo que indiques arriba.";
+    }
+    if (d.company.client_exists && !d.same_client) {
+      companyNotice =
+        "Ya hay una empresa registrada con este nombre. Si es la misma, usa el mismo correo con el que reservaste antes; si es otra razón social, ajusta el nombre.";
+    }
+  }
+
+  return {
+    emailBlock: "",
+    emailNotice,
+    companyBlock: "",
+    companyNotice,
+    blocked: false,
+  };
+}
+
 export default function CheckoutView() {
   const router = useRouter();
   const { items, clear } = useCart();
@@ -101,11 +156,9 @@ export default function CheckoutView() {
   const [step, setStep] = useState("datos");
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [company_name, setCompanyName] = useState("");
-  const [rif, setRif] = useState("");
   const [contact_name, setContactName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [country, setCountry] = useState("Venezuela");
   const [createAccount, setCreateAccount] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
@@ -117,6 +170,10 @@ export default function CheckoutView() {
   const [completedAsGuest, setCompletedAsGuest] = useState(false);
   const [guestPasswordPolicyError, setGuestPasswordPolicyError] = useState("");
   const [guestEmailTakenError, setGuestEmailTakenError] = useState("");
+  const [guestClientEmailBlock, setGuestClientEmailBlock] = useState("");
+  const [guestClientEmailNotice, setGuestClientEmailNotice] = useState("");
+  const [guestCompanyBlock, setGuestCompanyBlock] = useState("");
+  const [guestCompanyNotice, setGuestCompanyNotice] = useState("");
   const [guestDatosPasswordChecking, setGuestDatosPasswordChecking] = useState(false);
 
   const meetsMin = cartAllItemsMeetCheckoutRules(items);
@@ -127,7 +184,6 @@ export default function CheckoutView() {
   useEffect(() => {
     if (company && typeof company === "object") {
       setCompanyName(company.company_name || "");
-      setRif(company.rif || "");
       setContactName(company.contact_name || "");
       setEmail(company.email || "");
       setPhone(company.phone || "");
@@ -142,11 +198,21 @@ export default function CheckoutView() {
 
   useEffect(() => {
     setGuestEmailTakenError("");
+    setGuestClientEmailBlock("");
+    setGuestClientEmailNotice("");
+    setGuestCompanyBlock("");
+    setGuestCompanyNotice("");
   }, [email, createAccount]);
+
+  useEffect(() => {
+    setGuestCompanyBlock("");
+    setGuestCompanyNotice("");
+    setGuestClientEmailBlock("");
+    setGuestClientEmailNotice("");
+  }, [company_name]);
 
   const baseFieldsOk =
     Boolean(company_name.trim()) &&
-    Boolean(rif.trim()) &&
     Boolean(email.trim()) &&
     Boolean(contact_name.trim()) &&
     Boolean(phone.trim());
@@ -157,7 +223,8 @@ export default function CheckoutView() {
       password === passwordConfirm &&
       passwordConfirm.length >= PASSWORD_PAIR_MIN_LENGTH);
 
-  const guestDatosReady = isGuest && baseFieldsOk && passwordBlockOk;
+  const guestDatosReady =
+    isGuest && baseFieldsOk && passwordBlockOk && !guestClientEmailBlock && !guestCompanyBlock;
 
   const clientNewCompanyReady = !isGuest && !hasCompanyProfile && baseFieldsOk;
 
@@ -179,7 +246,6 @@ export default function CheckoutView() {
       if (!hasCompanyProfile) {
         const payload = {
           company_name: company_name.trim(),
-          rif: rif.trim(),
           contact_name: contact_name.trim(),
           email: email.trim(),
           phone: phone.trim(),
@@ -228,8 +294,33 @@ export default function CheckoutView() {
     }
     if (!guestDatosReady) {
       setError(
-        `Completa los datos y, si marcaste crear cuenta, la contraseña (mínimo ${PASSWORD_PAIR_MIN_LENGTH} caracteres).`,
+        guestClientEmailBlock || guestCompanyBlock
+          ? guestClientEmailBlock || guestCompanyBlock
+          : `Completa los datos y, si marcaste crear cuenta, la contraseña (mínimo ${PASSWORD_PAIR_MIN_LENGTH} caracteres).`,
       );
+      return;
+    }
+
+    try {
+      const raw = await postGuestCheckoutValidateDatos({
+        email: email.trim(),
+        company_name: company_name.trim(),
+      });
+      const v = interpretGuestCheckoutValidateDatos(raw);
+      setGuestClientEmailBlock(v.emailBlock);
+      setGuestClientEmailNotice(v.emailNotice);
+      setGuestCompanyBlock(v.companyBlock);
+      setGuestCompanyNotice(v.companyNotice);
+      if (v.blocked) {
+        setError(
+          v.emailBlock ||
+            v.companyBlock ||
+            "Revisa el correo o la razón social antes de enviar la solicitud.",
+        );
+        return;
+      }
+    } catch {
+      setError("No se pudo verificar los datos. Revisa tu conexión e inténtalo de nuevo.");
       return;
     }
 
@@ -237,7 +328,6 @@ export default function CheckoutView() {
     try {
       const submitted = await postGuestCheckout({
         company_name: company_name.trim(),
-        rif: rif.trim(),
         contact_name: contact_name.trim(),
         email: email.trim(),
         phone: phone.trim(),
@@ -428,42 +518,61 @@ export default function CheckoutView() {
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!datosStepCanContinue) return;
-                    if (createAccount) {
-                      setGuestPasswordPolicyError("");
-                      setGuestEmailTakenError("");
-                      setGuestDatosPasswordChecking(true);
-                      try {
-                        await postValidatePassword(password);
-                      } catch (err) {
-                        setGuestPasswordPolicyError(
-                          err instanceof Error ? err.message : "La contraseña no cumple las reglas de seguridad.",
-                        );
-                        setGuestDatosPasswordChecking(false);
-                        return;
-                      }
-                      try {
-                        const emailCheck = await postGuestCheckoutEmailAvailable(email.trim());
-                        if (!emailCheck.available) {
-                          setGuestEmailTakenError(
-                            typeof emailCheck.detail === "string" && emailCheck.detail.trim()
-                              ? emailCheck.detail.trim()
-                              : "Ya existe un usuario con este correo. Inicia sesión o usa otro email.",
+                    setGuestPasswordPolicyError("");
+                    setGuestEmailTakenError("");
+                    setGuestDatosPasswordChecking(true);
+                    try {
+                      const raw = await postGuestCheckoutValidateDatos({
+                        email: email.trim(),
+                        company_name: company_name.trim(),
+                      });
+                      const v = interpretGuestCheckoutValidateDatos(raw);
+                      setGuestClientEmailBlock(v.emailBlock);
+                      setGuestClientEmailNotice(v.emailNotice);
+                      setGuestCompanyBlock(v.companyBlock);
+                      setGuestCompanyNotice(v.companyNotice);
+                      if (v.blocked) return;
+                      if (createAccount) {
+                        try {
+                          await postValidatePassword(password);
+                        } catch (err) {
+                          setGuestPasswordPolicyError(
+                            err instanceof Error ? err.message : "La contraseña no cumple las reglas de seguridad.",
                           );
-                          setGuestDatosPasswordChecking(false);
                           return;
                         }
-                      } catch (err) {
-                        setGuestEmailTakenError(
-                          err instanceof Error
-                            ? err.message
-                            : "No se pudo comprobar el correo. Intenta de nuevo.",
-                        );
-                        setGuestDatosPasswordChecking(false);
-                        return;
+                        try {
+                          const emailCheck = await postGuestCheckoutEmailAvailable(email.trim());
+                          if (!emailCheck.available) {
+                            setGuestEmailTakenError(
+                              typeof emailCheck.detail === "string" && emailCheck.detail.trim()
+                                ? emailCheck.detail.trim()
+                                : "Ya existe un usuario con este correo. Inicia sesión o usa otro email.",
+                            );
+                            return;
+                          }
+                        } catch (err) {
+                          setGuestEmailTakenError(
+                            err instanceof Error
+                              ? err.message
+                              : "No se pudo comprobar el correo. Intenta de nuevo.",
+                          );
+                          return;
+                        }
                       }
+                      setStep("pago");
+                    } catch (err) {
+                      setGuestClientEmailBlock(
+                        err instanceof Error
+                          ? err.message
+                          : "No se pudo verificar los datos. Revisa tu conexión e inténtalo de nuevo.",
+                      );
+                      setGuestClientEmailNotice("");
+                      setGuestCompanyBlock("");
+                      setGuestCompanyNotice("");
+                    } finally {
                       setGuestDatosPasswordChecking(false);
                     }
-                    setStep("pago");
                   }}
                 >
                   <div>
@@ -474,9 +583,30 @@ export default function CheckoutView() {
                       onChange={(e) => setCompanyName(e.target.value)}
                       className={fieldClass}
                     />
+                    {guestCompanyBlock ? (
+                      <p
+                        role="alert"
+                        className={`mt-2 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}
+                      >
+                        {guestCompanyBlock}{" "}
+                        <Link
+                          href="/login?next=/checkout"
+                          className="font-semibold text-red-900 underline-offset-2 hover:underline"
+                        >
+                          Iniciar sesión
+                        </Link>
+                      </p>
+                    ) : null}
+                    {guestCompanyNotice ? (
+                      <p
+                        className={`mt-2 ${ROUNDED_CONTROL} border border-sky-100 bg-sky-50/90 px-3 py-2 text-sm text-sky-950`}
+                      >
+                        {guestCompanyNotice}
+                      </p>
+                    ) : null}
                   </div>
                   <div>
-                    <label className={labelClass}>Contacto</label>
+                    <label className={labelClass}>Nombre de contacto</label>
                     <input
                       required
                       value={contact_name}
@@ -494,6 +624,27 @@ export default function CheckoutView() {
                       className={fieldClass}
                       autoComplete="email"
                     />
+                    {guestClientEmailBlock ? (
+                      <p
+                        role="alert"
+                        className={`mt-2 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}
+                      >
+                        {guestClientEmailBlock}{" "}
+                        <Link
+                          href="/login?next=/checkout"
+                          className="font-semibold text-red-900 underline-offset-2 hover:underline"
+                        >
+                          Iniciar sesión
+                        </Link>
+                      </p>
+                    ) : null}
+                    {guestClientEmailNotice ? (
+                      <p
+                        className={`mt-2 ${ROUNDED_CONTROL} border border-sky-100 bg-sky-50/90 px-3 py-2 text-sm text-sky-950`}
+                      >
+                        {guestClientEmailNotice}
+                      </p>
+                    ) : null}
                   </div>
                   <div>
                     <label className={labelClass}>Teléfono</label>
@@ -504,24 +655,6 @@ export default function CheckoutView() {
                       className={fieldClass}
                       type="tel"
                       autoComplete="tel"
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>RIF</label>
-                    <input
-                      required
-                      value={rif}
-                      onChange={(e) => setRif(e.target.value)}
-                      className={fieldClass}
-                      placeholder="J-12345678-9"
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>País</label>
-                    <input
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      className={fieldClass}
                     />
                   </div>
                   <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-zinc-200 bg-zinc-50/80 px-4 py-3">
@@ -590,7 +723,7 @@ export default function CheckoutView() {
                     />
                   </div>
                   <div>
-                    <label className={labelClass}>Contacto</label>
+                    <label className={labelClass}>Nombre de contacto</label>
                     <input
                       required
                       value={contact_name}
@@ -620,24 +753,6 @@ export default function CheckoutView() {
                       autoComplete="tel"
                     />
                   </div>
-                  <div>
-                    <label className={labelClass}>RIF</label>
-                    <input
-                      required
-                      value={rif}
-                      onChange={(e) => setRif(e.target.value)}
-                      className={fieldClass}
-                      placeholder="J-12345678-9"
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>País</label>
-                    <input
-                      value={country}
-                      onChange={(e) => setCountry(e.target.value)}
-                      className={fieldClass}
-                    />
-                  </div>
                   <button
                     type="submit"
                     disabled={!datosStepCanContinue}
@@ -651,7 +766,9 @@ export default function CheckoutView() {
                   <div className={`${ROUNDED_CONTROL} border border-zinc-200 bg-zinc-50/80 p-5`}>
                     <p className={labelClass}>Empresa registrada</p>
                     <p className="mt-2 text-base font-semibold text-zinc-900">{company.company_name}</p>
-                    <p className="mt-1 text-sm text-zinc-600">RIF {company.rif}</p>
+                    {company.rif ? (
+                      <p className="mt-1 text-sm text-zinc-600">RIF {company.rif}</p>
+                    ) : null}
                     <button
                       type="button"
                       onClick={() => router.push("/cuenta")}

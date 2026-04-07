@@ -43,7 +43,10 @@ export function Header() {
   const { authReady, me, isAdmin, isClient, logout } = useAuth();
   const pathname = usePathname();
   const path = pathname || "";
-  const catalogActive = path === "/" || path.startsWith("/m/") || path.startsWith("/catalog");
+  /** Detalle de toma (`/catalog/:id`): «Catálogo» sin estilo activo; el enlace sigue yendo al inicio del catálogo. */
+  const catalogSpaceDetail = /^\/catalog\/[^/]+\/?$/.test(path);
+  const catalogActive =
+    !catalogSpaceDetail && (path === "/" || path.startsWith("/m/") || path.startsWith("/catalog"));
   const cartActive = path.startsWith("/cart");
   const ordersActive = path.startsWith("/cuenta/pedidos");
   /** Activo: fondo oscuro; texto e iconos en blanco (no mezclar con `navLink` para evitar `text-zinc-600` de Tailwind). */

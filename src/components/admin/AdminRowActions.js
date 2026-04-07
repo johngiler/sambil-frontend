@@ -7,22 +7,26 @@ const btn = `${ROUNDED_CONTROL} cursor-pointer p-2 text-zinc-500 transition hove
 
 export function AdminRowActions({
   onView,
-  onEdit,
+  onEdit = () => {},
   onDelete,
   viewLabel = "Ver",
   editLabel = "Editar",
   deleteLabel = "Eliminar",
+  showEdit = true,
   showDelete = true,
   deleteDisabledTitle = "No disponible",
+  trailing = null,
 }) {
   return (
-    <div className="flex items-center justify-end gap-0.5">
+    <div className="flex flex-nowrap items-center justify-end gap-0.5">
       <button type="button" className={btn} title={viewLabel} aria-label={viewLabel} onClick={onView}>
         <IconRowView />
       </button>
-      <button type="button" className={btn} title={editLabel} aria-label={editLabel} onClick={onEdit}>
-        <IconRowEdit />
-      </button>
+      {showEdit ? (
+        <button type="button" className={btn} title={editLabel} aria-label={editLabel} onClick={onEdit}>
+          <IconRowEdit />
+        </button>
+      ) : null}
       {showDelete ? (
         <button type="button" className={btn} title={deleteLabel} aria-label={deleteLabel} onClick={onDelete}>
           <IconRowTrash />
@@ -31,13 +35,14 @@ export function AdminRowActions({
         <button
           type="button"
           disabled
-          className={`${btn} cursor-not-allowed opacity-40`}
+          className={`${btn} cursor-not-allowed opacity-30`}
           title={deleteDisabledTitle}
           aria-label={deleteDisabledTitle}
         >
           <IconRowTrash />
         </button>
       )}
+      {trailing}
     </div>
   );
 }

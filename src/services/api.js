@@ -334,7 +334,13 @@ export async function getCenterByCode(code) {
 }
 
 export function errorMessageFromParsed({ data, text, status }) {
-  if (typeof data === "object" && data !== null) return JSON.stringify(data);
+  if (typeof data === "object" && data !== null) {
+    const d = /** @type {Record<string, unknown>} */ (data).detail;
+    if (typeof d === "string" && d.trim()) return d.trim();
+    if (Array.isArray(d) && d.length) return d.map(String).filter(Boolean).join(" ");
+    return JSON.stringify(data);
+  }
+  if (typeof data === "string" && data.trim()) return data.trim();
   return text || `HTTP ${status}`;
 }
 
@@ -376,6 +382,48 @@ export async function postValidatePassword(password) {
  * @param {string} email
  * @returns {Promise<{ available: boolean, detail?: string, code?: string }>}
  */
+/**
+ * Comprueba si el correo ya está asociado a un cliente del tenant (y si tiene cuenta marketplace).
+ * @param {string} email
+ * @returns {Promise<{ client_exists: boolean, has_marketplace_account: boolean }>}
+ */
+export async function postGuestCheckoutClientEmailCheck(email) {
+  const res = await fetch(apiUrl("/api/checkout/guest/check-client-email/"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...workspaceSlugRequestHeaders(),
+    },
+    body: JSON.stringify({ email }),
+    cache: "no-store",
+  });
+  const parsed = await parseFetchResponse(res);
+  if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
+  return /** @type {{ client_exists: boolean, has_marketplace_account: boolean }} */ (parsed.data);
+}
+
+/**
+ * Valida correo y razón social del checkout invitado (al pulsar Continuar en datos).
+ * @param {{ email: string, company_name: string }} body
+ * @returns {Promise<{ email: { client_exists: boolean, has_marketplace_account: boolean }, company: { client_exists: boolean, has_marketplace_account: boolean }, same_client: boolean }>}
+ */
+export async function postGuestCheckoutValidateDatos(body) {
+  const res = await fetch(apiUrl("/api/checkout/guest/validate-datos/"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...workspaceSlugRequestHeaders(),
+    },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  const parsed = await parseFetchResponse(res);
+  if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
+  return /** @type {{ email: { client_exists: boolean, has_marketplace_account: boolean }, company: { client_exists: boolean, has_marketplace_account: boolean }, same_client: boolean }} */ (
+    parsed.data
+  );
+}
+
 export async function postGuestCheckoutEmailAvailable(email) {
   const res = await fetch(apiUrl("/api/checkout/guest/check-email/"), {
     method: "POST",
@@ -419,6 +467,35 @@ export async function postActivateClientAccount({ token, password }) {
       ...workspaceSlugRequestHeaders(),
     },
     body: JSON.stringify({ token, password }),
+    cache: "no-store",
+  });
+  const parsed = await parseFetchResponse(res);
+  if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
+  return parsed.data;
+}
+
+/** Datos del correo para el formulario de definir contraseña (enlace del administrador). */
+export async function getPasswordSetupIntent(token) {
+  const q = new URLSearchParams();
+  q.set("token", String(token || "").trim());
+  const res = await fetch(apiUrl(`/api/auth/password-setup-intent/?${q}`), {
+    headers: { ...workspaceSlugRequestHeaders() },
+    cache: "no-store",
+  });
+  const parsed = await parseFetchResponse(res);
+  if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
+  return /** @type {{ email: string }} */ (parsed.data);
+}
+
+/** Primera contraseña para usuario creado sin clave (token firmado). */
+export async function postSetInitialPassword({ token, password, password_confirm }) {
+  const res = await fetch(apiUrl("/api/auth/set-initial-password/"), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...workspaceSlugRequestHeaders(),
+    },
+    body: JSON.stringify({ token, password, password_confirm }),
     cache: "no-store",
   });
   const parsed = await parseFetchResponse(res);

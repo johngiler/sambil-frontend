@@ -71,6 +71,15 @@ const pagePillActive = `mp-pagination-focus ${pagePillBase} border-[color-mix(in
 export function AdminListPagination({ page, totalCount, onPageChange, pageSize: pageSizeProp }) {
   const pageSize = pageSizeProp ?? ADMIN_LIST_PAGE_SIZE;
   const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+
+  const goToPage = (next) => {
+    if (next < 1 || next > totalPages || next === page) return;
+    onPageChange(next);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
   if (totalCount === 0) return null;
   if (totalPages <= 1) {
     return (
@@ -104,7 +113,7 @@ export function AdminListPagination({ page, totalCount, onPageChange, pageSize: 
           type="button"
           className={`${navBtnBase} px-2 sm:px-2.5`}
           disabled={page <= 1}
-          onClick={() => onPageChange(page - 1)}
+          onClick={() => goToPage(page - 1)}
           aria-label="Página anterior"
         >
           <ChevronLeft className="sm:mr-1" />
@@ -126,7 +135,7 @@ export function AdminListPagination({ page, totalCount, onPageChange, pageSize: 
                 key={item}
                 type="button"
                 className={item === page ? pagePillActive : pagePillInactive}
-                onClick={() => onPageChange(item)}
+                onClick={() => goToPage(item)}
                 aria-label={`Ir a la página ${item}`}
                 aria-current={item === page ? "page" : undefined}
               >
@@ -140,7 +149,7 @@ export function AdminListPagination({ page, totalCount, onPageChange, pageSize: 
           type="button"
           className={`${navBtnBase} px-2 sm:px-2.5`}
           disabled={page >= totalPages}
-          onClick={() => onPageChange(page + 1)}
+          onClick={() => goToPage(page + 1)}
           aria-label="Página siguiente"
         >
           <span className="hidden sm:inline">Siguiente</span>

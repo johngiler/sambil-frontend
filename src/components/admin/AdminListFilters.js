@@ -107,10 +107,10 @@ export function AdminFilterSelect({ id, label, value, onChange, options }) {
 }
 
 const filterClearActionBase =
-  "mp-ring-brand group inline-flex items-center gap-2 rounded-lg text-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-100/80 hover:text-[color:var(--mp-primary)] focus-visible:outline-none";
+  "mp-ring-brand group inline-flex min-h-10 shrink-0 items-center gap-2 rounded-full border border-zinc-200/90 bg-white px-3 py-2 text-sm font-semibold text-zinc-600 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-[border-color,box-shadow,background-color,color,transform] hover:border-zinc-300 hover:bg-zinc-50 hover:text-zinc-900 focus-visible:outline-none active:scale-[0.98] sm:min-h-9 sm:py-1.5 sm:pl-2.5 sm:pr-3";
 
 /**
- * Acción compacta tipo enlace + icono (portada, estados vacíos, etc.).
+ * Acción secundaria con icono (portada, calendario de meses, estados vacíos, admin).
  * @param {object} props
  * @param {() => void} props.onClick
  * @param {string} [props.className]
@@ -118,13 +118,14 @@ const filterClearActionBase =
  */
 export function FilterClearAction({ onClick, className = "", label = "Limpiar filtros" }) {
   return (
-    <button type="button" onClick={onClick} className={`${filterClearActionBase} py-2 sm:py-1.5 sm:pl-1 sm:pr-2 ${className}`}>
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-100/90 text-zinc-400 transition-colors group-hover:bg-[color-mix(in_srgb,var(--mp-primary)_12%,transparent)] group-hover:text-[color:var(--mp-primary)]">
-        <FilterResetIcon className="block" />
+    <button type="button" onClick={onClick} className={`${filterClearActionBase} ${className}`}>
+      <span
+        className="flex size-7 shrink-0 items-center justify-center rounded-full bg-zinc-100/90 text-zinc-500 transition-colors group-hover:bg-[color-mix(in_srgb,var(--mp-primary)_12%,#f4f4f5)] group-hover:text-[color:var(--mp-primary)]"
+        aria-hidden
+      >
+        <FilterResetIcon className="block h-3.5 w-3.5" />
       </span>
-      <span className="border-b border-transparent pb-px transition-[border-color] group-hover:border-[color-mix(in_srgb,var(--mp-primary)_40%,transparent)]">
-        {label}
-      </span>
+      <span>{label}</span>
     </button>
   );
 }

@@ -183,7 +183,7 @@ export default function CartView() {
           className={`mt-6 ${ROUNDED_CONTROL} border border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950`}
         >
           Alguna línea no tiene fechas válidas o no llega a 5 meses. Usa el icono de <strong className="font-medium">lápiz</strong>,
-          ajusta el calendario y <strong className="font-medium">Guardar fechas de esta toma</strong>, o vacía el carrito.
+          ajusta el calendario y pulsa <strong className="font-medium">Guardar modificación</strong>, o vacía el carrito.
         </p>
       ) : null}
 

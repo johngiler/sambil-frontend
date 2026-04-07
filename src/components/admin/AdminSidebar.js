@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { ADMIN_NAV } from "@/components/admin/adminNavConfig";
-import { IconClose, IconMenu } from "@/components/layout/navIcons";
+import { IconChevronLeft, IconClose, IconMenu } from "@/components/layout/navIcons";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 
@@ -79,9 +79,10 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
         <div className="mt-auto border-t border-zinc-200 p-3 lg:mt-4">
           <Link
             href="/"
-            className={`block ${ROUNDED_CONTROL} px-3 py-2 text-center text-sm font-medium text-zinc-900 hover:bg-zinc-200/60`}
+            className={`flex items-center justify-center gap-2 ${ROUNDED_CONTROL} px-3 py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200/60`}
             onClick={() => setMobileOpen(false)}
           >
+            <IconChevronLeft className="text-zinc-600" />
             Volver al marketplace
           </Link>
         </div>

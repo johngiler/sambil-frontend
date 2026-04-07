@@ -11,6 +11,15 @@ import { saveMyCompany } from "@/services/authApi";
 
 const fieldClass = `mp-form-field-accent mt-1.5 min-h-11 w-full ${ROUNDED_CONTROL} border border-zinc-200 bg-white px-3.5 py-2.5 text-base text-zinc-900 shadow-sm transition-[border-color,box-shadow] duration-200 ease-out placeholder:text-zinc-400 focus:outline-none sm:min-h-0 sm:py-2 sm:text-sm`;
 
+const roleBadgeClass =
+  "inline-flex max-w-full shrink-0 items-center rounded-full border border-orange-200/90 bg-gradient-to-r from-orange-50/95 via-amber-50/80 to-white px-3 py-1 text-xs font-semibold text-orange-950 shadow-sm ring-1 ring-orange-100/70 sm:text-sm";
+
+function marketplaceRoleLabel(role) {
+  if (role === "admin") return "Administrador marketplace";
+  if (role === "client") return "Cliente marketplace";
+  return typeof role === "string" && role.trim() ? role : "";
+}
+
 function SectionTitle({ children, id }) {
   return (
     <h2
@@ -28,7 +37,7 @@ function SectionTitle({ children, id }) {
 
 export default function CuentaView() {
   const router = useRouter();
-  const { authReady, me, isAdmin, company, setCompanyData, accessToken } = useAuth();
+  const { authReady, me, isAdmin, company, setCompanyData, accessToken, role } = useAuth();
   const [company_name, setCompanyName] = useState("");
   const [rif, setRif] = useState("");
   const [contact_name, setContactName] = useState("");
@@ -102,16 +111,11 @@ export default function CuentaView() {
   }
 
   const hasProfile = company && typeof company === "object";
+  const profileRoleBadge = marketplaceRoleLabel(role);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
       <nav className="flex flex-wrap gap-2 text-sm" aria-label="Sección de cuenta">
-        <Link
-          href="/cuenta/pedidos"
-          className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white px-3 py-1.5 font-medium text-zinc-700 shadow-sm transition hover:border-[color-mix(in_srgb,var(--mp-primary)_40%,transparent)] hover:text-[color:var(--mp-primary)]`}
-        >
-          Mis pedidos
-        </Link>
         <Link
           href="/cuenta/perfil"
           className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white px-3 py-1.5 font-medium text-zinc-700 shadow-sm transition hover:border-[color-mix(in_srgb,var(--mp-primary)_40%,transparent)] hover:text-[color:var(--mp-primary)]`}
@@ -131,9 +135,16 @@ export default function CuentaView() {
 
       <div className="relative mt-8 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white px-5 py-6 shadow-[0_2px_12px_rgba(15,23,42,0.06)] sm:px-6 sm:py-7">
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] mp-admin-filters-top-accent" aria-hidden />
-        <h1 className="text-balance text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
-          Mi empresa
-        </h1>
+        <div className="flex flex-wrap items-center gap-3">
+          <h1 className="text-balance text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
+            Mi empresa
+          </h1>
+          {profileRoleBadge ? (
+            <span className={roleBadgeClass} aria-label={`Rol: ${profileRoleBadge}`}>
+              {profileRoleBadge}
+            </span>
+          ) : null}
+        </div>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-600">
           Datos de tu <span className="font-medium text-zinc-800">empresa</span> para reservas en el marketplace.
           Son necesarios antes de enviar una solicitud desde el checkout.
@@ -173,12 +184,14 @@ export default function CuentaView() {
               </div>
               <div className="sm:max-w-md">
                 <label htmlFor="cuenta-rif" className="block text-sm font-medium text-zinc-800">
-                  RIF <span className="text-red-600">*</span>
+                  RIF
                 </label>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Opcional si aún no lo tienes; complétalo aquí para facturación.
+                </p>
                 <input
                   id="cuenta-rif"
-                  required
-                  className={fieldClass}
+                  className={`mt-1.5 ${fieldClass}`}
                   value={rif}
                   onChange={(e) => setRif(e.target.value)}
                   placeholder="Ej. J-12345678-9"

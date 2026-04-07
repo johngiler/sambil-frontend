@@ -11,6 +11,7 @@ import { useCart } from "@/context/CartProvider";
 import { contractMonthsInclusive } from "@/lib/rentalDates";
 import { postSpaceRentalRangeCheck } from "@/services/api";
 import {
+  monthBoundsFromIsoInYear,
   normalizeMonthsOccupied,
   rangeTouchesOccupiedMonth,
 } from "@/lib/spaceCalendar";
@@ -40,6 +41,35 @@ export function SpaceDetailReservationActions({ space }) {
     [items, space.id],
   );
 
+  const cartLine = useMemo(
+    () => items.find((i) => String(i.id) === String(space.id)),
+    [items, space.id],
+  );
+
+  const cartDatesInYear = useMemo(() => {
+    if (!cartLine?.start_date || !cartLine?.end_date) return null;
+    const { y: ys, m: sm } = isoYearMonth(cartLine.start_date);
+    const { y: ye, m: em } = isoYearMonth(cartLine.end_date);
+    if (ys !== year || ye !== year) return null;
+    return { start_date: cartLine.start_date, end_date: cartLine.end_date };
+  }, [cartLine, year]);
+
+  const cartBaselineMonths = useMemo(
+    () =>
+      spaceInCart && cartDatesInYear
+        ? monthBoundsFromIsoInYear(cartDatesInYear.start_date, cartDatesInYear.end_date, year)
+        : null,
+    [spaceInCart, cartDatesInYear, year],
+  );
+
+  useEffect(() => {
+    if (spaceInCart && cartLine?.start_date && cartLine?.end_date) {
+      setPick({ start_date: cartLine.start_date, end_date: cartLine.end_date });
+    } else if (!spaceInCart) {
+      setPick(null);
+    }
+  }, [space.id, spaceInCart, cartLine?.start_date, cartLine?.end_date]);
+
   const pickValid = useMemo(() => {
     if (!pick?.start_date || !pick?.end_date) return false;
     const { y: ys, m: sm } = isoYearMonth(pick.start_date);
@@ -51,12 +81,19 @@ export function SpaceDetailReservationActions({ space }) {
     return contractMonthsInclusive(pick.start_date, pick.end_date) >= 5;
   }, [pick, year, occ]);
 
+  const hasRealModification = useMemo(() => {
+    if (!spaceInCart || !pickValid || !pick?.start_date || !pick?.end_date) return false;
+    if (!cartLine?.start_date || !cartLine?.end_date) return false;
+    return pick.start_date !== cartLine.start_date || pick.end_date !== cartLine.end_date;
+  }, [spaceInCart, pickValid, cartLine?.start_date, cartLine?.end_date, pick?.start_date, pick?.end_date]);
+
   useEffect(() => {
     setRangeCheckError("");
   }, [pick?.start_date, pick?.end_date]);
 
   const onConfirmDates = useCallback(async () => {
     if (!pickValid || !pick) return;
+    if (spaceInCart && !hasRealModification) return;
     setRangeCheckError("");
     setRangeCheckLoading(true);
     try {
@@ -72,7 +109,7 @@ export function SpaceDetailReservationActions({ space }) {
         );
         return;
       }
-      if (items.some((i) => String(i.id) === String(space.id))) {
+      if (spaceInCart) {
         updateItemDates(space.id, { start_date: pick.start_date, end_date: pick.end_date });
       } else {
         addItem(space, pick);
@@ -84,7 +121,7 @@ export function SpaceDetailReservationActions({ space }) {
     } finally {
       setRangeCheckLoading(false);
     }
-  }, [addItem, items, pick, pickValid, space, updateItemDates]);
+  }, [addItem, hasRealModification, pick, pickValid, space, spaceInCart, updateItemDates]);
 
   if (!authReady) {
     return (
@@ -130,10 +167,10 @@ export function SpaceDetailReservationActions({ space }) {
             Período de reserva
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600">
-            Elige los meses de <strong className="font-medium text-zinc-800">{year}</strong> para tu campaña. Cada clic
-            amplía el rango entre el mes más temprano y el más tardío que hayas tocado. Necesitas al menos{" "}
-            <strong className="font-medium text-zinc-800">5 meses</strong> seguidos en calendario. Los meses atenuados no
-            se pueden reservar.
+            Selecciona el rango disponible en <strong className="font-medium text-zinc-800">{year}</strong>: meses
+            seguidos en un solo bloque, con un mínimo de{" "}
+            <strong className="font-medium text-zinc-800">5 meses</strong>. Toca el calendario para marcar o ajustar el
+            intervalo; los meses en gris no se pueden reservar.
           </p>
         </div>
 
@@ -144,6 +181,8 @@ export function SpaceDetailReservationActions({ space }) {
             monthlyPriceUsd={space.monthly_price_usd}
             minMonths={5}
             onRangeChange={setPick}
+            pickSync={pick}
+            cartBaselineMonths={cartBaselineMonths}
           />
         </div>
 
@@ -158,7 +197,7 @@ export function SpaceDetailReservationActions({ space }) {
           ) : null}
           {spaceInCart ? (
             <div className="flex flex-col gap-3">
-              {pickValid ? (
+              {pickValid && hasRealModification ? (
                 <button
                   type="button"
                   disabled={rangeCheckLoading}
@@ -169,7 +208,7 @@ export function SpaceDetailReservationActions({ space }) {
                       : "inline-flex min-h-12 w-full cursor-wait items-center justify-center gap-2 rounded-[15px] border border-zinc-200 bg-zinc-100 px-6 py-3.5 text-base font-semibold text-zinc-500 sm:min-h-11 sm:text-sm"
                   }
                 >
-                  {rangeCheckLoading ? "Comprobando…" : "Guardar fechas de esta toma"}
+                  {rangeCheckLoading ? "Comprobando…" : "Guardar modificación"}
                   {!rangeCheckLoading ? <span aria-hidden>→</span> : null}
                 </button>
               ) : null}
@@ -184,6 +223,12 @@ export function SpaceDetailReservationActions({ space }) {
                 <p className="text-center text-xs text-zinc-500">
                   Elige un rango arriba para actualizar <strong className="font-medium text-zinc-700">solo esta toma</strong> en
                   el carrito; el resto de líneas conservan sus fechas.
+                </p>
+              ) : null}
+              {pickValid && !hasRealModification ? (
+                <p className="text-center text-xs text-zinc-500">
+                  El calendario muestra las fechas guardadas en el carrito. Cámbialas para habilitar{" "}
+                  <strong className="font-medium text-zinc-700">Guardar modificación</strong>.
                 </p>
               ) : null}
             </div>

@@ -26,7 +26,12 @@ import {
   adminSecondaryBtn,
   adminTableCard,
 } from "@/components/admin/adminFormStyles";
-import { SPACE_STATUS, SPACE_TYPES } from "@/components/admin/adminConstants";
+import {
+  SPACE_STATUS,
+  SPACE_TYPES,
+  spaceStatusLabel,
+  spaceStatusPillClassName,
+} from "@/components/admin/adminConstants";
 import { AdminSelect } from "@/components/admin/AdminSelect";
 import { CoverImageField } from "@/components/admin/CoverImageField";
 import { IconAdminGrid } from "@/components/admin/adminIcons";
@@ -48,6 +53,24 @@ import {
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
 
 const SPACE_STATUS_FILTERS = [{ v: "all", l: "Todos los estados" }, ...SPACE_STATUS];
+
+/** Nomenclatura: {código_centro}-T{número}[sufijo], ej. SCC-T1, SLC-T1A. */
+function validateTomaCodeForCenter(code, centerCode) {
+  const c = String(code || "")
+    .trim()
+    .toUpperCase();
+  const cc = String(centerCode || "")
+    .trim()
+    .toUpperCase();
+  if (!cc) return "El centro seleccionado no tiene código.";
+  if (!c) return "Indica el código de la toma.";
+  const esc = cc.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`^${esc}-T(\\d+)([A-Z]*)$`);
+  if (!re.test(c)) {
+    return `Usa el formato ${cc}-Tnúmero[sufijo], por ejemplo ${cc}-T1 o ${cc}-T1A.`;
+  }
+  return null;
+}
 
 function buildSpacePayload(fd, values) {
   const {
@@ -309,16 +332,27 @@ export function TomasAdminSection() {
       setErr("Selecciona un centro.");
       return;
     }
+    if (modal === "create") {
+      const centerRow = centers.find((x) => Number(x.id) === centerId);
+      const codeErr = validateTomaCodeForCenter(code, centerRow?.code);
+      if (codeErr) {
+        setErr(codeErr);
+        return;
+      }
+    }
     try {
       const v = valuesObject();
       if (modal === "create") {
         if (coverFile) {
           const fd = new FormData();
-          buildSpacePayload(fd, v);
+          buildSpacePayload(fd, { ...v, code: v.code.trim().toUpperCase() });
           fd.append("cover_image", coverFile);
           await authFetchForm("/api/admin/spaces/", { method: "POST", formData: fd });
         } else {
-          await authFetch("/api/admin/spaces/", { method: "POST", body: jsonSpaceBody(v, "create") });
+          await authFetch("/api/admin/spaces/", {
+            method: "POST",
+            body: jsonSpaceBody({ ...v, code: v.code.trim().toUpperCase() }, "create"),
+          });
         }
         setMsg("Toma creada.");
       } else if (modal === "edit" && selected) {
@@ -505,7 +539,13 @@ export function TomasAdminSection() {
                       <td className="max-w-[8rem] truncate px-3 py-2.5 text-xs text-zinc-600" title={s.shopping_center_name || undefined}>
                         {s.shopping_center_name || "—"}
                       </td>
-                      <td className="px-3 py-2.5 capitalize text-zinc-700">{s.status}</td>
+                      <td className="px-3 py-2.5">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${spaceStatusPillClassName(s.status)}`}
+                        >
+                          {spaceStatusLabel(s.status, s.status_label)}
+                        </span>
+                      </td>
                       <td className="px-3 py-2">
                         <AdminRowActions
                           onView={() => openView(s)}
@@ -551,7 +591,11 @@ export function TomasAdminSection() {
                                 </AdminDetailField>
                                 <AdminDetailField label="Tipo">{spaceTypeLabel(s.type)}</AdminDetailField>
                                 <AdminDetailField label="Estado">
-                                  <span className="capitalize">{s.status}</span>
+                                  <span
+                                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${spaceStatusPillClassName(s.status)}`}
+                                  >
+                                    {spaceStatusLabel(s.status, s.status_label)}
+                                  </span>
                                 </AdminDetailField>
                                 <AdminDetailField label="Precio USD / mes">
                                   <span className="tabular-nums">{s.monthly_price_usd}</span>
@@ -662,7 +706,13 @@ export function TomasAdminSection() {
             </div>
             <div>
               <p className={adminLabel}>Estado</p>
-              <p className="mt-1 text-sm capitalize text-zinc-800">{selected.status}</p>
+              <p className="mt-1">
+                <span
+                  className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${spaceStatusPillClassName(selected.status)}`}
+                >
+                  {spaceStatusLabel(selected.status, selected.status_label)}
+                </span>
+              </p>
             </div>
             <div className="sm:col-span-2">
               <p className={adminLabel}>Título</p>
@@ -746,7 +796,20 @@ export function TomasAdminSection() {
                 onChange={(e) => setCode(e.target.value)}
                 required
                 disabled={modal === "edit"}
+                autoComplete="off"
+                spellCheck={false}
               />
+              {modal === "create" ? (
+                <p className="mt-1 text-xs text-zinc-500">
+                  Formato{" "}
+                  <span className="font-mono text-zinc-600">
+                    {"{código del centro}-T{número}[sufijo]"}
+                  </span>
+                  . Ejemplos: <span className="font-mono">SCC-T1</span>,{" "}
+                  <span className="font-mono">SLC-T1A</span>. Debe empezar con el código del centro
+                  que elijas arriba.
+                </p>
+              ) : null}
             </div>
             <div>
               <label className={adminLabel} htmlFor="s-type">

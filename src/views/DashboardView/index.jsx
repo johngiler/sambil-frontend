@@ -10,19 +10,22 @@ import { TomasAdminSection } from "@/components/admin/sections/TomasAdminSection
 import { UsuariosAdminSection } from "@/components/admin/sections/UsuariosAdminSection";
 import { DashboardChromeSkeleton } from "@/components/admin/skeletons/DashboardChromeSkeleton";
 import { ResumenTabSkeleton } from "@/components/admin/skeletons/ResumenTabSkeleton";
+import { IconChevronLeft } from "@/components/layout/navIcons";
 import { useAuth } from "@/context/AuthContext";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
 import { authFetch } from "@/services/authApi";
 
-const SECTION_TITLE = {
-  resumen: "Resumen",
-  centros: "Centros comerciales",
-  tomas: "Tomas (espacios)",
-  usuarios: "Usuarios",
-  clientes: "Clientes empresa",
-  pedidos: "Pedidos",
+/** Etiqueta de rol como en el panel Usuarios (UserProfile). */
+const MARKETPLACE_ROLE_BADGE_LABEL = {
+  admin: "Administrador marketplace",
+  client: "Cliente marketplace",
 };
+
+function marketplaceRoleBadgeLabel(role) {
+  if (role == null || role === "") return "";
+  return MARKETPLACE_ROLE_BADGE_LABEL[role] ?? role;
+}
 
 function ResumenTab() {
   const [nCenters, setNCenters] = useState("—");
@@ -98,7 +101,7 @@ function ResumenTab() {
 }
 
 export default function DashboardView({ section = "resumen" }) {
-  const { authReady } = useAuth();
+  const { authReady, role } = useAuth();
 
   if (!authReady) {
     return (
@@ -108,19 +111,23 @@ export default function DashboardView({ section = "resumen" }) {
     );
   }
 
-  const title = SECTION_TITLE[section] ?? "Panel";
+  const roleBadge = marketplaceRoleBadgeLabel(role);
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="text-2xl font-bold text-zinc-900 sm:text-3xl">Panel de administración</h1>
-      <p className="mt-3">
-        <span
-          className="inline-flex max-w-full items-center rounded-full border border-orange-200/90 bg-gradient-to-r from-orange-50/95 via-amber-50/80 to-white px-4 py-1.5 text-sm font-semibold text-orange-950 shadow-sm ring-1 ring-orange-100/70"
-          aria-label={`Sección en gestión: ${title}`}
-        >
-          {title}
-        </span>
-      </p>
+      <header>
+        <h1 className="flex flex-wrap items-center gap-x-3 gap-y-2 text-2xl font-bold text-zinc-900 sm:text-3xl">
+          <span>Panel de administración</span>
+          {roleBadge ? (
+            <span
+              className="inline-flex max-w-full items-center rounded-full border border-orange-200/90 bg-gradient-to-r from-orange-50/95 via-amber-50/80 to-white px-4 py-1.5 text-sm font-semibold text-orange-950 shadow-sm ring-1 ring-orange-100/70"
+              title="Tu rol en este marketplace"
+            >
+              {roleBadge}
+            </span>
+          ) : null}
+        </h1>
+      </header>
 
       <div className="mt-8">
         {section === "resumen" ? <ResumenTab /> : null}
@@ -132,7 +139,11 @@ export default function DashboardView({ section = "resumen" }) {
       </div>
 
       <p className="mt-10 text-sm text-zinc-500 lg:hidden">
-        <Link href="/" className="font-medium text-zinc-800 underline-offset-4 hover:underline">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 font-medium text-zinc-800 underline-offset-4 hover:underline"
+        >
+          <IconChevronLeft className="text-zinc-600" />
           Volver al marketplace
         </Link>
       </p>

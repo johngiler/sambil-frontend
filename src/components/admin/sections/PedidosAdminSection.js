@@ -11,6 +11,8 @@ import {
   adminDetailEmpty,
 } from "@/components/admin/AdminAccordionDetail";
 import { AdminAccordionToggle } from "@/components/admin/AdminAccordionToggle";
+import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
+import { AdminRowActions } from "@/components/admin/AdminRowActions";
 import {
   adminPanelCard,
   adminPrimaryBtn,
@@ -25,7 +27,8 @@ import {
 } from "@/components/admin/AdminListFilters";
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
 import { AdminSelect } from "@/components/admin/AdminSelect";
-import { IconAdminClipboard } from "@/components/admin/adminIcons";
+import { clientStatusLabel, clientStatusPillClassName } from "@/components/admin/adminConstants";
+import { IconAdminClipboard, IconAdminRefresh } from "@/components/admin/adminIcons";
 import { PedidosSectionSkeleton } from "@/components/admin/skeletons/PedidosSectionSkeleton";
 import { useAuth } from "@/context/AuthContext";
 import { EmptyState, EmptyStateIconClipboard } from "@/components/ui/EmptyState";
@@ -33,12 +36,12 @@ import { ordersListPath } from "@/lib/adminListQuery";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
-import { authFetch } from "@/services/authApi";
+import { authFetch, mediaAbsoluteUrl } from "@/services/authApi";
 
 const ORDER_STATUS = [
   { v: "draft", l: "Borrador" },
   { v: "submitted", l: "Enviada" },
-  { v: "client_approved", l: "Cliente aprobado" },
+  { v: "client_approved", l: "Solicitud aprobada" },
   { v: "art_approved", l: "Arte aprobado" },
   { v: "invoiced", l: "Facturada" },
   { v: "paid", l: "Pagada" },
@@ -60,12 +63,35 @@ function formatPedidoAlta(iso) {
   });
 }
 
+/** Monto en USD con dos decimales (sin símbolo). */
+function formatUsdAmount(value) {
+  if (value == null || value === "") return "—";
+  const n = typeof value === "number" ? value : Number(String(value).replace(",", "."));
+  if (Number.isNaN(n)) return String(value);
+  return n.toLocaleString("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function formatLineDate(d) {
+  if (!d) return "—";
+  const s = String(d);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, m, day] = s.split("-").map(Number);
+    return new Date(y, m - 1, day).toLocaleDateString("es-VE", { dateStyle: "medium" });
+  }
+  return s;
+}
+
 function clientDisplayName(o) {
   return (
     o.client_detail?.company_name ||
     o.client_company_name ||
     ""
   ).trim();
+}
+
+/** Solo borrador puede borrarse (misma regla que el API). */
+function orderIsDeletable(o) {
+  return o?.status === "draft";
 }
 
 export function PedidosAdminSection() {
@@ -75,6 +101,7 @@ export function PedidosAdminSection() {
   const [page, setPage] = useState(1);
   const [ready, setReady] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
+  const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [filterQ, setFilterQ] = useState("");
@@ -126,6 +153,21 @@ export function PedidosAdminSection() {
     }
   }
 
+  async function executeDeleteOrder(orderId) {
+    setErr("");
+    setMsg("");
+    try {
+      await authFetch(`/api/orders/${orderId}/`, { method: "DELETE" });
+      setMsg("Pedido eliminado.");
+      if (expandedId === orderId) setExpandedId(null);
+      await reloadOrders();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Error al eliminar");
+    } finally {
+      setDeleteTargetId(null);
+    }
+  }
+
   useEffect(() => {
     setExpandedId(null);
   }, [filterQ, filterOrderStatus, page]);
@@ -165,8 +207,13 @@ export function PedidosAdminSection() {
             </p>
           </div>
         </div>
-        <button type="button" className={adminPrimaryBtn} onClick={() => reloadOrders()}>
-          Actualizar lista
+        <button
+          type="button"
+          className={`${adminPrimaryBtn} inline-flex items-center justify-center gap-2`}
+          onClick={() => reloadOrders()}
+        >
+          <IconAdminRefresh className="!h-[1.125rem] !w-[1.125rem]" />
+          Actualizar
         </button>
       </div>
 
@@ -181,7 +228,7 @@ export function PedidosAdminSection() {
         <EmptyState
           icon={<EmptyStateIconClipboard />}
           title="No hay pedidos"
-          description="Cuando lleguen solicitudes de reserva desde el sitio, aparecerán aquí. Puedes pulsar «Actualizar lista» cuando quieras ver los últimos datos."
+          description="Cuando lleguen solicitudes de reserva desde el sitio, aparecerán aquí. Puedes pulsar «Actualizar» cuando quieras ver los últimos datos."
         />
       ) : (
         <>
@@ -234,6 +281,7 @@ export function PedidosAdminSection() {
                 <th className="px-3 py-2">Cliente</th>
                 <th className="px-3 py-2">Estado</th>
                 <th className="px-3 py-2">Total USD</th>
+                <th className="whitespace-nowrap px-2 py-2 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -271,10 +319,25 @@ export function PedidosAdminSection() {
                         />
                       </div>
                     </td>
-                    <td className="px-3 py-2 tabular-nums">{o.total_amount}</td>
+                    <td className="px-3 py-2">
+                      <span className="font-semibold tabular-nums text-zinc-900">
+                        ${formatUsdAmount(o.total_amount)}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-2 py-2 align-middle text-right">
+                      <AdminRowActions
+                        showEdit={false}
+                        viewLabel="Ver detalle del pedido"
+                        deleteLabel="Eliminar pedido"
+                        showDelete={orderIsDeletable(o)}
+                        deleteDisabledTitle="Solo se pueden eliminar pedidos en borrador."
+                        onView={() => setExpandedId((id) => (id === o.id ? null : o.id))}
+                        onDelete={() => setDeleteTargetId(o.id)}
+                      />
+                    </td>
                   </tr>
                   {open ? (
-                    <AdminAccordionRowPanel colSpan={5} panelId={panelId} fullWidthContent>
+                    <AdminAccordionRowPanel colSpan={6} panelId={panelId} fullWidthContent>
                       <AdminAccordionDetailHeader
                         badgeText={formatPedidoAlta(o.created_at)}
                         titleLabel="Pedido"
@@ -285,8 +348,10 @@ export function PedidosAdminSection() {
                       <div className="mt-5 grid w-full gap-6 lg:grid-cols-2 lg:gap-8">
                         <AdminDetailSection panelId={panelId} sectionId="meta" title="Datos del pedido">
                           <AdminDetailInset>
-                            <AdminDetailField label="Total">
-                              <span className="tabular-nums font-medium text-zinc-900">{o.total_amount}</span>
+                            <AdminDetailField label="Total (USD)">
+                              <span className="text-lg font-bold tabular-nums text-zinc-900">
+                                ${formatUsdAmount(o.total_amount)}
+                              </span>
                             </AdminDetailField>
                             <AdminDetailField label="Creada">
                               {o.created_at
@@ -311,31 +376,68 @@ export function PedidosAdminSection() {
                             {(o.items || []).length === 0 ? (
                               <p className="text-sm text-zinc-400">Sin líneas en este pedido.</p>
                             ) : (
-                              <ul className="space-y-2">
-                                {o.items.map((it) => (
-                                  <li
-                                    key={it.id}
-                                    className={`${ROUNDED_CONTROL} border border-zinc-200 bg-white px-3 py-2 text-xs text-zinc-800`}
-                                  >
-                                    {it.ad_space_code ? (
-                                      <span className="font-mono">{it.ad_space_code}</span>
-                                    ) : it.ad_space_title ? (
-                                      <span className="font-medium text-zinc-900">{it.ad_space_title}</span>
-                                    ) : (
-                                      <span className="text-zinc-600">Toma</span>
-                                    )}
-                                    {it.ad_space_code && it.ad_space_title ? (
-                                      <>
-                                        {" · "}
-                                        <span className="font-medium text-zinc-900">{it.ad_space_title}</span>
-                                      </>
-                                    ) : null}
-                                    {" · "}
-                                    {it.start_date} → {it.end_date}
-                                    {" · "}
-                                    <span className="tabular-nums">${it.subtotal} USD</span>
-                                  </li>
-                                ))}
+                              <ul className="space-y-3">
+                                {o.items.map((it) => {
+                                  const coverSrc = it.ad_space_cover_image
+                                    ? mediaAbsoluteUrl(it.ad_space_cover_image)
+                                    : "";
+                                  const centerLine = [it.shopping_center_code, it.shopping_center_name]
+                                    .filter(Boolean)
+                                    .join(" · ");
+                                  return (
+                                    <li
+                                      key={it.id}
+                                      className={`${ROUNDED_CONTROL} flex gap-3 border border-zinc-200 bg-white p-3 sm:gap-4`}
+                                    >
+                                      <div
+                                        className="relative h-[4.5rem] w-[6.5rem] shrink-0 overflow-hidden rounded-xl border border-zinc-200/90 bg-zinc-100 sm:h-24 sm:w-32"
+                                        aria-hidden={!coverSrc}
+                                      >
+                                        {coverSrc ? (
+                                          <img
+                                            src={coverSrc}
+                                            alt={
+                                              it.ad_space_title
+                                                ? `Portada: ${it.ad_space_title}`
+                                                : it.ad_space_code
+                                                  ? `Portada toma ${it.ad_space_code}`
+                                                  : "Portada de la toma"
+                                            }
+                                            className="h-full w-full object-cover"
+                                          />
+                                        ) : (
+                                          <div className="flex h-full w-full items-center justify-center px-1 text-center text-[10px] font-medium uppercase leading-tight tracking-wide text-zinc-400">
+                                            Sin imagen
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="min-w-0 flex-1 space-y-1.5 text-sm text-zinc-800">
+                                        <p className="font-mono text-xs font-semibold tracking-tight text-zinc-900">
+                                          {it.ad_space_code || "—"}
+                                        </p>
+                                        <p className="font-medium leading-snug text-zinc-900">
+                                          {it.ad_space_title || "Toma"}
+                                        </p>
+                                        {centerLine ? (
+                                          <p className="text-xs text-zinc-600">
+                                            <span className="font-semibold text-zinc-700">Centro: </span>
+                                            {centerLine}
+                                          </p>
+                                        ) : null}
+                                        <p className="text-xs text-zinc-600">
+                                          <span className="font-semibold text-zinc-700">Contrato: </span>
+                                          {formatLineDate(it.start_date)} → {formatLineDate(it.end_date)}
+                                        </p>
+                                        <p className="pt-0.5 text-sm">
+                                          <span className="font-semibold text-zinc-700">Subtotal: </span>
+                                          <span className="font-bold tabular-nums text-zinc-900">
+                                            ${formatUsdAmount(it.subtotal)} USD
+                                          </span>
+                                        </p>
+                                      </div>
+                                    </li>
+                                  );
+                                })}
                               </ul>
                             )}
                           </AdminDetailInset>
@@ -379,8 +481,19 @@ export function PedidosAdminSection() {
                                     adminDetailEmpty("")
                                   )}
                                 </AdminDetailField>
-                                <AdminDetailField label="Estado en sistema">
-                                  <span className="capitalize">{o.client_detail.status || "—"}</span>
+                                <AdminDetailField label="Estado de la ficha (cliente)">
+                                  {o.client_detail.status ? (
+                                    <span
+                                      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${clientStatusPillClassName(o.client_detail.status)}`}
+                                    >
+                                      {clientStatusLabel(
+                                        o.client_detail.status,
+                                        o.client_detail.status_label,
+                                      )}
+                                    </span>
+                                  ) : (
+                                    adminDetailEmpty("")
+                                  )}
                                 </AdminDetailField>
                               </div>
                             ) : (
@@ -407,6 +520,22 @@ export function PedidosAdminSection() {
           <AdminListPagination page={page} totalCount={totalCount} onPageChange={setPage} />
         </>
       )}
+
+      <AdminConfirmDialog
+        open={deleteTargetId != null}
+        onClose={() => setDeleteTargetId(null)}
+        title="Eliminar pedido"
+        confirmLabel="Eliminar"
+        onConfirm={async () => {
+          if (deleteTargetId == null) return;
+          await executeDeleteOrder(deleteTargetId);
+        }}
+      >
+        <p>
+          ¿Eliminar el pedido #{deleteTargetId}? Se borrarán también sus líneas e historial de estados. Esta acción no
+          se puede deshacer.
+        </p>
+      </AdminConfirmDialog>
     </div>
   );
 }

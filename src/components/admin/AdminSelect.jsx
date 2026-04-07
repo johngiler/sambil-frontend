@@ -37,6 +37,8 @@ export function AdminSelect({
   const minH = compact ? 34 : 40;
   const focusBorder = "color-mix(in srgb, var(--mp-primary) 50%, #d4d4d8)";
   const focusRing = "0 0 0 2px color-mix(in srgb, var(--mp-primary) 15%, transparent)";
+  const optionSelectedBg = "var(--mp-primary)";
+  const optionFocusedBg = "color-mix(in srgb, var(--mp-primary) 6%, #f4f4f5)";
 
   const styles = {
     control: (base, state) => ({
@@ -66,9 +68,9 @@ export function AdminSelect({
       borderRadius: Math.max(0, r - 4),
       fontSize: compact ? "0.8125rem" : "0.875rem",
       backgroundColor: state.isSelected
-        ? "var(--mp-primary)"
+        ? optionSelectedBg
         : state.isFocused
-          ? "color-mix(in srgb, var(--mp-primary) 6%, #f4f4f5)"
+          ? optionFocusedBg
           : "#fff",
       color: state.isSelected ? "#fff" : "#18181b",
       cursor: "pointer",

@@ -8,7 +8,6 @@ import {
   IconBuilding,
   IconChevronDown,
   IconLogout,
-  IconPay,
   IconUser,
 } from "@/components/layout/navIcons";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
@@ -96,16 +95,10 @@ export function UserAccountMenu({
             </Link>
           ) : null}
           {showMiEmpresa ? (
-            <>
-              <Link href={empresaHref} role="menuitem" className={menuItem} onClick={handleNav}>
-                <IconBuilding className="text-zinc-400" />
-                Mi empresa
-              </Link>
-              <Link href="/cuenta/pedidos" role="menuitem" className={menuItem} onClick={handleNav}>
-                <IconPay className="text-zinc-400" />
-                Mis pedidos
-              </Link>
-            </>
+            <Link href={empresaHref} role="menuitem" className={menuItem} onClick={handleNav}>
+              <IconBuilding className="text-zinc-400" />
+              Mi empresa
+            </Link>
           ) : null}
           <button
             type="button"

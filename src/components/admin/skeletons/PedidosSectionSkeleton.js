@@ -21,6 +21,9 @@ export function PedidosSectionSkeleton() {
             <th className="px-3 py-3">
               <Skeleton className="h-3 w-16" />
             </th>
+            <th className="px-2 py-3 text-right">
+              <Skeleton className="ml-auto h-3 w-14" />
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -40,6 +43,12 @@ export function PedidosSectionSkeleton() {
               </td>
               <td className="px-3 py-3">
                 <Skeleton className="h-4 w-16" />
+              </td>
+              <td className="px-2 py-2">
+                <div className="flex justify-end gap-1">
+                  <Skeleton className={`h-8 w-8 ${ROUNDED_CONTROL}`} />
+                  <Skeleton className={`h-8 w-8 ${ROUNDED_CONTROL}`} />
+                </div>
               </td>
             </tr>
           ))}
