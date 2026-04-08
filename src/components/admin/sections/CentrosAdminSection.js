@@ -94,7 +94,7 @@ export function CentrosAdminSection() {
   const filtersActive = filterQ.trim() !== "" || filterActive !== "all";
 
   const [name, setName] = useState("");
-  const [code, setCode] = useState("");
+  const [slug, setSlug] = useState("");
   const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
   const [country, setCountry] = useState("Venezuela");
@@ -155,7 +155,7 @@ export function CentrosAdminSection() {
   function openCreate() {
     setSelected(null);
     setName("");
-    setCode("");
+    setSlug("");
     setCity("");
     setAddress("");
     setCountry("Venezuela");
@@ -183,7 +183,7 @@ export function CentrosAdminSection() {
     if (!c) return;
     setSelected(c);
     setName(c.name);
-    setCode(c.code);
+    setSlug(c.slug || "");
     setCity(c.city || "");
     setAddress(c.address || "");
     setCountry(c.country?.trim() || "Venezuela");
@@ -226,7 +226,7 @@ export function CentrosAdminSection() {
         if (coverFile) {
           const fd = new FormData();
           fd.append("name", name.trim());
-          fd.append("code", code.trim());
+          fd.append("slug", slug.trim());
           fd.append("city", city.trim());
           fd.append("district", district.trim());
           fd.append("address", address.trim());
@@ -252,7 +252,7 @@ export function CentrosAdminSection() {
             method: "POST",
             body: {
               name: name.trim(),
-              code: code.trim(),
+              slug: slug.trim(),
               city: city.trim(),
               ...extra,
               address: address.trim(),
@@ -269,7 +269,7 @@ export function CentrosAdminSection() {
         if (coverFile) {
           const fd = new FormData();
           fd.append("name", name.trim());
-          fd.append("code", code.trim());
+          fd.append("slug", slug.trim());
           fd.append("city", city.trim());
           fd.append("district", district.trim());
           fd.append("address", address.trim());
@@ -295,7 +295,7 @@ export function CentrosAdminSection() {
             method: "PATCH",
             body: {
               name: name.trim(),
-              code: code.trim(),
+              slug: slug.trim(),
               city: city.trim(),
               ...extra,
               address: address.trim(),
@@ -399,7 +399,7 @@ export function CentrosAdminSection() {
               id="centros-filter-q"
               value={filterQ}
               onChange={setFilterQ}
-              placeholder="Código, nombre, ciudad, zona…"
+              placeholder="Slug, nombre, ciudad, zona…"
             />
             <AdminFilterSelect
               id="centros-filter-active"
@@ -444,7 +444,7 @@ export function CentrosAdminSection() {
                     Portada
                   </th>
                   <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Código
+                    Slug
                   </th>
                   <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Nombre
@@ -503,7 +503,7 @@ export function CentrosAdminSection() {
                           )}
                         </td>
                         <td className="px-3 py-2.5 font-mono text-xs text-zinc-800">
-                          {c.code}
+                          {c.slug}
                         </td>
                         <td className="px-3 py-2.5 font-medium text-zinc-900">
                           {c.name}
@@ -534,15 +534,15 @@ export function CentrosAdminSection() {
                         <AdminAccordionRowPanel colSpan={7} panelId={panelId}>
                           <AdminAccordionDetailHeader
                             badgeText={
-                              typeof c.code === "string" && c.code.trim() !== ""
-                                ? c.code.trim().toUpperCase()
+                              typeof c.slug === "string" && c.slug.trim() !== ""
+                                ? c.slug.trim()
                                 : undefined
                             }
                             titleLabel="Centro en sistema"
                             titleLine={
                               <p className="truncate text-sm font-medium text-zinc-900">
                                 <span className="font-mono text-zinc-600">
-                                  {c.code}
+                                  {c.slug}
                                 </span>
                                 <span
                                   className="mx-2 text-zinc-300"
@@ -657,7 +657,7 @@ export function CentrosAdminSection() {
               : "Detalle del centro"
         }
         subtitle={
-          modal === "view" ? `${selected?.code} · ${selected?.name}` : undefined
+          modal === "view" ? `${selected?.slug} · ${selected?.name}` : undefined
         }
         wide={modal !== "view"}
         footer={
@@ -712,8 +712,8 @@ export function CentrosAdminSection() {
               <p className="mt-1 font-medium text-zinc-900">{selected.name}</p>
             </div>
             <div>
-              <p className={adminLabel}>Código</p>
-              <p className="mt-1 font-mono text-zinc-800">{selected.code}</p>
+              <p className={adminLabel}>Slug (URL)</p>
+              <p className="mt-1 font-mono text-zinc-800">{selected.slug}</p>
             </div>
             <div>
               <p className={adminLabel}>Ciudad</p>
@@ -845,22 +845,22 @@ export function CentrosAdminSection() {
               />
             </div>
             <div>
-              <label className={adminLabel} htmlFor="c-code">
-                Código
+              <label className={adminLabel} htmlFor="c-slug">
+                Slug (URL)
               </label>
               <input
-                id="c-code"
+                id="c-slug"
                 className={adminField}
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
                 required
-                disabled={modal === "edit"}
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="solo-minusculas-numeros-guiones"
               />
-              {modal === "edit" ? (
-                <p className="mt-1 text-xs text-zinc-500">
-                  El código no se puede cambiar.
-                </p>
-              ) : null}
+              <p className="mt-1 text-xs text-zinc-500">
+                Identificador en enlaces públicos (?center=, /m/…, API). Solo letras minúsculas, números y guiones.
+              </p>
             </div>
             <div>
               <label className={adminLabel} htmlFor="c-city">

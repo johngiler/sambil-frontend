@@ -47,7 +47,7 @@ export function HomeSpacesCatalogClient() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const centerCode = useMemo(() => (searchParams.get("center") || "").trim(), [searchParams]);
+  const centerSlug = useMemo(() => (searchParams.get("center") || "").trim(), [searchParams]);
 
   const [spaces, setSpaces] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -62,21 +62,21 @@ export function HomeSpacesCatalogClient() {
   const debouncedQuery = useDebouncedValue(query, 400);
 
   const filtersActive = useMemo(
-    () => selectedCity.trim() !== "" || query.trim() !== "" || centerCode !== "",
-    [selectedCity, query, centerCode],
+    () => selectedCity.trim() !== "" || query.trim() !== "" || centerSlug !== "",
+    [selectedCity, query, centerSlug],
   );
 
   const loadFacets = useCallback(async () => {
     setFacetsError(null);
     try {
-      const data = await getSpacesLocationFacets({ search: debouncedQuery, center: centerCode });
+      const data = await getSpacesLocationFacets({ search: debouncedQuery, center: centerSlug });
       const total = typeof data.total === "number" ? data.total : 0;
       const items = Array.isArray(data.items) ? data.items : [];
       setFacets({ total, items });
     } catch (e) {
       setFacetsError(e instanceof Error ? e : new Error(String(e)));
     }
-  }, [debouncedQuery, centerCode]);
+  }, [debouncedQuery, centerSlug]);
 
   const loadPage = useCallback(async () => {
     setLoading(true);
@@ -85,7 +85,7 @@ export function HomeSpacesCatalogClient() {
       const { results, count } = await getSpacesCatalogPage({
         search: debouncedQuery,
         city: selectedCity,
-        center: centerCode,
+        center: centerSlug,
         page,
       });
       setSpaces(Array.isArray(results) ? results : []);
@@ -98,7 +98,7 @@ export function HomeSpacesCatalogClient() {
       setLoading(false);
       setDataReady(true);
     }
-  }, [debouncedQuery, selectedCity, centerCode, page]);
+  }, [debouncedQuery, selectedCity, centerSlug, page]);
 
   useEffect(() => {
     loadFacets();
@@ -110,7 +110,7 @@ export function HomeSpacesCatalogClient() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedQuery, selectedCity, centerCode]);
+  }, [debouncedQuery, selectedCity, centerSlug]);
 
   function clearFilters() {
     setSelectedCity("");

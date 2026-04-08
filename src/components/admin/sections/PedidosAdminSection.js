@@ -483,13 +483,13 @@ export function PedidosAdminSection() {
                                     ? mediaAbsoluteUrl(it.ad_space_cover_image)
                                     : "";
                                   const centerName = (it.shopping_center_name || "").trim();
-                                  const centerCode = (it.shopping_center_code || "").trim();
+                                  const centerSlug = (it.shopping_center_slug || "").trim();
                                   const centerCityRaw = (it.shopping_center_city || "").trim();
                                   const centerCityLine = subtitleCityAfterCenterName(
                                     centerName,
                                     centerCityRaw,
                                   );
-                                  const centerHrefQ = centerCode || centerName;
+                                  const centerHrefQ = centerSlug || centerName;
                                   return (
                                     <li
                                       key={it.id}

@@ -197,10 +197,10 @@ export async function fetchAllPagesWithJson(fetchJsonFn, firstPath) {
   return all;
 }
 
-export async function getSpaces(centerCode) {
+export async function getSpaces(centerSlug) {
   const q =
-    centerCode != null && String(centerCode).trim() !== ""
-      ? `?center=${encodeURIComponent(centerCode)}`
+    centerSlug != null && String(centerSlug).trim() !== ""
+      ? `?center=${encodeURIComponent(String(centerSlug).trim())}`
       : "";
   const paths = [`/api/spaces${q}`, `/api/catalog/spaces${q}`];
   for (const path of paths) {
@@ -327,12 +327,12 @@ export async function getSpacesLocationFacets({ search = "", center = "" } = {})
   throw last ?? new Error("No hubo respuesta del servicio");
 }
 
-/** Detalle público por código (`SCC`, `SLC`, …). */
-export async function getCenterByCode(code) {
-  const c = String(code || "").trim().toUpperCase();
-  if (!c) throw new Error("Código de centro vacío");
-  const path = `/api/centers/${encodeURIComponent(c)}/`;
-  const pathCatalog = `/api/catalog/centers/${encodeURIComponent(c)}/`;
+/** Detalle público por slug del centro comercial (URL amigable). */
+export async function getCenterBySlug(slug) {
+  const s = String(slug || "").trim();
+  if (!s) throw new Error("Slug de centro vacío");
+  const path = `/api/centers/${encodeURIComponent(s)}/`;
+  const pathCatalog = `/api/catalog/centers/${encodeURIComponent(s)}/`;
   return fetchJsonFirst([path, pathCatalog]);
 }
 

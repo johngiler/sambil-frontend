@@ -1,14 +1,14 @@
 /**
- * Metadatos de centro por código cuando no hay API (offline).
- * En operación normal los títulos vienen de `/api/centers/{code}/`.
+ * Metadatos de centro por slug cuando no hay API (offline).
+ * En operación normal los títulos vienen de `/api/centers/{slug}/`.
  */
 const FALLBACK_MALL_META = {};
 
 /**
- * @param {string} code
+ * @param {string} slug
  * @returns {{ title: string, subtitle: string } | null}
  */
-export function getMallMeta(code) {
-  const u = String(code || "").toUpperCase();
-  return FALLBACK_MALL_META[u] ?? null;
+export function getMallMeta(slug) {
+  const key = String(slug || "").trim().toLowerCase();
+  return FALLBACK_MALL_META[key] ?? null;
 }

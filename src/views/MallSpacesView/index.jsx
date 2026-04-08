@@ -4,15 +4,15 @@ import { notFound } from "next/navigation";
 import { SpaceCardWithCart } from "@/components/space/SpaceCardWithCart";
 import { EmptyState, EmptyStateIconPhoto } from "@/components/ui/EmptyState";
 import { getMallMeta } from "@/lib/catalog";
-import { getCenterByCode, getSpaces } from "@/services/api";
+import { getCenterBySlug, getSpaces } from "@/services/api";
 
-export default async function MallSpacesView({ centerCode }) {
-  const upper = String(centerCode || "").toUpperCase();
-  if (!upper) notFound();
+export default async function MallSpacesView({ centerSlug }) {
+  const slug = String(centerSlug || "").trim();
+  if (!slug) notFound();
 
   let center;
   try {
-    center = await getCenterByCode(upper);
+    center = await getCenterBySlug(slug);
   } catch {
     notFound();
   }
@@ -21,7 +21,7 @@ export default async function MallSpacesView({ centerCode }) {
     notFound();
   }
 
-  let meta = getMallMeta(upper);
+  let meta = getMallMeta(slug);
   if (center) {
     const name = typeof center.name === "string" ? center.name : "";
     const display =
@@ -29,14 +29,18 @@ export default async function MallSpacesView({ centerCode }) {
     if (display) {
       meta = { title: display, subtitle: name && name !== display ? name : "" };
     } else {
-      meta = { title: name || upper, subtitle: "" };
+      meta = { title: name || slug, subtitle: "" };
     }
   }
   if (!meta?.title) {
     notFound();
   }
 
-  const spaces = await getSpaces(upper);
+  const publicSlug =
+    typeof center.slug === "string" && center.slug.trim() !== ""
+      ? center.slug.trim()
+      : slug;
+  const spaces = await getSpaces(publicSlug);
 
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-transparent">

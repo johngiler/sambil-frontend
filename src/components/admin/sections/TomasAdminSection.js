@@ -68,12 +68,12 @@ const SPACE_STATUS_FILTERS = [{ v: "all", l: "Todos los estados" }, ...SPACE_STA
 
 function TomaCentroComercialValue({ s }) {
   const name = (s?.shopping_center_name || "").trim();
-  const code = (s?.shopping_center_code || "").trim();
+  const slug = (s?.shopping_center_slug || "").trim();
   const cityLine = subtitleCityAfterCenterName(name, s?.shopping_center_city);
   if (!name) return adminDetailEmpty("");
   return (
     <>
-      <AdminDashboardFilterLink href={dashboardCentrosSearchHref(code || name)}>
+      <AdminDashboardFilterLink href={dashboardCentrosSearchHref(slug || name)}>
         {name}
       </AdminDashboardFilterLink>
       {cityLine ? <span className="mt-0.5 block text-xs text-zinc-500">{cityLine}</span> : null}
@@ -81,20 +81,13 @@ function TomaCentroComercialValue({ s }) {
   );
 }
 
-/** Nomenclatura: {código_centro}-T{número}[sufijo], ej. SCC-T1, SLC-T1A. */
-function validateTomaCodeForCenter(code, centerCode) {
-  const c = String(code || "")
-    .trim()
-    .toUpperCase();
-  const cc = String(centerCode || "")
-    .trim()
-    .toUpperCase();
-  if (!cc) return "El centro comercial seleccionado no tiene código.";
+/** Código de toma: prefijo-T{número}[sufijo]; el prefijo no depende del centro. */
+function validateTomaCodeFormat(code) {
+  const c = String(code || "").trim().toUpperCase();
   if (!c) return "Indica el código de la toma.";
-  const esc = cc.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const re = new RegExp(`^${esc}-T(\\d+)([A-Z]*)$`);
-  if (!re.test(c)) {
-    return `Usa el formato ${cc}-Tnúmero[sufijo], por ejemplo ${cc}-T1 o ${cc}-T1A.`;
+  if (c.length > 32) return "El código no puede superar 32 caracteres.";
+  if (!/^[A-Z0-9][A-Z0-9_-]*-T[0-9]+[A-Z]*$/.test(c)) {
+    return "Usa un prefijo (letras, números, guiones o guiones bajos), luego «-T», un número y, si aplica, letras (ej. SCC-T1, SLC-T1A).";
   }
   return null;
 }
@@ -321,8 +314,7 @@ export function TomasAdminSection() {
       return;
     }
     if (modal === "create") {
-      const centerRow = centers.find((x) => Number(x.id) === centerId);
-      const codeErr = validateTomaCodeForCenter(code, centerRow?.code);
+      const codeErr = validateTomaCodeFormat(code);
       if (codeErr) {
         setErr(codeErr);
         return;
@@ -553,7 +545,7 @@ export function TomasAdminSection() {
                         {s.shopping_center_name?.trim() ? (
                           <AdminDashboardFilterLink
                             href={dashboardCentrosSearchHref(
-                              s.shopping_center_code || s.shopping_center_name,
+                              s.shopping_center_slug || s.shopping_center_name,
                             )}
                             className="block truncate"
                             title={s.shopping_center_name}
@@ -772,7 +764,7 @@ export function TomasAdminSection() {
               </label>
               <AdminSelect
                 id="s-center"
-                options={centers.map((c) => ({ v: c.id, l: `${c.code} — ${c.name}` }))}
+                options={centers.map((c) => ({ v: c.id, l: `${c.slug} — ${c.name}` }))}
                 value={shoppingCenter}
                 onChange={(v) => setShoppingCenter(v === "" || v == null ? "" : String(v))}
                 placeholder="Selecciona un centro comercial…"
@@ -798,11 +790,11 @@ export function TomasAdminSection() {
                 <p className="mt-1 text-xs text-zinc-500">
                   Formato{" "}
                   <span className="font-mono text-zinc-600">
-                    {"{código del centro comercial}-T{número}[sufijo]"}
+                    {"{prefijo}-T{número}[sufijo]"}
                   </span>
                   . Ejemplos: <span className="font-mono">SCC-T1</span>,{" "}
-                  <span className="font-mono">SLC-T1A</span>. Debe empezar con el código del centro comercial
-                  que elijas arriba.
+                  <span className="font-mono">SLC-T1A</span>. El prefijo es el código único de la toma (no tiene
+                  que coincidir con el slug del centro).
                 </p>
               ) : null}
             </div>

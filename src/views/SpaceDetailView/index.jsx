@@ -70,16 +70,16 @@ export default async function SpaceDetailView({ spaceId }) {
     typeof space.shopping_center_name === "string" && space.shopping_center_name.trim() !== ""
       ? space.shopping_center_name.trim()
       : "";
-  const centerCode =
-    typeof space.shopping_center_code === "string" && space.shopping_center_code.trim() !== ""
-      ? space.shopping_center_code.trim()
+  const centerSlug =
+    typeof space.shopping_center_slug === "string" && space.shopping_center_slug.trim() !== ""
+      ? space.shopping_center_slug.trim()
       : "";
   const cityRaw =
     typeof space.shopping_center_city === "string" && space.shopping_center_city.trim() !== ""
       ? space.shopping_center_city.trim()
       : null;
   const cityLine = subtitleCityAfterCenterName(centerName, cityRaw);
-  const homeFilteredByCenterHref = centerCode ? `/?center=${encodeURIComponent(centerCode)}` : "/";
+  const homeFilteredByCenterHref = centerSlug ? `/?center=${encodeURIComponent(centerSlug)}` : "/";
   const coverUrl = spaceCoverUrlForUi(space);
   const galleryUrls =
     Array.isArray(space.gallery_images) && space.gallery_images.length > 0
@@ -111,12 +111,12 @@ export default async function SpaceDetailView({ spaceId }) {
         </h1>
         <p className="mt-3 text-base text-zinc-600">
           <span className="font-medium text-zinc-700">Centro comercial: </span>
-          {centerCode ? (
+          {centerSlug ? (
             <Link
               href={homeFilteredByCenterHref}
               className="font-medium mp-text-brand no-underline underline-offset-2 transition-colors hover:underline hover:decoration-[color-mix(in_srgb,var(--mp-primary)_85%,transparent)]"
             >
-              {centerName || centerCode}
+              {centerName || centerSlug}
             </Link>
           ) : (
             <span className="font-medium text-zinc-900">{centerName || "—"}</span>

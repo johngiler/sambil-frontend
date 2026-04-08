@@ -17,18 +17,21 @@ function formatUsdMonthly(n) {
 }
 
 /**
- * Tarjeta de toma en catálogo de centro (precio acento, badge ciudad, franja de 12 meses).
+ * Tarjeta de toma en catálogo (título a ancho completo; fila estado / precio; badge centro + ciudad).
  * @param {{ space: Record<string, unknown>, availabilityLabel?: "free" | "occupied", showFooterLink?: boolean, inCart?: boolean }} props
  */
 export function SpaceCard({ space, availabilityLabel = "free", showFooterLink = true, inCart = false }) {
   const cover = spaceCoverUrlForUi(space);
-  const cityRaw =
-    typeof space.shopping_center_city === "string" && space.shopping_center_city.trim() !== ""
-      ? space.shopping_center_city.trim()
-      : typeof space.shopping_center_name === "string"
-        ? space.shopping_center_name
-        : "";
-  const city = cityRaw;
+  const centerName =
+    typeof space.shopping_center_name === "string" ? space.shopping_center_name.trim() : "";
+  const cityLine =
+    typeof space.shopping_center_city === "string" ? space.shopping_center_city.trim() : "";
+  /** Ciudad bajo el nombre del CC cuando aporta contexto y no duplica el nombre. */
+  const showCitySubline =
+    cityLine !== "" &&
+    centerName !== "" &&
+    cityLine.localeCompare(centerName, undefined, { sensitivity: "accent" }) !== 0;
+  const hasLocationBadge = centerName !== "" || cityLine !== "";
   const statusText = spaceStatusLabel(space.status, space.status_label);
   const desc =
     typeof space.description === "string" && space.description.trim() !== ""
@@ -62,10 +65,32 @@ export function SpaceCard({ space, availabilityLabel = "free", showFooterLink = 
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
             </>
           )}
-          {city ? (
-            <span className="absolute left-3 top-3 rounded-md bg-black/75 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-white backdrop-blur-sm">
-              {city}
-            </span>
+          {hasLocationBadge ? (
+            <div
+              className="absolute bottom-3 right-3 max-w-[min(calc(100%-1.5rem),12.5rem)] rounded-lg bg-black/65 px-2.5 py-1.5 text-right shadow-sm ring-1 ring-white/[0.12] backdrop-blur-md"
+              aria-label={
+                centerName
+                  ? showCitySubline
+                    ? `${centerName}, ${cityLine}`
+                    : centerName
+                  : cityLine
+              }
+            >
+              {centerName ? (
+                <span className="block w-full truncate text-end text-[11px] font-semibold leading-snug tracking-tight text-white">
+                  {centerName}
+                </span>
+              ) : (
+                <span className="block w-full truncate text-end text-[11px] font-semibold uppercase tracking-wide text-white">
+                  {cityLine}
+                </span>
+              )}
+              {showCitySubline ? (
+                <span className="mt-0.5 block w-full truncate text-end text-[9px] font-medium uppercase tracking-[0.14em] text-white/72">
+                  {cityLine}
+                </span>
+              ) : null}
+            </div>
           ) : null}
           {inCart ? (
             <span className="absolute right-2.5 top-2.5 inline-flex max-w-[min(100%-4rem,9.5rem)] items-center gap-1 rounded-full bg-[var(--mp-secondary)] px-2.5 py-1 text-[10px] font-semibold leading-tight text-white shadow-[0_2px_10px_rgba(234,88,12,0.45)] ring-1 ring-white/35">
@@ -75,20 +100,18 @@ export function SpaceCard({ space, availabilityLabel = "free", showFooterLink = 
           ) : null}
         </div>
         <div className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <h2 className="min-w-0 flex-1 break-words text-[17px] font-semibold leading-snug tracking-tight text-zinc-900">
-              {space.title}
-            </h2>
-            <div className="flex shrink-0 flex-col items-end gap-2">
-              <span
-                className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold leading-tight ${spaceStatusPillClassName(space.status)}`}
-              >
-                {statusText}
-              </span>
-              <p className="text-right text-lg font-bold tabular-nums text-[#c2410c]">
-                {formatUsdMonthly(space.monthly_price_usd)}
-              </p>
-            </div>
+          <h2 className="w-full text-balance break-words text-[15px] font-semibold leading-snug tracking-tight text-zinc-900">
+            {space.title}
+          </h2>
+          <div className="mt-2.5 flex w-full items-center justify-between gap-3">
+            <span
+              className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold leading-tight ${spaceStatusPillClassName(space.status)}`}
+            >
+              {statusText}
+            </span>
+            <p className="min-w-0 text-right text-lg font-bold tabular-nums text-[#c2410c]">
+              {formatUsdMonthly(space.monthly_price_usd)}
+            </p>
           </div>
           {desc ? (
             <p className="mt-1.5 line-clamp-2 break-words text-sm text-zinc-500">{desc}</p>
