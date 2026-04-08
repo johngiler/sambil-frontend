@@ -1,11 +1,16 @@
+import { Suspense } from "react";
+
 import { HomeSpacesCatalogClient } from "@/components/home/HomeSpacesCatalogClient";
+import { HomeSpacesCatalogSkeleton } from "@/components/home/HomeSpacesCatalogSkeleton";
 
 /** Portada del marketplace (tomas con búsqueda y filtro por ciudad). */
 export default function HomeView() {
   return (
     <div className="min-h-[calc(100vh-8rem)] bg-transparent">
       <div className="mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 sm:pb-16 sm:pt-5 lg:px-8">
-        <HomeSpacesCatalogClient />
+        <Suspense fallback={<HomeSpacesCatalogSkeleton />}>
+          <HomeSpacesCatalogClient />
+        </Suspense>
       </div>
     </div>
   );

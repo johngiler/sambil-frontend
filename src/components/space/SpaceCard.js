@@ -100,7 +100,7 @@ export function SpaceCard({ space, availabilityLabel = "free", showFooterLink = 
             />
           </div>
           {showFooterLink ? (
-            <span className="mt-3 inline-block text-sm font-semibold text-zinc-800 underline-offset-4 group-hover:underline">
+            <span className="mt-3 inline-block text-sm font-semibold text-zinc-800 no-underline underline-offset-4 group-hover:underline">
               Ver detalle
             </span>
           ) : null}

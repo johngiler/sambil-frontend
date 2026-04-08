@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 
 import { IconRowEdit, IconRowTrash } from "@/components/admin/rowActionIcons";
+import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { EmptyState, EmptyStateIconCart } from "@/components/ui/EmptyState";
 import { useAuth } from "@/context/AuthContext";
@@ -168,7 +169,9 @@ export default function CartView() {
                     )}
                     <div className="min-w-0 flex-1">
                     <p className="break-words text-base font-semibold text-zinc-900">
-                      {item.title}
+                      <CatalogSpaceLink spaceId={item.id} className="text-inherit">
+                        {item.title}
+                      </CatalogSpaceLink>
                       {center ? (
                         <>
                           {" "}
@@ -179,7 +182,15 @@ export default function CartView() {
                     {detail ? (
                       <p className="mt-1.5 break-words text-sm text-zinc-500">{detail}</p>
                     ) : (
-                      <p className="mt-1.5 text-sm text-zinc-500">{item.code}</p>
+                      <p className="mt-1.5 text-sm text-zinc-500">
+                        <CatalogSpaceLink
+                          spaceId={item.id}
+                          variant="mono"
+                          className="text-inherit text-zinc-500 hover:text-[color:var(--mp-primary)]"
+                        >
+                          {item.code}
+                        </CatalogSpaceLink>
+                      </p>
                     )}
                     {monthPills.length > 0 ? (
                       <div className="mt-3 flex flex-wrap gap-1.5">

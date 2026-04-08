@@ -162,12 +162,21 @@ export async function fetchMyCompany(accessToken) {
   return res.json();
 }
 
+/** JSON o `FormData` (logo/foto de empresa y `remove_company_cover`). */
 export async function saveMyCompany(payload, { method = "POST", token } = {}) {
-  const parsed = await fetchWithAuth("/api/me/company/", {
+  const t = token ?? getAccessToken();
+  const isForm = typeof FormData !== "undefined" && payload instanceof FormData;
+  const res = await fetch(apiUrl("/api/me/company/"), {
     method,
-    body: payload,
-    token,
+    headers: {
+      ...(isForm ? {} : { "Content-Type": "application/json" }),
+      ...workspaceSlugRequestHeaders(),
+      ...(t ? { Authorization: `Bearer ${t}` } : {}),
+    },
+    body: isForm ? payload : JSON.stringify(payload),
+    cache: "no-store",
   });
+  const parsed = await parseFetchResponse(res);
   if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
   return parsed.data;
 }

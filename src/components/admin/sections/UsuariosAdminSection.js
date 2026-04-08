@@ -56,6 +56,19 @@ import {
   FilterClearAction,
 } from "@/components/admin/AdminListFilters";
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
+import { AdminListQuerySync } from "@/components/admin/AdminListQuerySync";
+import {
+  AdminDashboardFilterLink,
+  dashboardClientesSearchHref,
+} from "@/lib/adminDashboardLinks";
+
+function EmpresaVinculadaAdminLink({ companyName }) {
+  const n = typeof companyName === "string" ? companyName.trim() : "";
+  if (!n) return null;
+  return (
+    <AdminDashboardFilterLink href={dashboardClientesSearchHref(n)}>{n}</AdminDashboardFilterLink>
+  );
+}
 
 function IconEye({ className }) {
   return (
@@ -155,7 +168,7 @@ export function UsuariosAdminSection() {
   }, []);
 
   const clientSelectOptions = useMemo(() => {
-    const base = [{ v: "", l: "Sin empresa vinculada" }];
+    const base = [{ v: "", l: "Sin cliente vinculado" }];
     return base.concat(
       clientRows.map((c) => {
         const name = typeof c.company_name === "string" ? c.company_name.trim() : "";
@@ -278,7 +291,7 @@ export function UsuariosAdminSection() {
       if (modal === "create") {
         if (role === "client" && (!linkedClientId || linkedClientId === "")) {
           setErr(
-            "Selecciona la empresa vinculada para el rol cliente marketplace.",
+            "Selecciona el cliente vinculado para el rol cliente marketplace.",
           );
           return;
         }
@@ -320,7 +333,7 @@ export function UsuariosAdminSection() {
       } else if (modal === "edit" && selected) {
         if (role === "client" && (!linkedClientId || linkedClientId === "")) {
           setErr(
-            "Selecciona la empresa vinculada para el rol cliente marketplace.",
+            "Selecciona el cliente vinculado para el rol cliente marketplace.",
           );
           return;
         }
@@ -402,7 +415,9 @@ export function UsuariosAdminSection() {
   }
 
   return (
-    <div className={adminPanelCard}>
+    <>
+      <AdminListQuerySync onQuery={setFilterQ} />
+      <div className={adminPanelCard}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-3">
           <div className={adminSectionHeaderIconWrap}>
@@ -451,7 +466,7 @@ export function UsuariosAdminSection() {
               id="usuarios-filter-q"
               value={filterQ}
               onChange={setFilterQ}
-              placeholder="Usuario, correo, empresa…"
+              placeholder="Usuario, correo, cliente…"
             />
             <AdminFilterSelect
               id="usuarios-filter-role"
@@ -499,7 +514,7 @@ export function UsuariosAdminSection() {
                         Usuario
                       </th>
                       <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                        Empresa vinculada
+                        Cliente vinculado
                       </th>
                       <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                         Rol
@@ -556,7 +571,7 @@ export function UsuariosAdminSection() {
                               }
                             >
                               {u.role === "client" && u.client_company_name?.trim() ? (
-                                <span className="font-medium text-zinc-900">{u.client_company_name.trim()}</span>
+                                <EmpresaVinculadaAdminLink companyName={u.client_company_name} />
                               ) : (
                                 "—"
                               )}
@@ -576,7 +591,7 @@ export function UsuariosAdminSection() {
                                     <button
                                       type="button"
                                       className={`${adminSecondaryBtn} ml-1 shrink-0 px-2 py-1.5 text-xs font-semibold`}
-                                      title="Copia el enlace para que el cliente defina su contraseña en /registro"
+                                      title="Copia el enlace para que defina su contraseña en /registro"
                                       disabled={passwordLinkUserId === u.id}
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -625,7 +640,7 @@ export function UsuariosAdminSection() {
                                         {u.email?.trim() ? (
                                           <a
                                             href={`mailto:${u.email.trim()}`}
-                                            className="break-all font-medium text-zinc-900 underline-offset-2 hover:underline"
+                                            className="break-all font-medium text-zinc-900 no-underline underline-offset-2 hover:underline"
                                           >
                                             {u.email.trim()}
                                           </a>
@@ -641,10 +656,12 @@ export function UsuariosAdminSection() {
                                           : adminDetailEmpty("")}
                                       </AdminDetailField>
                                       {u.role === "client" ? (
-                                        <AdminDetailField label="Empresa vinculada">
-                                          {u.client_company_name
-                                            ? u.client_company_name
-                                            : adminDetailEmpty("")}
+                                        <AdminDetailField label="Cliente vinculado">
+                                          {u.client_company_name?.trim() ? (
+                                            <EmpresaVinculadaAdminLink companyName={u.client_company_name} />
+                                          ) : (
+                                            adminDetailEmpty("")
+                                          )}
                                         </AdminDetailField>
                                       ) : null}
                                     </div>
@@ -756,9 +773,13 @@ export function UsuariosAdminSection() {
             </div>
             {selected.role === "client" ? (
               <div className="sm:col-span-2">
-                <p className={adminLabel}>Empresa vinculada</p>
+                <p className={adminLabel}>Cliente vinculado</p>
                 <p className="mt-1 text-sm text-zinc-800">
-                  {selected.client_company_name ? selected.client_company_name : "—"}
+                  {selected.client_company_name?.trim() ? (
+                    <EmpresaVinculadaAdminLink companyName={selected.client_company_name} />
+                  ) : (
+                    "—"
+                  )}
                 </p>
               </div>
             ) : null}
@@ -877,7 +898,7 @@ export function UsuariosAdminSection() {
             {role === "client" ? (
               <div className="sm:col-span-2">
                 <label className={adminLabel} htmlFor="u-client">
-                  Cliente (empresa) vinculado
+                  Cliente vinculado
                 </label>
                 <AdminSelect
                   id="u-client"
@@ -889,17 +910,17 @@ export function UsuariosAdminSection() {
                   inModal
                   isSearchable
                   placeholder="Buscar por razón social o ID…"
-                  aria-label="Seleccionar ficha de cliente a vincular"
+                  aria-label="Seleccionar cliente a vincular"
                 />
                 {clientRows.length === 0 ? (
                   <p className="mt-1 text-xs text-amber-800">
-                    No hay fichas en Clientes. Crea primero una empresa en la
-                    sección Clientes para poder seleccionarla aquí.
+                    No hay clientes en el listado. Crea primero un cliente en la sección Clientes para poder
+                    seleccionarlo aquí.
                   </p>
                 ) : (
                   <p className="mt-1 text-xs text-zinc-500">
-                    Obligatorio para este rol. El workspace del owner se toma de
-                    la empresa. Un usuario → una empresa; la misma empresa puede
+                    Obligatorio para este rol. El workspace del owner se toma del
+                    cliente. Un usuario → un cliente; el mismo cliente puede
                     tener varios usuarios.
                   </p>
                 )}
@@ -928,5 +949,6 @@ export function UsuariosAdminSection() {
         </p>
       </AdminConfirmDialog>
     </div>
+    </>
   );
 }

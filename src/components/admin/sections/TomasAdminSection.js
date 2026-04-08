@@ -58,8 +58,28 @@ import {
   FilterClearAction,
 } from "@/components/admin/AdminListFilters";
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
+import {
+  AdminDashboardFilterLink,
+  dashboardCentrosSearchHref,
+} from "@/lib/adminDashboardLinks";
+import { subtitleCityAfterCenterName } from "@/lib/shoppingCenterDisplay";
 
 const SPACE_STATUS_FILTERS = [{ v: "all", l: "Todos los estados" }, ...SPACE_STATUS];
+
+function TomaCentroComercialValue({ s }) {
+  const name = (s?.shopping_center_name || "").trim();
+  const code = (s?.shopping_center_code || "").trim();
+  const cityLine = subtitleCityAfterCenterName(name, s?.shopping_center_city);
+  if (!name) return adminDetailEmpty("");
+  return (
+    <>
+      <AdminDashboardFilterLink href={dashboardCentrosSearchHref(code || name)}>
+        {name}
+      </AdminDashboardFilterLink>
+      {cityLine ? <span className="mt-0.5 block text-xs text-zinc-500">{cityLine}</span> : null}
+    </>
+  );
+}
 
 /** Nomenclatura: {código_centro}-T{número}[sufijo], ej. SCC-T1, SLC-T1A. */
 function validateTomaCodeForCenter(code, centerCode) {
@@ -529,8 +549,20 @@ export function TomasAdminSection() {
                       <td className="max-w-[10rem] truncate px-3 py-2.5 font-medium text-zinc-900" title={s.title}>
                         {s.title}
                       </td>
-                      <td className="max-w-[8rem] truncate px-3 py-2.5 text-xs text-zinc-600" title={s.shopping_center_name || undefined}>
-                        {s.shopping_center_name || "—"}
+                      <td className="max-w-[8rem] truncate px-3 py-2.5 text-xs text-zinc-600">
+                        {s.shopping_center_name?.trim() ? (
+                          <AdminDashboardFilterLink
+                            href={dashboardCentrosSearchHref(
+                              s.shopping_center_code || s.shopping_center_name,
+                            )}
+                            className="block truncate"
+                            title={s.shopping_center_name}
+                          >
+                            {s.shopping_center_name}
+                          </AdminDashboardFilterLink>
+                        ) : (
+                          "—"
+                        )}
                       </td>
                       <td className="px-3 py-2.5">
                         <span
@@ -553,13 +585,7 @@ export function TomasAdminSection() {
                           badgeText={s.code || "—"}
                           titleLabel="Toma en catálogo"
                           titleLine={
-                            <p className="truncate text-sm font-medium text-zinc-900">
-                              <span className="font-mono text-zinc-600">{s.code}</span>
-                              <span className="mx-2 text-zinc-300" aria-hidden>
-                                ·
-                              </span>
-                              {s.title}
-                            </p>
+                            <p className="truncate text-sm font-medium text-zinc-900">{s.title}</p>
                           }
                           hint="Vista ampliada sin editar"
                         />
@@ -569,18 +595,7 @@ export function TomasAdminSection() {
                             <AdminDetailInset>
                               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                                 <AdminDetailField label="Centro comercial">
-                                  {s.shopping_center_name ? (
-                                    <>
-                                      <span className="font-medium text-zinc-900">{s.shopping_center_name}</span>
-                                      {s.shopping_center_city ? (
-                                        <span className="mt-0.5 block text-xs text-zinc-500">
-                                          {s.shopping_center_city}
-                                        </span>
-                                      ) : null}
-                                    </>
-                                  ) : (
-                                    adminDetailEmpty("")
-                                  )}
+                                  <TomaCentroComercialValue s={s} />
                                 </AdminDetailField>
                                 <AdminDetailField label="Tipo">{spaceTypeLabel(s.type)}</AdminDetailField>
                                 <AdminDetailField label="Estado">
@@ -686,12 +701,9 @@ export function TomasAdminSection() {
             </div>
             <div>
               <p className={adminLabel}>Centro comercial</p>
-              <p className="mt-1 text-sm font-medium text-zinc-900">
-                {selected.shopping_center_name || "—"}
-              </p>
-              {selected.shopping_center_city ? (
-                <p className="mt-0.5 text-xs text-zinc-500">{selected.shopping_center_city}</p>
-              ) : null}
+              <div className="mt-1 text-sm">
+                <TomaCentroComercialValue s={selected} />
+              </div>
             </div>
             <div>
               <p className={adminLabel}>Tipo</p>

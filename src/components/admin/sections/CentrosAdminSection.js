@@ -51,6 +51,7 @@ import {
   FilterClearAction,
 } from "@/components/admin/AdminListFilters";
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
+import { AdminListQuerySync } from "@/components/admin/AdminListQuerySync";
 
 const CENTER_ACTIVE_FILTERS = [
   { v: "all", l: "Todos (estado)" },
@@ -345,7 +346,9 @@ export function CentrosAdminSection() {
   }
 
   return (
-    <div className={adminPanelCard}>
+    <>
+      <AdminListQuerySync onQuery={setFilterQ} />
+      <div className={adminPanelCard}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-3">
           <div className={adminSectionHeaderIconWrap}>
@@ -587,7 +590,7 @@ export function CentrosAdminSection() {
                                   {c.contact_email?.trim() ? (
                                     <a
                                       href={`mailto:${c.contact_email.trim()}`}
-                                      className="font-medium text-zinc-900 underline-offset-2 hover:underline"
+                                      className="font-medium text-zinc-900 no-underline underline-offset-2 hover:underline"
                                     >
                                       {c.contact_email.trim()}
                                     </a>
@@ -605,7 +608,7 @@ export function CentrosAdminSection() {
                                       }
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="font-medium text-zinc-900 underline-offset-2 hover:underline"
+                                      className="font-medium text-zinc-900 no-underline underline-offset-2 hover:underline"
                                     >
                                       {c.website.trim()}
                                     </a>
@@ -1032,5 +1035,6 @@ export function CentrosAdminSection() {
         ariaLabel="Portada del centro comercial"
       />
     </div>
+    </>
   );
 }

@@ -86,7 +86,7 @@ export function PublivallaFallbackChrome({ badge, title, description, meta }) {
           </p>
           <a
             href={platformUrl}
-            className="shrink-0 text-xs font-semibold text-zinc-300 underline-offset-4 transition hover:text-white hover:underline"
+            className="shrink-0 text-xs font-semibold text-zinc-300 no-underline underline-offset-4 transition hover:text-white hover:underline"
             target="_blank"
             rel="noopener noreferrer"
           >

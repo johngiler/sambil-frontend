@@ -2,7 +2,7 @@
  * Miniaturas cuadradas compartidas: radio **10px** en todos los marcos de esta lib.
  * - 100×100: lightbox, galería admin de toma, comprobante checkout (`squareListImagePreview*`).
  * - 60×60: columna Portada en tablas admin CC y tomas; miniaturas en «Reserva — líneas» de Mis pedidos (`squareAdminTablePortada*`).
- * - Líneas de pedido (solo admin): ancho **120px**, **alto = fila** (`squareOrderLinePreview*`).
+ * - Líneas de pedido (panel Pedidos): miniatura **120×120** cuadrada (`squareOrderLinePreview*`).
  * No usar en portadas hero del catálogo ni en avatares circulares de persona.
  */
 export const squareListImagePreviewFrameClass =
@@ -16,11 +16,11 @@ export const squareAdminTablePortadaFrameClass =
 
 export const squareAdminTablePortadaImgClass = "h-full w-full object-cover";
 
-/** Tarjetas de línea en pedido: misma altura que el bloque de texto (`items-stretch` en la fila). */
+/** Tarjetas de línea en pedido (panel): portada cuadrada fija. */
 export const squareOrderLinePreviewFrameClass =
-  "relative flex w-[120px] shrink-0 self-stretch min-h-[120px] overflow-hidden rounded-[10px] border border-zinc-200/90 bg-zinc-100 shadow-sm";
+  "relative h-[120px] w-[120px] shrink-0 overflow-hidden rounded-[10px] border border-zinc-200/90 bg-zinc-100 shadow-sm";
 
-export const squareOrderLinePreviewImgClass = "min-h-0 h-full w-full flex-1 object-cover";
+export const squareOrderLinePreviewImgClass = "absolute inset-0 h-full w-full object-cover";
 
 /** Anillos hover/focus para botones que abren lightbox (Mis pedidos, etc.). */
 export const squareListImagePreviewButtonRingClass =

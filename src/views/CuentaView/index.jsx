@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import { CoverImageField } from "@/components/admin/CoverImageField";
 import { useAuth } from "@/context/AuthContext";
 import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
@@ -38,6 +39,7 @@ function SectionTitle({ children, id }) {
 export default function CuentaView() {
   const router = useRouter();
   const { authReady, me, isAdmin, company, setCompanyData, accessToken, role } = useAuth();
+  const companyFileRef = useRef(null);
   const [company_name, setCompanyName] = useState("");
   const [rif, setRif] = useState("");
   const [contact_name, setContactName] = useState("");
@@ -45,6 +47,9 @@ export default function CuentaView() {
   const [phone, setPhone] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
+  const [coverFile, setCoverFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
+  const [pendingClearCover, setPendingClearCover] = useState(false);
   const [error, setError] = useState("");
   const [ok, setOk] = useState("");
   const [saving, setSaving] = useState(false);
@@ -69,8 +74,22 @@ export default function CuentaView() {
       setPhone(company.phone || "");
       setAddress(company.address || "");
       setCity(company.city || "");
+      setCoverFile(null);
+      setFilePreview(null);
+      setPendingClearCover(false);
+      if (companyFileRef.current) companyFileRef.current.value = "";
     }
   }, [company]);
+
+  useEffect(() => {
+    if (!coverFile) {
+      setFilePreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(coverFile);
+    setFilePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [coverFile]);
 
   if (!authReady || !me || isAdmin) {
     return (
@@ -87,22 +106,49 @@ export default function CuentaView() {
     setOk("");
     setSaving(true);
     try {
-      const payload = {
-        company_name: company_name.trim(),
-        rif: rif.trim(),
-        contact_name: contact_name.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        address: address.trim(),
-        city: city.trim(),
-      };
       const hasProfile = company && typeof company === "object";
-      const data = await saveMyCompany(payload, {
-        method: hasProfile ? "PATCH" : "POST",
-        token: accessToken,
-      });
+      const useMultipart = coverFile != null || pendingClearCover;
+      let data;
+      if (useMultipart) {
+        const fd = new FormData();
+        fd.append("company_name", company_name.trim());
+        fd.append("rif", rif.trim());
+        fd.append("contact_name", contact_name.trim());
+        fd.append("email", email.trim());
+        fd.append("phone", phone.trim());
+        fd.append("address", address.trim());
+        fd.append("city", city.trim());
+        if (coverFile) fd.append("cover_image", coverFile);
+        if (pendingClearCover) fd.append("remove_company_cover", "true");
+        data = await saveMyCompany(fd, {
+          method: hasProfile ? "PATCH" : "POST",
+          token: accessToken,
+        });
+      } else {
+        const payload = {
+          company_name: company_name.trim(),
+          rif: rif.trim(),
+          contact_name: contact_name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          address: address.trim(),
+          city: city.trim(),
+        };
+        data = await saveMyCompany(payload, {
+          method: hasProfile ? "PATCH" : "POST",
+          token: accessToken,
+        });
+      }
       setCompanyData(data);
-      setOk(hasProfile ? "Datos actualizados correctamente." : "Empresa registrada. Ya puedes usar el checkout.");
+      setCoverFile(null);
+      setPendingClearCover(false);
+      setFilePreview(null);
+      if (companyFileRef.current) companyFileRef.current.value = "";
+      setOk(
+        hasProfile
+          ? "Datos actualizados correctamente."
+          : "Cliente registrado. Ya puedes usar el checkout.",
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al guardar");
     } finally {
@@ -130,7 +176,7 @@ export default function CuentaView() {
         </span>
       </nav>
       <p className="mt-3 text-xs text-zinc-500">
-        En perfil puedes cambiar usuario, nombre y foto de perfil.
+        En perfil puedes cambiar usuario, nombre y foto de perfil. Aquí también puedes subir logo o foto de tu empresa.
       </p>
 
       <div className="relative mt-8 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white px-5 py-6 shadow-[0_2px_12px_rgba(15,23,42,0.06)] sm:px-6 sm:py-7">
@@ -146,7 +192,7 @@ export default function CuentaView() {
           ) : null}
         </div>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-600">
-          Datos de tu <span className="font-medium text-zinc-800">empresa</span> para reservas en el marketplace.
+          Datos de tu <span className="font-medium text-zinc-800">cliente</span> para reservas en el marketplace.
           Son necesarios antes de enviar una solicitud desde el checkout.
         </p>
       </div>
@@ -154,8 +200,8 @@ export default function CuentaView() {
       <div
         className={`mt-8 ${ROUNDED_CONTROL} border border-amber-200/80 bg-gradient-to-r from-amber-50/90 to-orange-50/40 px-4 py-3 text-sm text-amber-950 shadow-sm ring-1 ring-amber-100/60`}
       >
-        <span className="font-semibold">Importante:</span> estos datos identifican a tu empresa en pedidos y
-        facturación. Revísalos antes de confirmar reservas.
+        <span className="font-semibold">Importante:</span> estos datos identifican a tu cliente en pedidos y facturación.
+        Revísalos antes de confirmar reservas.
       </div>
 
       <form
@@ -167,8 +213,27 @@ export default function CuentaView() {
         <div className="p-5 sm:p-6">
           <div className="space-y-8">
           <section aria-labelledby="sec-empresa">
-            <SectionTitle id="sec-empresa">Empresa</SectionTitle>
+            <SectionTitle id="sec-empresa">Cliente</SectionTitle>
             <div className="mt-4 space-y-4">
+              <div className="rounded-xl border border-zinc-100 bg-zinc-50/50 p-4 sm:p-5">
+                <CoverImageField
+                  readOnly={false}
+                  variant="avatar"
+                  label="Logo o foto de la empresa"
+                  existingUrl={pendingClearCover ? "" : company?.cover_image}
+                  filePreviewUrl={filePreview}
+                  onFileChange={(f) => {
+                    setCoverFile(f);
+                    setPendingClearCover(false);
+                  }}
+                  onClearExisting={() => {
+                    setPendingClearCover(true);
+                    setCoverFile(null);
+                    if (companyFileRef.current) companyFileRef.current.value = "";
+                  }}
+                  fileInputRef={companyFileRef}
+                />
+              </div>
               <div>
                 <label htmlFor="cuenta-razon" className="block text-sm font-medium text-zinc-800">
                   Razón social <span className="text-red-600">*</span>
@@ -300,11 +365,11 @@ export default function CuentaView() {
             disabled={saving}
             className={`${marketplacePrimaryBtn} min-h-11 px-6 py-2.5 text-base sm:min-h-0 sm:text-sm`}
           >
-            {saving ? "Guardando…" : hasProfile ? "Guardar cambios" : "Crear ficha de empresa"}
+            {saving ? "Guardando…" : hasProfile ? "Guardar cambios" : "Registrar cliente"}
           </button>
           <Link
             href="/"
-            className="text-center text-sm font-medium text-zinc-600 underline-offset-4 transition hover:text-zinc-900 hover:underline sm:text-left"
+            className="text-center text-sm font-medium text-zinc-600 no-underline underline-offset-4 transition hover:text-zinc-900 hover:underline sm:text-left"
           >
             Volver al inicio
           </Link>

@@ -92,7 +92,7 @@ function interpretGuestCheckoutValidateDatos(d) {
   const emailBlockMsg =
     "Este correo ya está asociado a una cuenta de cliente en este sitio. Inicia sesión para completar tu reserva.";
   const companyBlockMsg =
-    "Esta razón social ya está registrada con una cuenta de cliente en este sitio. Inicia sesión o corrige el nombre si es otra empresa.";
+    "Esta razón social ya está registrada con una cuenta de cliente en este sitio. Inicia sesión o corrige el nombre si es otro cliente.";
 
   if (d.email.has_marketplace_account) {
     return {
@@ -117,15 +117,15 @@ function interpretGuestCheckoutValidateDatos(d) {
   let companyNotice = "";
   if (d.same_client && d.email.client_exists) {
     emailNotice =
-      "Este correo y esta razón social ya están registrados como una misma empresa. Al enviar se actualizarán los datos de contacto con lo que indicaste arriba.";
+      "Este correo y esta razón social ya están registrados como el mismo cliente. Al enviar se actualizarán los datos de contacto con lo que indicaste arriba.";
   } else {
     if (d.email.client_exists) {
       emailNotice =
-        "Este correo ya figura como empresa registrada. Al enviar la solicitud se actualizarán los datos de contacto con lo que indiques arriba.";
+        "Este correo ya figura como cliente registrado. Al enviar la solicitud se actualizarán los datos de contacto con lo que indiques arriba.";
     }
     if (d.company.client_exists && !d.same_client) {
       companyNotice =
-        "Ya hay una empresa registrada con este nombre. Si es la misma, usa el mismo correo con el que reservaste antes; si es otra razón social, ajusta el nombre.";
+        "Ya hay un cliente registrado con este nombre. Si es el mismo, usa el mismo correo con el que reservaste antes; si es otra razón social, ajusta el nombre.";
     }
   }
 
@@ -418,7 +418,7 @@ export default function CheckoutView() {
         {guestCreatedAccount ? (
           <p className="mt-4 rounded-xl border border-emerald-200/80 bg-emerald-50/90 px-4 py-3 text-sm text-emerald-950">
             Creaste tu cuenta con este pedido. Ya puedes{" "}
-            <Link href="/login" className="font-semibold underline-offset-4 hover:underline">
+            <Link href="/login" className="font-semibold no-underline underline-offset-4 hover:underline">
               iniciar sesión
             </Link>{" "}
             con tu correo y contraseña para ver el estado en &quot;Mis pedidos&quot;.
@@ -435,7 +435,7 @@ export default function CheckoutView() {
         {!completedAsGuest ? (
           <p className="mt-4 text-sm text-zinc-600">
             Revisa el estado en{" "}
-            <Link href="/cuenta/pedidos" className="font-semibold text-zinc-900 underline-offset-4 hover:underline">
+            <Link href="/cuenta/pedidos" className="font-semibold text-zinc-900 no-underline underline-offset-4 hover:underline">
               Mis pedidos
             </Link>
             .
@@ -487,7 +487,7 @@ export default function CheckoutView() {
         <h1 className="text-balance text-2xl font-bold text-zinc-900 sm:text-3xl">Checkout</h1>
         <p className="mt-4 text-zinc-600">
           Este proceso no está disponible para tu cuenta.{" "}
-          <Link href="/" className="font-medium text-zinc-900 underline-offset-4 hover:underline">
+          <Link href="/" className="font-medium text-zinc-900 no-underline underline-offset-4 hover:underline">
             Volver al inicio
           </Link>
         </p>
@@ -499,7 +499,7 @@ export default function CheckoutView() {
     return (
       <div className="mx-auto max-w-lg px-4 py-8 text-zinc-600">
         Este proceso no está disponible para tu cuenta.{" "}
-        <Link href="/" className="font-medium text-zinc-900 underline-offset-4 hover:underline">
+        <Link href="/" className="font-medium text-zinc-900 no-underline underline-offset-4 hover:underline">
           Inicio
         </Link>
       </div>
@@ -514,14 +514,14 @@ export default function CheckoutView() {
   return (
     <div className="mx-auto max-w-lg px-4 py-8 sm:px-6 sm:py-10">
       <p className="text-sm text-zinc-500">
-        <Link href="/cart" className="font-medium text-zinc-900 underline-offset-4 hover:underline">
+        <Link href="/cart" className="font-medium text-zinc-900 no-underline underline-offset-4 hover:underline">
           ← Volver al carrito
         </Link>
       </p>
       {isGuest ? (
         <p className="mt-3 text-sm text-zinc-600">
           ¿Ya tienes cuenta?{" "}
-          <Link href="/login?next=/checkout" className="font-semibold text-zinc-900 underline-offset-4 hover:underline">
+          <Link href="/login?next=/checkout" className="font-semibold text-zinc-900 no-underline underline-offset-4 hover:underline">
             Inicia sesión
           </Link>
         </p>
@@ -614,7 +614,7 @@ export default function CheckoutView() {
                   }}
                 >
                   <div>
-                    <label className={labelClass}>Empresa</label>
+                    <label className={labelClass}>Cliente</label>
                     <input
                       required
                       value={company_name}
@@ -629,7 +629,7 @@ export default function CheckoutView() {
                         {guestCompanyBlock}{" "}
                         <Link
                           href="/login?next=/checkout"
-                          className="font-semibold text-red-900 underline-offset-2 hover:underline"
+                          className="font-semibold text-red-900 no-underline underline-offset-2 hover:underline"
                         >
                           Iniciar sesión
                         </Link>
@@ -670,7 +670,7 @@ export default function CheckoutView() {
                         {guestClientEmailBlock}{" "}
                         <Link
                           href="/login?next=/checkout"
-                          className="font-semibold text-red-900 underline-offset-2 hover:underline"
+                          className="font-semibold text-red-900 no-underline underline-offset-2 hover:underline"
                         >
                           Iniciar sesión
                         </Link>
@@ -729,7 +729,7 @@ export default function CheckoutView() {
                       {guestEmailTakenError}{" "}
                       <Link
                         href="/login?next=/checkout"
-                        className="font-semibold text-red-900 underline-offset-2 hover:underline"
+                        className="font-semibold text-red-900 no-underline underline-offset-2 hover:underline"
                       >
                         Iniciar sesión
                       </Link>
@@ -752,7 +752,7 @@ export default function CheckoutView() {
                   }}
                 >
                   <div>
-                    <label className={labelClass}>Empresa</label>
+                    <label className={labelClass}>Cliente</label>
                     <input
                       required
                       value={company_name}
@@ -802,7 +802,7 @@ export default function CheckoutView() {
               ) : (
                 <div className="space-y-6">
                   <div className={`${ROUNDED_CONTROL} border border-zinc-200 bg-zinc-50/80 p-5`}>
-                    <p className={labelClass}>Empresa registrada</p>
+                    <p className={labelClass}>Cliente registrado</p>
                     <p className="mt-2 text-base font-semibold text-zinc-900">{company.company_name}</p>
                     {company.rif ? (
                       <p className="mt-1 text-sm text-zinc-600">RIF {company.rif}</p>
@@ -810,7 +810,7 @@ export default function CheckoutView() {
                     <button
                       type="button"
                       onClick={() => router.push("/cuenta")}
-                      className="mp-text-brand mt-4 text-sm font-semibold underline-offset-4 hover:underline"
+                      className="mp-text-brand mt-4 text-sm font-semibold no-underline underline-offset-4 hover:underline"
                     >
                       Editar en Mi empresa
                     </button>

@@ -198,7 +198,7 @@ export function CheckoutPaymentReceiptField({
                 <button
                   type="button"
                   onClick={openPicker}
-                  className="mp-text-brand underline decoration-[color-mix(in_srgb,var(--mp-primary)_45%,transparent)] underline-offset-2 transition-colors hover:decoration-[color-mix(in_srgb,var(--mp-primary)_80%,transparent)]"
+                  className="mp-text-brand no-underline underline-offset-2 transition-colors hover:underline hover:decoration-[color-mix(in_srgb,var(--mp-primary)_80%,transparent)]"
                 >
                   elige un archivo
                 </button>
@@ -233,7 +233,7 @@ export function CheckoutPaymentReceiptField({
                     href={previewUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mp-text-brand font-semibold underline underline-offset-2"
+                    className="mp-text-brand font-semibold no-underline underline-offset-2 transition-colors hover:underline hover:decoration-[color-mix(in_srgb,var(--mp-primary)_80%,transparent)]"
                   >
                     ábrelo en una nueva pestaña
                   </a>
@@ -256,7 +256,7 @@ export function CheckoutPaymentReceiptField({
                     href={previewUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="mp-text-brand font-semibold underline underline-offset-2"
+                    className="mp-text-brand font-semibold no-underline underline-offset-2 transition-colors hover:underline hover:decoration-[color-mix(in_srgb,var(--mp-primary)_80%,transparent)]"
                   >
                     abrirlo en una nueva pestaña
                   </a>{" "}
@@ -283,7 +283,7 @@ export function CheckoutPaymentReceiptField({
                       href={previewUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-1 inline-block text-xs font-semibold mp-text-brand underline underline-offset-2"
+                      className="mt-1 inline-block text-xs font-semibold mp-text-brand no-underline underline-offset-2 transition-colors hover:underline hover:decoration-[color-mix(in_srgb,var(--mp-primary)_80%,transparent)]"
                     >
                       Ampliar en nueva pestaña
                     </a>

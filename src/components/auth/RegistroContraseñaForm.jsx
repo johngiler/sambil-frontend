@@ -148,7 +148,7 @@ export default function RegistroContraseñaForm() {
     <div className="mx-auto max-w-md px-4 py-10 sm:px-6 sm:py-14">
       <h1 className="text-balance text-2xl font-bold text-zinc-900 sm:text-3xl">Definir contraseña</h1>
       <p className="mt-3 text-sm text-zinc-600">
-        Tu cuenta ya está creada con el correo de tu empresa. Solo necesitas elegir una contraseña para acceder al
+        Tu cuenta ya está creada con el correo de tu ficha de cliente. Solo necesitas elegir una contraseña para acceder al
         marketplace.
       </p>
 
@@ -179,7 +179,9 @@ export default function RegistroContraseñaForm() {
               value={emailDisplay}
               className={`mp-login-field mp-form-field-accent mt-2 min-h-11 w-full ${ROUNDED_CONTROL} border border-zinc-200 bg-zinc-100 px-3.5 py-2.5 text-base text-zinc-700 shadow-inner shadow-zinc-100/50 sm:min-h-10 sm:text-sm`}
             />
-            <p className="mt-1 text-xs text-zinc-500">Este correo viene de tu ficha de empresa; no se puede cambiar aquí.</p>
+            <p className="mt-1 text-xs text-zinc-500">
+              Este correo corresponde a tu ficha de cliente; no se puede cambiar aquí.
+            </p>
           </div>
           <PasswordPairLiveValidation
             password={password}
@@ -207,12 +209,12 @@ export default function RegistroContraseñaForm() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="font-medium text-zinc-700 underline-offset-4 hover:underline"
+          className="font-medium text-zinc-700 no-underline underline-offset-4 hover:underline"
         >
           Volver
         </button>
         {" · "}
-        <Link href="/login" className="font-medium text-zinc-700 underline-offset-4 hover:underline">
+        <Link href="/login" className="font-medium text-zinc-700 no-underline underline-offset-4 hover:underline">
           Iniciar sesión
         </Link>
       </p>

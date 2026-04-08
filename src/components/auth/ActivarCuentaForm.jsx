@@ -95,7 +95,7 @@ export default function ActivarCuentaForm() {
       <div className="mx-auto max-w-md px-4 py-10 sm:px-6 sm:py-14">
         <h1 className="text-balance text-2xl font-bold text-zinc-900 sm:text-3xl">Cuenta lista</h1>
         <p className="mt-4 text-sm leading-relaxed text-zinc-600">
-          Ya puedes iniciar sesión con el correo de tu empresa y la contraseña que acabas de definir.
+          Ya puedes iniciar sesión con el correo de tu ficha de cliente y la contraseña que acabas de definir.
         </p>
         <Link
           href="/login"
@@ -111,7 +111,7 @@ export default function ActivarCuentaForm() {
     <div className="mx-auto max-w-md px-4 py-10 sm:px-6 sm:py-14">
       <h1 className="text-balance text-2xl font-bold text-zinc-900 sm:text-3xl">Activar tu cuenta</h1>
       <p className="mt-3 text-sm text-zinc-600">
-        Define una contraseña para acceder al marketplace con el correo de tu empresa.
+        Define una contraseña para acceder al marketplace con el correo de tu ficha de cliente.
       </p>
       {!token ? (
         <p className={`mt-6 ${ROUNDED_CONTROL} border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950`}>
@@ -144,12 +144,12 @@ export default function ActivarCuentaForm() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="font-medium text-zinc-700 underline-offset-4 hover:underline"
+          className="font-medium text-zinc-700 no-underline underline-offset-4 hover:underline"
         >
           Volver
         </button>
         {" · "}
-        <Link href="/login" className="font-medium text-zinc-700 underline-offset-4 hover:underline">
+        <Link href="/login" className="font-medium text-zinc-700 no-underline underline-offset-4 hover:underline">
           Iniciar sesión
         </Link>
       </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 4;
@@ -173,6 +173,12 @@ export function ImageLightbox({
     resetView();
   }, [open, initialIndex, count, resetView]);
 
+  useLayoutEffect(() => {
+    if (!open || count === 0) return;
+    const d = clamp(index, 0, count - 1);
+    if (d !== index) setIndex(d);
+  }, [open, count, index]);
+
   useEffect(() => {
     if (!open) return;
     resetView();
@@ -190,16 +196,18 @@ export function ImageLightbox({
   const goPrev = useCallback(() => {
     if (count <= 1) return;
     setIndex((i) => {
-      if (i <= 0) return loop ? count - 1 : 0;
-      return i - 1;
+      const ci = clamp(i, 0, Math.max(0, count - 1));
+      if (ci <= 0) return loop ? count - 1 : 0;
+      return ci - 1;
     });
   }, [count, loop]);
 
   const goNext = useCallback(() => {
     if (count <= 1) return;
     setIndex((i) => {
-      if (i >= count - 1) return loop ? 0 : count - 1;
-      return i + 1;
+      const ci = clamp(i, 0, Math.max(0, count - 1));
+      if (ci >= count - 1) return loop ? 0 : count - 1;
+      return ci + 1;
     });
   }, [count, loop]);
 
@@ -270,10 +278,13 @@ export function ImageLightbox({
 
   if (!open || count === 0) return null;
 
-  const current = safeItems[index];
+  /** Índice acotado: el estado puede quedar fuera de rango un frame al reabrir o si `items` se filtra distinto. */
+  const displayIndex = clamp(index, 0, count - 1);
+  const current = safeItems[displayIndex];
   const thumbSrc = (it) => (it.thumbnailSrc && String(it.thumbnailSrc)) || it.src;
-  const atStart = index <= 0;
-  const atEnd = index >= count - 1;
+  if (!current || typeof current.src !== "string" || !current.src) return null;
+  const atStart = displayIndex <= 0;
+  const atEnd = displayIndex >= count - 1;
   const prevDisabled = !loop && atStart;
   const nextDisabled = !loop && atEnd;
   const canPan = scale > 1;
@@ -325,7 +336,7 @@ export function ImageLightbox({
               {/* eslint-disable-next-line @next/next/no-img-element -- URLs dinámicas de API / media */}
               <img
                 src={current.src}
-                alt={current.alt || `Imagen ${index + 1} de ${count}`}
+                alt={current.alt || `Imagen ${displayIndex + 1} de ${count}`}
                 className="max-h-[min(70vh,640px)] max-w-full select-none object-contain"
                 draggable={false}
               />
@@ -355,11 +366,11 @@ export function ImageLightbox({
                           key={`dot-${i}`}
                           type="button"
                           role="tab"
-                          aria-selected={i === index}
+                          aria-selected={i === displayIndex}
                           aria-label={`Imagen ${i + 1} de ${count}`}
                           onClick={() => setIndex(i)}
                           className={`h-2.5 w-2.5 shrink-0 rounded-full transition ${
-                            i === index
+                            i === displayIndex
                               ? "scale-110 bg-[color-mix(in_srgb,var(--mp-primary)_88%,#171717)] ring-2 ring-[color-mix(in_srgb,var(--mp-primary)_55%,transparent)]"
                               : "bg-zinc-600 hover:bg-zinc-500"
                           }`}
@@ -414,9 +425,9 @@ export function ImageLightbox({
                   type="button"
                   onClick={() => setIndex(i)}
                   aria-label={`Mostrar imagen ${i + 1}`}
-                  aria-current={i === index ? "true" : undefined}
+                  aria-current={i === displayIndex ? "true" : undefined}
                   className={`relative h-[100px] w-[100px] shrink-0 rounded-[10px] transition outline-none ${
-                    i === index
+                    i === displayIndex
                       ? "z-[1] ring-2 ring-[color-mix(in_srgb,var(--mp-primary)_88%,#171717)] ring-offset-2 ring-offset-zinc-900 opacity-100"
                       : "opacity-75 hover:opacity-100"
                   }`}

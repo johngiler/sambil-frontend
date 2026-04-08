@@ -260,7 +260,7 @@ export function CoverImageField({
                 Reemplazar: arrastra aquí o{" "}
                 <button
                   type="button"
-                  className="mp-text-brand underline decoration-[color-mix(in_srgb,var(--mp-primary)_45%,transparent)] underline-offset-2"
+                  className="mp-text-brand no-underline underline-offset-2 transition-colors hover:underline hover:decoration-[color-mix(in_srgb,var(--mp-primary)_85%,transparent)]"
                   onClick={openPicker}
                 >
                   elige un archivo
@@ -271,7 +271,7 @@ export function CoverImageField({
                 Arrastra una imagen aquí o{" "}
                 <button
                   type="button"
-                  className="mp-text-brand underline decoration-[color-mix(in_srgb,var(--mp-primary)_45%,transparent)] underline-offset-2"
+                  className="mp-text-brand no-underline underline-offset-2 transition-colors hover:underline hover:decoration-[color-mix(in_srgb,var(--mp-primary)_85%,transparent)]"
                   onClick={openPicker}
                 >
                   elige un archivo

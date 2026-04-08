@@ -58,14 +58,23 @@ export function adminCenterCoverLightboxItems(center) {
 }
 
 export function adminOrderLineCoverLightboxItems(line) {
-  if (!line?.ad_space_cover_image) return [];
-  const s = mediaAbsoluteUrl(line.ad_space_cover_image);
-  if (!s) return [];
   const alt =
-    typeof line.ad_space_title === "string" && line.ad_space_title.trim()
+    typeof line?.ad_space_title === "string" && line.ad_space_title.trim()
       ? line.ad_space_title.trim()
-      : line.ad_space_code
+      : line?.ad_space_code
         ? `Portada ${line.ad_space_code}`
         : "Portada de la toma";
-  return [{ src: s, alt }];
+  const out = [];
+  if (Array.isArray(line?.ad_space_gallery_images) && line.ad_space_gallery_images.length > 0) {
+    for (const u of line.ad_space_gallery_images) {
+      if (typeof u !== "string" || !u.trim()) continue;
+      const s = mediaAbsoluteUrl(u.trim());
+      if (s) out.push({ src: s, alt, thumbnailSrc: s });
+    }
+  }
+  if (out.length === 0 && line?.ad_space_cover_image) {
+    const s = mediaAbsoluteUrl(line.ad_space_cover_image);
+    if (s) out.push({ src: s, alt, thumbnailSrc: s });
+  }
+  return out;
 }

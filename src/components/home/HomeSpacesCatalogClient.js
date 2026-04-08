@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { HomeSpacesCatalogSkeleton } from "@/components/home/HomeSpacesCatalogSkeleton";
 import { SpaceCardWithCart } from "@/components/space/SpaceCardWithCart";
@@ -43,6 +44,11 @@ function facetLabel(item) {
 
 export function HomeSpacesCatalogClient() {
   const { displayName } = useWorkspace();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const centerCode = useMemo(() => (searchParams.get("center") || "").trim(), [searchParams]);
+
   const [spaces, setSpaces] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
@@ -56,21 +62,21 @@ export function HomeSpacesCatalogClient() {
   const debouncedQuery = useDebouncedValue(query, 400);
 
   const filtersActive = useMemo(
-    () => selectedCity.trim() !== "" || query.trim() !== "",
-    [selectedCity, query],
+    () => selectedCity.trim() !== "" || query.trim() !== "" || centerCode !== "",
+    [selectedCity, query, centerCode],
   );
 
   const loadFacets = useCallback(async () => {
     setFacetsError(null);
     try {
-      const data = await getSpacesLocationFacets({ search: debouncedQuery });
+      const data = await getSpacesLocationFacets({ search: debouncedQuery, center: centerCode });
       const total = typeof data.total === "number" ? data.total : 0;
       const items = Array.isArray(data.items) ? data.items : [];
       setFacets({ total, items });
     } catch (e) {
       setFacetsError(e instanceof Error ? e : new Error(String(e)));
     }
-  }, [debouncedQuery]);
+  }, [debouncedQuery, centerCode]);
 
   const loadPage = useCallback(async () => {
     setLoading(true);
@@ -79,6 +85,7 @@ export function HomeSpacesCatalogClient() {
       const { results, count } = await getSpacesCatalogPage({
         search: debouncedQuery,
         city: selectedCity,
+        center: centerCode,
         page,
       });
       setSpaces(Array.isArray(results) ? results : []);
@@ -91,7 +98,7 @@ export function HomeSpacesCatalogClient() {
       setLoading(false);
       setDataReady(true);
     }
-  }, [debouncedQuery, selectedCity, page]);
+  }, [debouncedQuery, selectedCity, centerCode, page]);
 
   useEffect(() => {
     loadFacets();
@@ -103,12 +110,16 @@ export function HomeSpacesCatalogClient() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedQuery, selectedCity]);
+  }, [debouncedQuery, selectedCity, centerCode]);
 
   function clearFilters() {
     setSelectedCity("");
     setQuery("");
     setPage(1);
+    const p = new URLSearchParams(searchParams.toString());
+    p.delete("center");
+    const s = p.toString();
+    router.replace(s ? `${pathname}?${s}` : pathname, { scroll: false });
   }
 
   const totalForPills = useMemo(() => {

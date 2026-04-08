@@ -130,11 +130,7 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
           )}
           <button
             type="button"
-            className={`mp-ring-brand absolute bottom-0 z-30 flex h-9 w-9 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-md transition hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_40%,transparent)] ${
-              collapsed
-                ? "left-1/2 -translate-x-1/2 translate-y-1/2"
-                : "-right-3 translate-y-1/2"
-            }`}
+            className="mp-ring-brand absolute bottom-0 right-0 z-30 flex h-9 w-9 translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-md transition hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_40%,transparent)]"
             aria-expanded={!collapsed}
             aria-label={collapsed ? "Expandir menú del panel" : "Contraer menú del panel"}
             onClick={toggleCollapsed}

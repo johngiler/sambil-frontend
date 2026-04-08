@@ -10,6 +10,7 @@ import {
   AdminDetailSection,
   adminDetailEmpty,
 } from "@/components/admin/AdminAccordionDetail";
+import { AdminCopyIconButton } from "@/components/admin/AdminCopyIconButton";
 import { AdminAccordionToggle } from "@/components/admin/AdminAccordionToggle";
 import { AdminCreatePlusIcon } from "@/components/admin/AdminCreatePlusIcon";
 import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
@@ -49,6 +50,11 @@ import {
   FilterClearAction,
 } from "@/components/admin/AdminListFilters";
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
+import { AdminListQuerySync } from "@/components/admin/AdminListQuerySync";
+import {
+  AdminDashboardFilterLink,
+  dashboardUsuariosSearchHref,
+} from "@/lib/adminDashboardLinks";
 
 const CLIENT_STATUS_FILTERS = [{ v: "all", l: "Todos los estados" }, ...CLIENT_STATUS];
 
@@ -72,7 +78,7 @@ function clientCanGenerateUser(c) {
   return !hasLinked && em;
 }
 
-/** Texto de usuarios vinculados a la empresa (nombres de usuario, más legible que IDs). */
+/** Texto de usuarios vinculados al cliente (nombres de usuario, más legible que IDs). */
 function formatLinkedUsersDisplay(c) {
   if (c == null) return "—";
   if (Array.isArray(c.linked_usernames) && c.linked_usernames.length > 0) {
@@ -82,6 +88,22 @@ function formatLinkedUsersDisplay(c) {
     return c.linked_user_ids.join(", ");
   }
   return "—";
+}
+
+function LinkedUsernamesAdminLinks({ usernames }) {
+  if (!Array.isArray(usernames) || usernames.length === 0) return null;
+  return (
+    <>
+      {usernames.map((uname, i) => (
+        <Fragment key={uname}>
+          {i > 0 ? ", " : null}
+          <AdminDashboardFilterLink href={dashboardUsuariosSearchHref(uname)}>
+            {uname}
+          </AdminDashboardFilterLink>
+        </Fragment>
+      ))}
+    </>
+  );
 }
 
 export function ClientesAdminSection() {
@@ -219,7 +241,7 @@ export function ClientesAdminSection() {
         try {
           await navigator.clipboard.writeText(fullUrl);
           setMsg(
-            `Usuario generado para ${data.email || c.email}. Enlace de registro copiado al portapapeles; compártelo con la empresa.`,
+            `Usuario generado para ${data.email || c.email}. Enlace de registro copiado al portapapeles; compártelo con el cliente.`,
           );
         } catch {
           setMsg(
@@ -336,7 +358,9 @@ export function ClientesAdminSection() {
   }
 
   return (
-    <div className={adminPanelCard}>
+    <>
+      <AdminListQuerySync onQuery={setFilterQ} />
+      <div className={adminPanelCard}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="flex items-center gap-3">
           <div className={adminSectionHeaderIconWrap}>
@@ -366,8 +390,8 @@ export function ClientesAdminSection() {
         <div className="mt-6">
           <EmptyState
             icon={<EmptyStateIconBriefcase />}
-            title="No hay empresas cliente registradas"
-            description="Todavía no hay empresas dadas de alta. Puedes registrar la primera con «Nuevo cliente» o aparecerán cuando un usuario complete los datos de su empresa en Mi empresa."
+            title="No hay clientes registrados"
+            description="Todavía no hay clientes dados de alta. Puedes registrar el primero con «Nuevo cliente» o aparecerán cuando un usuario complete los datos en Mi empresa."
           />
         </div>
       ) : (
@@ -377,7 +401,7 @@ export function ClientesAdminSection() {
               id="clientes-filter-q"
               value={filterQ}
               onChange={setFilterQ}
-              placeholder="Empresa, correo, contacto…"
+              placeholder="Cliente, correo, contacto…"
             />
             <AdminFilterSelect
               id="clientes-filter-status"
@@ -422,7 +446,7 @@ export function ClientesAdminSection() {
                     Foto
                   </th>
                   <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Empresa
+                    Cliente
                   </th>
                   <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Email
@@ -473,7 +497,7 @@ export function ClientesAdminSection() {
                         {c.email?.trim() ? (
                           <a
                             href={`mailto:${encodeURIComponent(c.email.trim())}`}
-                            className="block truncate font-medium text-zinc-900 underline-offset-2 hover:underline"
+                            className="block truncate font-medium text-zinc-900 no-underline underline-offset-2 hover:underline"
                             title={c.email.trim()}
                             onClick={(e) => e.stopPropagation()}
                           >
@@ -502,7 +526,11 @@ export function ClientesAdminSection() {
                           </button>
                         ) : (
                           <span className="block truncate" title={linkedUsersText}>
-                            {linkedUsersText}
+                            {Array.isArray(c.linked_usernames) && c.linked_usernames.length > 0 ? (
+                              <LinkedUsernamesAdminLinks usernames={c.linked_usernames} />
+                            ) : (
+                              linkedUsersText
+                            )}
                           </span>
                         )}
                       </td>
@@ -536,7 +564,11 @@ export function ClientesAdminSection() {
                           <AdminDetailSection panelId={panelId} sectionId="contact" title="Contacto">
                             <AdminDetailInset>
                               <AdminDetailField label="Usuarios vinculados">
-                                {linkedUsersText !== "—" ? (
+                                {Array.isArray(c.linked_usernames) && c.linked_usernames.length > 0 ? (
+                                  <span className="text-sm text-zinc-800">
+                                    <LinkedUsernamesAdminLinks usernames={c.linked_usernames} />
+                                  </span>
+                                ) : linkedUsersText !== "—" ? (
                                   <span className="text-sm text-zinc-800">{linkedUsersText}</span>
                                 ) : (
                                   <span className="text-sm text-zinc-400">
@@ -546,13 +578,23 @@ export function ClientesAdminSection() {
                                 )}
                               </AdminDetailField>
                               <AdminDetailField label="Persona de contacto">
-                                {adminDetailEmpty(c.contact_name)}
+                                {c.contact_name?.trim() ? (
+                                  <span className="inline-flex max-w-full flex-wrap items-center gap-1.5 text-sm text-zinc-800">
+                                    <span>{c.contact_name.trim()}</span>
+                                    <AdminCopyIconButton
+                                      value={c.contact_name.trim()}
+                                      ariaLabel="Copiar persona de contacto"
+                                    />
+                                  </span>
+                                ) : (
+                                  adminDetailEmpty("")
+                                )}
                               </AdminDetailField>
                               <AdminDetailField label="Email">
                                 {c.email?.trim() ? (
                                   <a
                                     href={`mailto:${c.email.trim()}`}
-                                    className="break-all font-medium text-zinc-900 underline-offset-2 hover:underline"
+                                    className="break-all font-medium text-zinc-900 no-underline underline-offset-2 hover:underline"
                                   >
                                     {c.email.trim()}
                                   </a>
@@ -560,7 +602,29 @@ export function ClientesAdminSection() {
                                   adminDetailEmpty("")
                                 )}
                               </AdminDetailField>
-                              <AdminDetailField label="Teléfono">{adminDetailEmpty(c.phone)}</AdminDetailField>
+                              <AdminDetailField label="RIF">
+                                {c.rif?.trim() ? (
+                                  <span className="inline-flex max-w-full flex-wrap items-center gap-1.5 font-mono text-sm text-zinc-800">
+                                    <span>{c.rif.trim()}</span>
+                                    <AdminCopyIconButton value={c.rif.trim()} ariaLabel="Copiar RIF" />
+                                  </span>
+                                ) : (
+                                  <span className="font-mono text-sm text-zinc-800">{adminDetailEmpty("")}</span>
+                                )}
+                              </AdminDetailField>
+                              <AdminDetailField label="Teléfono">
+                                {c.phone?.trim() ? (
+                                  <span className="inline-flex max-w-full flex-wrap items-center gap-1.5 text-sm text-zinc-800">
+                                    <span>{c.phone.trim()}</span>
+                                    <AdminCopyIconButton
+                                      value={c.phone.trim()}
+                                      ariaLabel="Copiar teléfono"
+                                    />
+                                  </span>
+                                ) : (
+                                  adminDetailEmpty("")
+                                )}
+                              </AdminDetailField>
                             </AdminDetailInset>
                           </AdminDetailSection>
 
@@ -632,7 +696,12 @@ export function ClientesAdminSection() {
             </div>
             <div>
               <p className={adminLabel}>RIF</p>
-              <p className="mt-1 font-mono text-sm text-zinc-800">{selected.rif}</p>
+              <p className="mt-1 inline-flex flex-wrap items-center gap-1.5 font-mono text-sm text-zinc-800">
+                <span>{selected.rif?.trim() || "—"}</span>
+                {selected.rif?.trim() ? (
+                  <AdminCopyIconButton value={selected.rif.trim()} ariaLabel="Copiar RIF" />
+                ) : null}
+              </p>
             </div>
             <div>
               <p className={adminLabel}>Estado</p>
@@ -646,11 +715,25 @@ export function ClientesAdminSection() {
             </div>
             <div>
               <p className={adminLabel}>Contacto</p>
-              <p className="mt-1 text-sm text-zinc-800">{selected.contact_name || "—"}</p>
+              <p className="mt-1 inline-flex flex-wrap items-center gap-1.5 text-sm text-zinc-800">
+                <span>{selected.contact_name?.trim() || "—"}</span>
+                {selected.contact_name?.trim() ? (
+                  <AdminCopyIconButton
+                    value={selected.contact_name.trim()}
+                    ariaLabel="Copiar persona de contacto"
+                  />
+                ) : null}
+              </p>
             </div>
             <div>
               <p className={adminLabel}>Usuarios vinculados</p>
-              <p className="mt-1 text-sm text-zinc-800">{formatLinkedUsersDisplay(selected)}</p>
+              <p className="mt-1 text-sm text-zinc-800">
+                {Array.isArray(selected.linked_usernames) && selected.linked_usernames.length > 0 ? (
+                  <LinkedUsernamesAdminLinks usernames={selected.linked_usernames} />
+                ) : (
+                  formatLinkedUsersDisplay(selected)
+                )}
+              </p>
               <p className="mt-1 text-xs text-zinc-500">
                 Solo lectura. Puedes usar «Generar usuario» en la columna Usuarios vinculados (enlace para definir
                 contraseña) o enlazar cuentas en Usuarios con rol «Cliente marketplace». Varias cuentas pueden compartir
@@ -663,7 +746,12 @@ export function ClientesAdminSection() {
             </div>
             <div>
               <p className={adminLabel}>Teléfono</p>
-              <p className="mt-1 text-sm text-zinc-800">{selected.phone || "—"}</p>
+              <p className="mt-1 inline-flex flex-wrap items-center gap-1.5 text-sm text-zinc-800">
+                <span>{selected.phone?.trim() || "—"}</span>
+                {selected.phone?.trim() ? (
+                  <AdminCopyIconButton value={selected.phone.trim()} ariaLabel="Copiar teléfono" />
+                ) : null}
+              </p>
             </div>
             <div>
               <p className={adminLabel}>Ciudad</p>
@@ -824,10 +912,11 @@ export function ClientesAdminSection() {
         }}
       >
         <p>
-          ¿Eliminar esta empresa del sistema? Solo aparece esta opción si no tiene pedidos vinculados. Esta acción no se
+          ¿Eliminar este cliente del sistema? Solo aparece esta opción si no tiene pedidos vinculados. Esta acción no se
           puede deshacer.
         </p>
       </AdminConfirmDialog>
     </div>
+    </>
   );
 }

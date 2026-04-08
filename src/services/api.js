@@ -253,12 +253,13 @@ export async function postSpaceRentalRangeCheck(spaceId, { start_date, end_date 
 
 /**
  * Portada: tomas paginadas con búsqueda y filtro por ciudad del centro.
- * @param {{ search?: string, city?: string, page?: number, pageSize?: number }} params
+ * @param {{ search?: string, city?: string, center?: string, page?: number, pageSize?: number }} params
  * @returns {Promise<{ results: Array<Record<string, unknown>>, count: number, next: string | null, previous: string | null }>}
  */
 export async function getSpacesCatalogPage({
   search = "",
   city = "",
+  center = "",
   page = 1,
   pageSize = 20,
 } = {}) {
@@ -267,6 +268,7 @@ export async function getSpacesCatalogPage({
   if (pageSize && pageSize !== 20) params.set("page_size", String(pageSize));
   if (search.trim()) params.set("search", search.trim());
   if (city.trim()) params.set("city", city.trim());
+  if (center.trim()) params.set("center", center.trim());
   const qs = `?${params.toString()}`;
   const paths = [`/api/spaces/${qs}`, `/api/catalog/spaces/${qs}`];
   const headers = {
@@ -292,12 +294,13 @@ export async function getSpacesCatalogPage({
 
 /**
  * Conteos por ciudad para pills (respeta la misma búsqueda que el listado).
- * @param {{ search?: string }} params
+ * @param {{ search?: string, center?: string }} params
  * @returns {Promise<{ total: number, items: Array<{ city: string, count: number, label?: string }> }>}
  */
-export async function getSpacesLocationFacets({ search = "" } = {}) {
+export async function getSpacesLocationFacets({ search = "", center = "" } = {}) {
   const params = new URLSearchParams();
   if (search.trim()) params.set("search", search.trim());
+  if (center.trim()) params.set("center", center.trim());
   const q = params.toString();
   const suffix = q ? `?${q}` : "";
   const paths = [

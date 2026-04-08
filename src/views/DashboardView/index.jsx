@@ -141,7 +141,7 @@ export default function DashboardView({ section = "resumen" }) {
       <p className="mt-10 text-sm text-zinc-500 lg:hidden">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 font-medium text-zinc-800 underline-offset-4 hover:underline"
+          className="inline-flex items-center gap-2 font-medium text-zinc-800 no-underline underline-offset-4 hover:underline"
         >
           <IconChevronLeft className="text-zinc-600" />
           Volver al marketplace

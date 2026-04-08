@@ -74,8 +74,8 @@ function LoginShell({ children }) {
               </span>
             </p>
             <p className="mt-2 max-w-sm text-sm leading-relaxed text-zinc-300 lg:text-[0.9375rem]">
-              Espacios publicitarios en centros comerciales. Accede para reservar, contratar y gestionar tu
-              empresa.
+              Espacios publicitarios en centros comerciales. Accede para reservar, contratar y gestionar la ficha de tu
+              cliente.
             </p>
           </div>
           <p className="relative mt-6 hidden text-xs text-zinc-500 lg:mt-0 lg:block">
@@ -165,15 +165,15 @@ export default function LoginForm() {
           </div>
           <Link
             href="/"
-            className="shrink-0 text-xs font-medium text-zinc-900 underline-offset-4 transition-colors hover:underline"
+            className="shrink-0 text-xs font-medium text-zinc-900 no-underline underline-offset-4 transition-colors hover:underline"
           >
             ← Catálogo
           </Link>
         </div>
 
         <p className="mt-5 text-pretty text-sm leading-relaxed text-zinc-600">
-          Necesario para completar el checkout y gestionar tu empresa. Las cuentas las habilita el equipo del
-          operador junto con el alta de tu empresa.
+          Necesario para completar el checkout y gestionar la ficha de tu cliente. Las cuentas las habilita el equipo del
+          operador junto con el alta de tu cliente.
         </p>
 
         <form onSubmit={onSubmit} className="mt-8 space-y-5">

@@ -144,7 +144,7 @@ export function SpaceDetailReservationActions({ space }) {
           Este proceso no está disponible para tu cuenta. Usa el acceso que te corresponde.
         </p>
         <p className="mt-3">
-          <Link href="/dashboard" className="font-semibold text-zinc-900 underline-offset-4 hover:underline">
+          <Link href="/dashboard" className="font-semibold text-zinc-900 no-underline underline-offset-4 hover:underline">
             Ir al panel
           </Link>
         </p>

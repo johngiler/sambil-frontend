@@ -5,6 +5,7 @@ import { SpaceDetailCoverWithLightbox } from "@/components/catalog/SpaceDetailCo
 import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvailabilityBar";
 import { SpaceDetailReservationActions } from "@/components/catalog/SpaceDetailReservationActions";
 import { SPACE_TYPES, spaceStatusLabel, spaceStatusPillClassName } from "@/components/admin/adminConstants";
+import { subtitleCityAfterCenterName } from "@/lib/shoppingCenterDisplay";
 import { spaceCoverUrlForUi } from "@/lib/spaceCover";
 import { getSpace } from "@/services/api";
 
@@ -29,7 +30,7 @@ function SpecRow({ label, children, compact = false }) {
   if (children == null || children === "") return null;
   return (
     <div
-      className={`border-b border-zinc-100 last:border-b-0 last:pb-0 ${compact ? "py-1.5" : "py-3"}`}
+      className={`border-b border-zinc-100 last:border-b-0 last:pb-0 ${compact ? "py-2" : "py-3"}`}
     >
       <dt
         className={`font-semibold uppercase tracking-wide text-zinc-500 ${
@@ -65,10 +66,20 @@ export default async function SpaceDetailView({ spaceId }) {
   const typeLabel = labelFromChoices(SPACE_TYPES, space.type);
   const statusLabel = spaceStatusLabel(space.status, space.status_label);
   const year = Number(space.availability_year) || new Date().getFullYear();
-  const city =
+  const centerName =
+    typeof space.shopping_center_name === "string" && space.shopping_center_name.trim() !== ""
+      ? space.shopping_center_name.trim()
+      : "";
+  const centerCode =
+    typeof space.shopping_center_code === "string" && space.shopping_center_code.trim() !== ""
+      ? space.shopping_center_code.trim()
+      : "";
+  const cityRaw =
     typeof space.shopping_center_city === "string" && space.shopping_center_city.trim() !== ""
       ? space.shopping_center_city.trim()
       : null;
+  const cityLine = subtitleCityAfterCenterName(centerName, cityRaw);
+  const homeFilteredByCenterHref = centerCode ? `/?center=${encodeURIComponent(centerCode)}` : "/";
   const coverUrl = spaceCoverUrlForUi(space);
   const galleryUrls =
     Array.isArray(space.gallery_images) && space.gallery_images.length > 0
@@ -99,8 +110,23 @@ export default async function SpaceDetailView({ spaceId }) {
           {space.title}
         </h1>
         <p className="mt-3 text-base text-zinc-600">
-          <span className="font-medium text-zinc-800">{space.shopping_center_name}</span>
-          {city ? <span className="text-zinc-400"> · {city}</span> : null}
+          <span className="font-medium text-zinc-700">Centro comercial: </span>
+          {centerCode ? (
+            <Link
+              href={homeFilteredByCenterHref}
+              className="font-medium mp-text-brand no-underline underline-offset-2 transition-colors hover:underline hover:decoration-[color-mix(in_srgb,var(--mp-primary)_85%,transparent)]"
+            >
+              {centerName || centerCode}
+            </Link>
+          ) : (
+            <span className="font-medium text-zinc-900">{centerName || "—"}</span>
+          )}
+          {cityLine ? (
+            <>
+              <span className="text-zinc-400"> · </span>
+              <span>{cityLine}</span>
+            </>
+          ) : null}
           {typeLabel ? (
             <>
               <span className="text-zinc-400"> · </span>
@@ -110,7 +136,7 @@ export default async function SpaceDetailView({ spaceId }) {
         </p>
       </header>
 
-      <div className="mt-6 grid gap-8 lg:mt-8 lg:grid-cols-12 lg:items-start lg:gap-x-6 lg:gap-y-0">
+      <div className="mt-6 grid gap-8 lg:mt-8 lg:grid-cols-12 lg:items-start lg:gap-x-3 lg:gap-y-0">
         <div className="min-w-0 lg:col-span-7">
           <SpaceDetailCoverWithLightbox
             galleryUrls={galleryUrls}
@@ -126,30 +152,34 @@ export default async function SpaceDetailView({ spaceId }) {
           ) : null}
         </div>
 
-        <aside className="mx-auto flex w-full min-w-0 max-w-xs flex-col gap-5 sm:max-w-[17rem] lg:col-span-5 lg:mx-0 lg:sticky lg:top-24 lg:justify-self-end lg:self-start">
-          <div className="w-full rounded-xl border border-zinc-200/90 bg-white p-3 shadow-sm sm:p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Precio mensual</p>
+        <aside className="mx-auto flex w-full min-w-0 max-w-sm flex-col gap-5 sm:max-w-[23rem] lg:col-span-5 lg:mx-0 lg:max-w-none lg:sticky lg:top-24 lg:justify-self-start lg:self-start">
+          <div className="w-full rounded-xl border border-zinc-200/90 bg-white p-3.5 shadow-sm sm:p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Precio mensual</p>
             <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-              <span className="text-xl font-semibold tabular-nums text-[#c2410c] sm:text-2xl">
+              <span className="text-2xl font-semibold tabular-nums text-[#c2410c] sm:text-3xl">
                 {formatUsdMonthly(space.monthly_price_usd)}
               </span>
-              <span className="text-xs text-zinc-500">USD / mes, antes de impuestos si aplican</span>
+              <span className="text-sm text-zinc-500">USD / mes, antes de impuestos si aplican</span>
             </p>
             <div className="mt-3 border-t border-zinc-100 pt-3">
-              <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                 Disponibilidad en {year}
               </p>
-              <p className="mt-1 text-[11px] leading-snug text-zinc-500">
+              <p className="mt-1 text-xs leading-snug text-zinc-500">
                 Franja por meses: naranja = ocupado o bloqueado; gris claro = libre.
               </p>
               <div className="mt-2 min-w-0">
-                <SpaceMonthAvailabilityBar monthsOccupied={space.months_occupied} labelMetric="occupied" />
+                <SpaceMonthAvailabilityBar
+                  monthsOccupied={space.months_occupied}
+                  labelMetric="occupied"
+                  variant="comfortable"
+                />
               </div>
             </div>
           </div>
 
-          <div className="w-full rounded-xl border border-zinc-200/90 bg-zinc-50/80 p-3 sm:p-3.5">
-            <h2 className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Ficha técnica</h2>
+          <div className="w-full rounded-xl border border-zinc-200/90 bg-zinc-50/80 p-3.5 sm:p-4">
+            <h2 className="text-base font-bold uppercase tracking-wide text-zinc-950">Ficha técnica</h2>
             <dl className="mt-1.5">
               {space.width != null && space.height != null ? (
                 <SpecRow compact label="Dimensiones (m)">
@@ -183,7 +213,7 @@ export default async function SpaceDetailView({ spaceId }) {
               ) : null}
               <SpecRow compact label="Estado">
                 <span
-                  className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${spaceStatusPillClassName(space.status)}`}
+                  className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${spaceStatusPillClassName(space.status)}`}
                 >
                   {statusLabel}
                 </span>

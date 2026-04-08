@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
 import { MisPedidosSkeleton } from "@/components/orders/MisPedidosSkeleton";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { useAuth } from "@/context/AuthContext";
@@ -110,23 +111,68 @@ function StatusBadge({ label, status }) {
   );
 }
 
-/** @param {{ items: unknown[] }} o */
+/** Número de fotos distintas de una línea (URLs únicas tras resolver media). */
+function orderLineItemImageCount(it) {
+  if (Array.isArray(it?.ad_space_gallery_images) && it.ad_space_gallery_images.length > 0) {
+    const seen = new Set();
+    for (const u of it.ad_space_gallery_images) {
+      if (typeof u !== "string" || !u.trim()) continue;
+      const s = mediaAbsoluteUrl(u.trim());
+      if (s) seen.add(s);
+    }
+    if (seen.size > 0) return seen.size;
+  }
+  if (it?.ad_space_cover_image && mediaAbsoluteUrl(it.ad_space_cover_image)) return 1;
+  return 0;
+}
+
+/**
+ * Entradas planas para el lightbox: todas las imágenes de cada línea en orden.
+ * `lineId` identifica la línea del pedido (para abrir en la primera foto de esa toma).
+ *
+ * @param {{ items: unknown[] }} o
+ */
 function orderLineGalleryEntries(o) {
   const items = Array.isArray(o.items) ? o.items : [];
-  return items
-    .map((it) => {
-      if (!it?.ad_space_cover_image) return null;
-      const src = mediaAbsoluteUrl(it.ad_space_cover_image);
-      if (!src) return null;
-      const alt =
-        typeof it.ad_space_title === "string" && it.ad_space_title.trim()
-          ? `Portada: ${it.ad_space_title.trim()}`
-          : it.ad_space_code
-            ? `Portada toma ${it.ad_space_code}`
-            : "Portada de la toma";
-      return { src, alt, thumbnailSrc: src, lineId: it.id };
-    })
-    .filter(Boolean);
+  const out = [];
+  for (const it of items) {
+    const label =
+      typeof it?.ad_space_title === "string" && it.ad_space_title.trim()
+        ? it.ad_space_title.trim()
+        : it?.ad_space_code
+          ? String(it.ad_space_code)
+          : "Toma";
+
+    if (Array.isArray(it?.ad_space_gallery_images) && it.ad_space_gallery_images.length > 0) {
+      const seenSrc = new Set();
+      let idx = 0;
+      for (const u of it.ad_space_gallery_images) {
+        if (typeof u !== "string" || !u.trim()) continue;
+        const src = mediaAbsoluteUrl(u.trim());
+        if (!src || seenSrc.has(src)) continue;
+        seenSrc.add(src);
+        idx += 1;
+        out.push({
+          src,
+          alt: idx > 1 ? `Imagen ${idx} · ${label}` : `Portada · ${label}`,
+          thumbnailSrc: src,
+          lineId: it.id,
+        });
+      }
+      if (idx > 0) continue;
+    }
+
+    if (!it?.ad_space_cover_image) continue;
+    const src = mediaAbsoluteUrl(it.ad_space_cover_image);
+    if (!src) continue;
+    out.push({
+      src,
+      alt: `Portada · ${label}`,
+      thumbnailSrc: src,
+      lineId: it.id,
+    });
+  }
+  return out;
 }
 
 function SectionTitle({ children, id }) {
@@ -247,14 +293,14 @@ export default function MisPedidosView() {
   });
 
   const openOrderLineGallery = useCallback((order, lineId) => {
-    const entries = orderLineGalleryEntries(order);
+    /** Solo imágenes de esta línea (igual que en panel Pedidos por toma). */
+    const entries = orderLineGalleryEntries(order).filter((x) => x.lineId === lineId);
     if (!entries.length) return;
-    const idx = entries.findIndex((x) => x.lineId === lineId);
     const items = entries.map(({ lineId: _lid, ...rest }) => rest);
     setLineLightbox({
       open: true,
       items,
-      initialIndex: idx >= 0 ? idx : 0,
+      initialIndex: 0,
     });
   }, []);
 
@@ -370,7 +416,27 @@ export default function MisPedidosView() {
                     </div>
                     <div className="flex flex-wrap items-start justify-between gap-3 border-t border-zinc-100 pt-3">
                       <div className="min-w-0">
-                        <p className="text-sm text-zinc-600">{lineDesc}</p>
+                        <p className="text-sm text-zinc-600">
+                          {first?.ad_space != null && first.ad_space !== "" ? (
+                            <>
+                              <CatalogSpaceLink
+                                spaceId={first.ad_space}
+                                stopPropagation
+                                className="text-zinc-800"
+                              >
+                                {firstTitle}
+                              </CatalogSpaceLink>
+                              {firstCenter ? (
+                                <>
+                                  <span className="text-zinc-400"> · </span>
+                                  <span>{firstCenter}</span>
+                                </>
+                              ) : null}
+                            </>
+                          ) : (
+                            lineDesc
+                          )}
+                        </p>
                         {items.length > 1 ? (
                           <p className="mt-1 text-xs text-zinc-400">+{items.length - 1} línea(s) más</p>
                         ) : null}
@@ -407,12 +473,21 @@ export default function MisPedidosView() {
                           className="mt-3 space-y-3 text-sm"
                           aria-labelledby={`${panelId}-lineas`}
                         >
-                          {(() => {
-                            const galleryCount = orderLineGalleryEntries(o).length;
-                            return (o.items || []).map((it) => {
-                            const lineCover = it.ad_space_cover_image
-                              ? mediaAbsoluteUrl(it.ad_space_cover_image)
-                              : "";
+                          {(o.items || []).map((it) => {
+                            const lineCover =
+                              (it.ad_space_cover_image
+                                ? mediaAbsoluteUrl(it.ad_space_cover_image)
+                                : "") ||
+                              (Array.isArray(it.ad_space_gallery_images)
+                                ? it.ad_space_gallery_images
+                                    .map((u) =>
+                                      typeof u === "string" && u.trim()
+                                        ? mediaAbsoluteUrl(u.trim())
+                                        : "",
+                                    )
+                                    .find(Boolean) || ""
+                                : "");
+                            const lineImgCount = orderLineItemImageCount(it);
                             return (
                               <li
                                 key={it.id}
@@ -425,9 +500,9 @@ export default function MisPedidosView() {
                                       onClick={() => openOrderLineGallery(o, it.id)}
                                       className={`${squareAdminTablePortadaFrameClass} ${squareListImagePreviewButtonRingClass} p-0`}
                                       aria-label={
-                                        galleryCount > 1
-                                          ? "Abrir galería de portadas del pedido"
-                                          : "Abrir portada ampliada"
+                                        lineImgCount > 1
+                                          ? `Abrir galería de esta toma (${lineImgCount} imágenes)`
+                                          : "Abrir imagen ampliada"
                                       }
                                     >
                                       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -439,9 +514,17 @@ export default function MisPedidosView() {
                                     </button>
                                   ) : null}
                                   <div className="min-w-0">
-                                    <span className="font-mono font-medium text-zinc-900">
+                                    <CatalogSpaceLink spaceId={it.ad_space} variant="mono">
                                       {it.ad_space_code || `#${it.ad_space}`}
-                                    </span>
+                                    </CatalogSpaceLink>
+                                    {it.ad_space_title ? (
+                                      <CatalogSpaceLink
+                                        spaceId={it.ad_space}
+                                        className="mt-0.5 block text-sm leading-snug text-zinc-800"
+                                      >
+                                        {it.ad_space_title}
+                                      </CatalogSpaceLink>
+                                    ) : null}
                                     <p className="mt-0.5 text-xs text-zinc-500">
                                       Contrato {it.start_date} → {it.end_date}
                                     </p>
@@ -452,8 +535,7 @@ export default function MisPedidosView() {
                                 </span>
                               </li>
                             );
-                          });
-                          })()}
+                          })}
                         </ul>
                       </div>
                       <div className="rounded-xl border border-zinc-100 bg-white/90 p-4 shadow-sm">
@@ -478,7 +560,7 @@ export default function MisPedidosView() {
         initialIndex={lineLightbox.initialIndex}
         showDownload={false}
         showThumbnails={lineLightbox.items.length > 1}
-        ariaLabel="Portadas de las tomas del pedido"
+        ariaLabel="Imágenes de las tomas del pedido"
       />
     </div>
   );

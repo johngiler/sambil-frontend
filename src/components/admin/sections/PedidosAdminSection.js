@@ -11,6 +11,7 @@ import {
   adminDetailEmpty,
 } from "@/components/admin/AdminAccordionDetail";
 import { AdminAccordionToggle } from "@/components/admin/AdminAccordionToggle";
+import { AdminCopyIconButton } from "@/components/admin/AdminCopyIconButton";
 import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
 import { AdminRowActions } from "@/components/admin/AdminRowActions";
 import { adminPanelCard, adminPrimaryBtn, adminSectionHeaderIconWrap } from "@/components/admin/adminFormStyles";
@@ -26,11 +27,18 @@ import { AdminSelect } from "@/components/admin/AdminSelect";
 import { clientStatusLabel, clientStatusPillClassName } from "@/components/admin/adminConstants";
 import { IconAdminClipboard, IconAdminRefresh } from "@/components/admin/adminIcons";
 import { PedidosSectionSkeleton } from "@/components/admin/skeletons/PedidosSectionSkeleton";
+import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { PaymentReceiptLightbox } from "@/components/orders/PaymentReceiptLightbox";
 import { useAuth } from "@/context/AuthContext";
 import { EmptyState, EmptyStateIconClipboard } from "@/components/ui/EmptyState";
+import {
+  AdminDashboardFilterLink,
+  dashboardCentrosSearchHref,
+  dashboardClientesSearchHref,
+} from "@/lib/adminDashboardLinks";
 import { ordersListPath } from "@/lib/adminListQuery";
+import { subtitleCityAfterCenterName } from "@/lib/shoppingCenterDisplay";
 import { adminOrderLineCoverLightboxItems } from "@/lib/imageLightboxItems";
 import { isPdfReceiptUrl } from "@/lib/orderPaymentMethods";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
@@ -113,15 +121,11 @@ function PedidoDatosPagoPortal({ order, panelId }) {
   return (
     <>
       <AdminDetailSection panelId={panelId} sectionId="payment" title="Datos de pago">
-        <AdminDetailInset className="space-y-0">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8 lg:gap-10">
-            <div className="shrink-0 sm:max-w-[11rem]">
-              <AdminDetailField label="Método de pago">
-                <span className="font-medium text-zinc-900">{methodLabel}</span>
-              </AdminDetailField>
-            </div>
-            <div className="min-w-0 flex-1">
-              <AdminDetailField label="Comprobante">
+        <AdminDetailInset className="space-y-5">
+          <AdminDetailField label="Método de pago">
+            <span className="font-medium text-zinc-900">{methodLabel}</span>
+          </AdminDetailField>
+          <AdminDetailField label="Comprobante">
             {receiptUrl ? (
               <button
                 type="button"
@@ -153,11 +157,11 @@ function PedidoDatosPagoPortal({ order, panelId }) {
                 </span>
               </button>
             ) : (
-              <p className="text-sm text-zinc-500">El cliente no adjuntó comprobante en el checkout.</p>
+              <p className="text-sm text-zinc-500">
+                El cliente no adjuntó comprobante en el checkout.
+              </p>
             )}
-              </AdminDetailField>
-            </div>
-          </div>
+          </AdminDetailField>
         </AdminDetailInset>
       </AdminDetailSection>
       <PaymentReceiptLightbox
@@ -318,7 +322,7 @@ export function PedidosAdminSection() {
               id="pedidos-filter-q"
               value={filterQ}
               onChange={setFilterQ}
-              placeholder="Buscar por empresa…"
+              placeholder="Buscar por cliente…"
             />
             <AdminFilterSelect
               id="pedidos-filter-status"
@@ -369,6 +373,7 @@ export function PedidosAdminSection() {
               {orders.map((o) => {
               const open = expandedId === o.id;
               const panelId = `pedido-extra-${o.id}`;
+              const clientQ = clientDisplayName(o);
               return (
                 <Fragment key={o.id}>
                   <tr className="border-t border-zinc-100">
@@ -384,9 +389,17 @@ export function PedidosAdminSection() {
                       {formatPedidoAlta(o.created_at)}
                     </td>
                     <td className="max-w-[12rem] px-3 py-2">
-                      <span className="line-clamp-2" title={clientDisplayName(o) || undefined}>
-                        {clientDisplayName(o) || "—"}
-                      </span>
+                      {clientQ ? (
+                        <AdminDashboardFilterLink
+                          href={dashboardClientesSearchHref(clientQ)}
+                          className="line-clamp-2 block max-w-full"
+                          title={clientQ}
+                        >
+                          {clientQ}
+                        </AdminDashboardFilterLink>
+                      ) : (
+                        <span className="line-clamp-2 text-zinc-500">—</span>
+                      )}
                     </td>
                     <td className="px-3 py-2">
                       <div className="max-w-[13rem]">
@@ -422,7 +435,7 @@ export function PedidosAdminSection() {
                       <AdminAccordionDetailHeader
                         badgeText={formatPedidoAlta(o.created_at)}
                         titleLabel="Pedido"
-                        titleLine={clientDisplayName(o) || "Sin nombre de empresa"}
+                        titleLine={clientDisplayName(o) || "Sin nombre de cliente"}
                         hint="Resumen y líneas del pedido"
                       />
 
@@ -469,13 +482,18 @@ export function PedidosAdminSection() {
                                   const coverSrc = it.ad_space_cover_image
                                     ? mediaAbsoluteUrl(it.ad_space_cover_image)
                                     : "";
-                                  const centerLine = [it.shopping_center_code, it.shopping_center_name]
-                                    .filter(Boolean)
-                                    .join(" · ");
+                                  const centerName = (it.shopping_center_name || "").trim();
+                                  const centerCode = (it.shopping_center_code || "").trim();
+                                  const centerCityRaw = (it.shopping_center_city || "").trim();
+                                  const centerCityLine = subtitleCityAfterCenterName(
+                                    centerName,
+                                    centerCityRaw,
+                                  );
+                                  const centerHrefQ = centerCode || centerName;
                                   return (
                                     <li
                                       key={it.id}
-                                      className={`${ROUNDED_CONTROL} flex items-stretch gap-3 border border-zinc-200 bg-white p-3 sm:gap-4`}
+                                      className={`${ROUNDED_CONTROL} flex items-start gap-3 border border-zinc-200 bg-white p-3 sm:gap-4`}
                                     >
                                       {coverSrc ? (
                                         <button
@@ -512,25 +530,39 @@ export function PedidosAdminSection() {
                                         </button>
                                       ) : (
                                         <div
-                                          className={squareOrderLinePreviewFrameClass}
+                                          className={`${squareOrderLinePreviewFrameClass} flex items-center justify-center`}
                                           aria-hidden
                                         >
-                                          <div className="flex h-full w-full items-center justify-center px-1 text-center text-[10px] font-medium uppercase leading-tight tracking-wide text-zinc-400">
+                                          <div className="px-1 text-center text-[10px] font-medium uppercase leading-tight tracking-wide text-zinc-400">
                                             Sin imagen
                                           </div>
                                         </div>
                                       )}
                                       <div className="min-w-0 flex-1 space-y-1.5 text-sm text-zinc-800">
-                                        <p className="font-mono text-xs font-semibold tracking-tight text-zinc-900">
-                                          {it.ad_space_code || "—"}
+                                        <p className="text-xs">
+                                          <CatalogSpaceLink spaceId={it.ad_space} variant="mono" className="font-semibold tracking-tight">
+                                            {it.ad_space_code || "—"}
+                                          </CatalogSpaceLink>
                                         </p>
-                                        <p className="font-medium leading-snug text-zinc-900">
-                                          {it.ad_space_title || "Toma"}
+                                        <p className="font-medium leading-snug">
+                                          <CatalogSpaceLink spaceId={it.ad_space} className="text-zinc-900">
+                                            {it.ad_space_title || "Toma"}
+                                          </CatalogSpaceLink>
                                         </p>
-                                        {centerLine ? (
+                                        {centerName && centerHrefQ ? (
                                           <p className="text-xs text-zinc-600">
                                             <span className="font-semibold text-zinc-700">Centro comercial: </span>
-                                            {centerLine}
+                                            <AdminDashboardFilterLink
+                                              href={dashboardCentrosSearchHref(centerHrefQ)}
+                                            >
+                                              {centerName}
+                                            </AdminDashboardFilterLink>
+                                            {centerCityLine ? (
+                                              <>
+                                                <span className="text-zinc-400"> · </span>
+                                                <span>{centerCityLine}</span>
+                                              </>
+                                            ) : null}
                                           </p>
                                         ) : null}
                                         <p className="text-xs text-zinc-600">
@@ -554,26 +586,62 @@ export function PedidosAdminSection() {
                         </div>
 
                         <div className="min-w-0">
-                        <AdminDetailSection panelId={panelId} sectionId="client" title="Cliente (empresa)">
+                        <AdminDetailSection panelId={panelId} sectionId="client" title="Cliente">
                           <AdminDetailInset className="w-full min-w-0">
                             {o.client_detail ? (
                               <div className="grid w-full min-w-0 grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-4">
-                                <AdminDetailField label="Empresa">
-                                  {o.client_detail.company_name || adminDetailEmpty("")}
+                                <AdminDetailField label="Cliente">
+                                  {o.client_detail.company_name?.trim() ? (
+                                    <AdminDashboardFilterLink
+                                      href={dashboardClientesSearchHref(o.client_detail.company_name.trim())}
+                                    >
+                                      {o.client_detail.company_name.trim()}
+                                    </AdminDashboardFilterLink>
+                                  ) : (
+                                    adminDetailEmpty("")
+                                  )}
                                 </AdminDetailField>
                                 <AdminDetailField label="Teléfono">
-                                  {o.client_detail.phone || adminDetailEmpty("")}
+                                  {o.client_detail.phone?.trim() ? (
+                                    <span className="inline-flex max-w-full flex-wrap items-center gap-1.5">
+                                      <span>{o.client_detail.phone.trim()}</span>
+                                      <AdminCopyIconButton
+                                        value={o.client_detail.phone.trim()}
+                                        ariaLabel="Copiar teléfono"
+                                      />
+                                    </span>
+                                  ) : (
+                                    adminDetailEmpty("")
+                                  )}
                                 </AdminDetailField>
                                 <AdminDetailField label="RIF">
-                                  <span className="font-mono text-zinc-800">
-                                    {o.client_detail.rif || adminDetailEmpty("")}
-                                  </span>
+                                  {o.client_detail.rif?.trim() ? (
+                                    <span className="inline-flex max-w-full flex-wrap items-center gap-1.5 font-mono text-zinc-800">
+                                      <span>{o.client_detail.rif.trim()}</span>
+                                      <AdminCopyIconButton
+                                        value={o.client_detail.rif.trim()}
+                                        ariaLabel="Copiar RIF"
+                                      />
+                                    </span>
+                                  ) : (
+                                    <span className="font-mono text-zinc-800">{adminDetailEmpty("")}</span>
+                                  )}
                                 </AdminDetailField>
                                 <AdminDetailField label="Dirección">
                                   {o.client_detail.address || adminDetailEmpty("")}
                                 </AdminDetailField>
                                 <AdminDetailField label="Contacto">
-                                  {o.client_detail.contact_name || adminDetailEmpty("")}
+                                  {o.client_detail.contact_name?.trim() ? (
+                                    <span className="inline-flex max-w-full flex-wrap items-center gap-1.5">
+                                      <span>{o.client_detail.contact_name.trim()}</span>
+                                      <AdminCopyIconButton
+                                        value={o.client_detail.contact_name.trim()}
+                                        ariaLabel="Copiar contacto"
+                                      />
+                                    </span>
+                                  ) : (
+                                    adminDetailEmpty("")
+                                  )}
                                 </AdminDetailField>
                                 <AdminDetailField label="Ciudad">
                                   {o.client_detail.city || adminDetailEmpty("")}
@@ -582,7 +650,7 @@ export function PedidosAdminSection() {
                                   {o.client_detail.email ? (
                                     <a
                                       href={`mailto:${encodeURIComponent(o.client_detail.email)}`}
-                                      className="break-all font-medium text-zinc-900 underline-offset-2 hover:underline"
+                                      className="break-all font-medium text-zinc-900 no-underline underline-offset-2 hover:underline"
                                     >
                                       {o.client_detail.email}
                                     </a>
@@ -608,8 +676,16 @@ export function PedidosAdminSection() {
                             ) : (
                               <div className="grid w-full grid-cols-1 sm:grid-cols-2">
                                 <div className="sm:col-span-2">
-                                  <AdminDetailField label="Empresa">
-                                    {o.client_company_name || adminDetailEmpty("")}
+                                  <AdminDetailField label="Cliente">
+                                    {o.client_company_name?.trim() ? (
+                                      <AdminDashboardFilterLink
+                                        href={dashboardClientesSearchHref(o.client_company_name.trim())}
+                                      >
+                                        {o.client_company_name.trim()}
+                                      </AdminDashboardFilterLink>
+                                    ) : (
+                                      adminDetailEmpty("")
+                                    )}
                                   </AdminDetailField>
                                 </div>
                               </div>
@@ -637,8 +713,8 @@ export function PedidosAdminSection() {
         items={lineCoverLightbox.items}
         initialIndex={lineCoverLightbox.initialIndex}
         showDownload={false}
-        showThumbnails={false}
-        ariaLabel="Portada de la línea del pedido"
+        showThumbnails={lineCoverLightbox.items.length > 1}
+        ariaLabel="Imágenes de la toma en esta línea"
       />
 
       <AdminConfirmDialog
