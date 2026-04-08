@@ -19,11 +19,18 @@ import {
 } from "@/components/admin/adminFormStyles";
 import { CentrosAdminSectionSkeleton } from "@/components/admin/skeletons/CentrosAdminSectionSkeleton";
 import { CoverImageField } from "@/components/admin/CoverImageField";
+import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { IconBuildingSection } from "@/components/admin/rowActionIcons";
 import { useAuth } from "@/context/AuthContext";
 import { EmptyState, EmptyStateIconBuilding } from "@/components/ui/EmptyState";
 import { centersAdminListPath } from "@/lib/adminListQuery";
+import { adminCenterCoverLightboxItems } from "@/lib/imageLightboxItems";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import {
+  squareAdminTablePortadaFrameClass,
+  squareAdminTablePortadaImgClass,
+  squareListImagePreviewButtonRingClass,
+} from "@/lib/squareImagePreview";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
 import {
@@ -73,6 +80,11 @@ export function CentrosAdminSection() {
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [portadaLightbox, setPortadaLightbox] = useState({
+    open: false,
+    items: [],
+    initialIndex: 0,
+  });
   const [filterQ, setFilterQ] = useState("");
   const [filterActive, setFilterActive] = useState("all");
   const [totalCount, setTotalCount] = useState(0);
@@ -461,16 +473,31 @@ export function CentrosAdminSection() {
                           />
                         </td>
                         <td className="px-2 py-2">
-                          <div className="size-11 shrink-0 overflow-hidden rounded-[10px] border border-zinc-100 bg-zinc-100">
-                            {c.cover_image ? (
-                              /* eslint-disable-next-line @next/next/no-img-element */
+                          {c.cover_image ? (
+                            <button
+                              type="button"
+                              className={`${squareAdminTablePortadaFrameClass} ${squareListImagePreviewButtonRingClass} p-0`}
+                              aria-label={
+                                c.name
+                                  ? `Ver portada ampliada: ${c.name}`
+                                  : "Ver portada ampliada del centro"
+                              }
+                              onClick={() => {
+                                const items = adminCenterCoverLightboxItems(c);
+                                if (items.length)
+                                  setPortadaLightbox({ open: true, items, initialIndex: 0 });
+                              }}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={mediaAbsoluteUrl(c.cover_image)}
                                 alt=""
-                                className="h-full w-full object-cover"
+                                className={squareAdminTablePortadaImgClass}
                               />
-                            ) : null}
-                          </div>
+                            </button>
+                          ) : (
+                            <div className={squareAdminTablePortadaFrameClass} aria-hidden />
+                          )}
                         </td>
                         <td className="px-3 py-2.5 font-mono text-xs text-zinc-800">
                           {c.code}
@@ -994,6 +1021,16 @@ export function CentrosAdminSection() {
       >
         <p>¿Eliminar este centro? Se borrarán tomas asociadas.</p>
       </AdminConfirmDialog>
+
+      <ImageLightbox
+        open={portadaLightbox.open}
+        onClose={() => setPortadaLightbox((s) => ({ ...s, open: false }))}
+        items={portadaLightbox.items}
+        initialIndex={portadaLightbox.initialIndex}
+        showDownload={false}
+        showThumbnails={false}
+        ariaLabel="Portada del centro comercial"
+      />
     </div>
   );
 }

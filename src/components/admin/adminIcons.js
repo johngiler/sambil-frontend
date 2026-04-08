@@ -95,3 +95,32 @@ export function IconAdminClipboard({ className = "" }) {
     </svg>
   );
 }
+
+/** Ver ampliado / expandir vista (comprobante, etc.). */
+export function IconAdminArrowsPointingOut({ className = "" }) {
+  return (
+    <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M20.25 3.75v4.5m0-4.5h-4.5m4.5 0L15 9m0 6l3.75 3.75m0 0h-4.5m4.5 0v-4.5m0 4.5L15 15M9 9l-3.75 3.75m0 0v-4.5m0 4.5h4.5m-4.5 0L9 15"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+export function IconAdminArrowDownTray({ className = "" }) {
+  return (
+    <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

@@ -4,12 +4,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { MisPedidosSkeleton } from "@/components/orders/MisPedidosSkeleton";
+import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { useAuth } from "@/context/AuthContext";
 import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
 import { formatUsdInteger, totalWithIva } from "@/lib/marketplacePricing";
 import { orderListReference } from "@/lib/orderDisplay";
+import {
+  squareAdminTablePortadaFrameClass,
+  squareAdminTablePortadaImgClass,
+  squareListImagePreviewButtonRingClass,
+} from "@/lib/squareImagePreview";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
-import { authFetchAllPages } from "@/services/authApi";
+import { authFetchAllPages, mediaAbsoluteUrl } from "@/services/authApi";
 
 function formatDate(iso) {
   if (!iso) return "—";
@@ -101,6 +108,25 @@ function StatusBadge({ label, status }) {
       {label}
     </span>
   );
+}
+
+/** @param {{ items: unknown[] }} o */
+function orderLineGalleryEntries(o) {
+  const items = Array.isArray(o.items) ? o.items : [];
+  return items
+    .map((it) => {
+      if (!it?.ad_space_cover_image) return null;
+      const src = mediaAbsoluteUrl(it.ad_space_cover_image);
+      if (!src) return null;
+      const alt =
+        typeof it.ad_space_title === "string" && it.ad_space_title.trim()
+          ? `Portada: ${it.ad_space_title.trim()}`
+          : it.ad_space_code
+            ? `Portada toma ${it.ad_space_code}`
+            : "Portada de la toma";
+      return { src, alt, thumbnailSrc: src, lineId: it.id };
+    })
+    .filter(Boolean);
 }
 
 function SectionTitle({ children, id }) {
@@ -214,6 +240,23 @@ export default function MisPedidosView() {
   const [openId, setOpenId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
+  const [lineLightbox, setLineLightbox] = useState({
+    open: false,
+    items: /** @type {Array<{ src: string; alt?: string; thumbnailSrc?: string }>} */ ([]),
+    initialIndex: 0,
+  });
+
+  const openOrderLineGallery = useCallback((order, lineId) => {
+    const entries = orderLineGalleryEntries(order);
+    if (!entries.length) return;
+    const idx = entries.findIndex((x) => x.lineId === lineId);
+    const items = entries.map(({ lineId: _lid, ...rest }) => rest);
+    setLineLightbox({
+      open: true,
+      items,
+      initialIndex: idx >= 0 ? idx : 0,
+    });
+  }, []);
 
   const load = useCallback(async () => {
     if (!accessToken) return;
@@ -276,10 +319,7 @@ export default function MisPedidosView() {
       ) : null}
 
       {loading ? (
-        <div className="mt-10 space-y-3">
-          <div className="h-24 animate-pulse rounded-2xl bg-zinc-100/90" />
-          <div className="h-24 animate-pulse rounded-2xl bg-zinc-100/90" />
-        </div>
+        <MisPedidosSkeleton />
       ) : rows.length === 0 ? (
         <div
           className={`mt-8 ${ROUNDED_CONTROL} border border-zinc-200 bg-zinc-50/80 px-5 py-8 text-center shadow-sm`}
@@ -367,24 +407,53 @@ export default function MisPedidosView() {
                           className="mt-3 space-y-3 text-sm"
                           aria-labelledby={`${panelId}-lineas`}
                         >
-                          {(o.items || []).map((it) => (
-                            <li
-                              key={it.id}
-                              className="flex flex-col gap-1 border-b border-zinc-100 pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-                            >
-                              <div>
-                                <span className="font-mono font-medium text-zinc-900">
-                                  {it.ad_space_code || `#${it.ad_space}`}
+                          {(() => {
+                            const galleryCount = orderLineGalleryEntries(o).length;
+                            return (o.items || []).map((it) => {
+                            const lineCover = it.ad_space_cover_image
+                              ? mediaAbsoluteUrl(it.ad_space_cover_image)
+                              : "";
+                            return (
+                              <li
+                                key={it.id}
+                                className="flex flex-col gap-3 border-b border-zinc-100 pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between"
+                              >
+                                <div className="flex min-w-0 flex-1 items-start gap-3">
+                                  {lineCover ? (
+                                    <button
+                                      type="button"
+                                      onClick={() => openOrderLineGallery(o, it.id)}
+                                      className={`${squareAdminTablePortadaFrameClass} ${squareListImagePreviewButtonRingClass} p-0`}
+                                      aria-label={
+                                        galleryCount > 1
+                                          ? "Abrir galería de portadas del pedido"
+                                          : "Abrir portada ampliada"
+                                      }
+                                    >
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={lineCover}
+                                        alt=""
+                                        className={`${squareAdminTablePortadaImgClass} transition duration-200 group-hover:scale-105`}
+                                      />
+                                    </button>
+                                  ) : null}
+                                  <div className="min-w-0">
+                                    <span className="font-mono font-medium text-zinc-900">
+                                      {it.ad_space_code || `#${it.ad_space}`}
+                                    </span>
+                                    <p className="mt-0.5 text-xs text-zinc-500">
+                                      Contrato {it.start_date} → {it.end_date}
+                                    </p>
+                                  </div>
+                                </div>
+                                <span className="shrink-0 tabular-nums text-sm font-semibold text-zinc-800">
+                                  ${it.subtotal} USD
                                 </span>
-                                <p className="mt-0.5 text-xs text-zinc-500">
-                                  Contrato {it.start_date} → {it.end_date}
-                                </p>
-                              </div>
-                              <span className="tabular-nums text-sm font-semibold text-zinc-800">
-                                ${it.subtotal} USD
-                              </span>
-                            </li>
-                          ))}
+                              </li>
+                            );
+                          });
+                          })()}
                         </ul>
                       </div>
                       <div className="rounded-xl border border-zinc-100 bg-white/90 p-4 shadow-sm">
@@ -401,6 +470,16 @@ export default function MisPedidosView() {
           })}
         </ul>
       )}
+
+      <ImageLightbox
+        open={lineLightbox.open}
+        onClose={() => setLineLightbox((s) => ({ ...s, open: false }))}
+        items={lineLightbox.items}
+        initialIndex={lineLightbox.initialIndex}
+        showDownload={false}
+        showThumbnails={lineLightbox.items.length > 1}
+        ariaLabel="Portadas de las tomas del pedido"
+      />
     </div>
   );
 }

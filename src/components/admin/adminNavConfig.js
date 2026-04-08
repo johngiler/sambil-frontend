@@ -10,7 +10,7 @@ import {
 /** segment coincide con la URL bajo /dashboard/… */
 export const ADMIN_NAV = [
   { segment: "resumen", href: "/dashboard", label: "Resumen", Icon: IconAdminChart },
-  { segment: "centros", href: "/dashboard/centros", label: "Centros", Icon: IconAdminBuilding },
+  { segment: "centros", href: "/dashboard/centros", label: "Centros comerciales", Icon: IconAdminBuilding },
   { segment: "tomas", href: "/dashboard/tomas", label: "Tomas", Icon: IconAdminGrid },
   { segment: "usuarios", href: "/dashboard/usuarios", label: "Usuarios", Icon: IconAdminUserPlus },
   { segment: "clientes", href: "/dashboard/clientes", label: "Clientes", Icon: IconAdminBriefcase },

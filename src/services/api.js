@@ -441,16 +441,29 @@ export async function postGuestCheckoutEmailAvailable(email) {
 
 /**
  * Checkout sin sesión: empresa + orden enviada; opcional crear usuario marketplace.
+ * Con comprobante: multipart (`payload` JSON + `payment_receipt`). Sin archivo: JSON.
  * @param {Record<string, unknown>} body
+ * @param {{ receiptFile?: File | null }} [options]
  */
-export async function postGuestCheckout(body) {
+export async function postGuestCheckout(body, options = {}) {
+  const receiptFile = options.receiptFile;
+  const slugHeaders = workspaceSlugRequestHeaders();
+  const isMultipart = Boolean(receiptFile);
+  const headers = { ...slugHeaders };
+  let fetchBody;
+  if (isMultipart) {
+    const fd = new FormData();
+    fd.append("payload", JSON.stringify(body));
+    fd.append("payment_receipt", receiptFile);
+    fetchBody = fd;
+  } else {
+    headers["Content-Type"] = "application/json";
+    fetchBody = JSON.stringify(body);
+  }
   const res = await fetch(apiUrl("/api/checkout/guest/"), {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...workspaceSlugRequestHeaders(),
-    },
-    body: JSON.stringify(body),
+    headers,
+    body: fetchBody,
     cache: "no-store",
   });
   const parsed = await parseFetchResponse(res);

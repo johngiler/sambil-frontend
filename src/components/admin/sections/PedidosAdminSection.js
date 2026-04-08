@@ -13,11 +13,7 @@ import {
 import { AdminAccordionToggle } from "@/components/admin/AdminAccordionToggle";
 import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
 import { AdminRowActions } from "@/components/admin/AdminRowActions";
-import {
-  adminPanelCard,
-  adminPrimaryBtn,
-  adminSectionHeaderIconWrap,
-} from "@/components/admin/adminFormStyles";
+import { adminPanelCard, adminPrimaryBtn, adminSectionHeaderIconWrap } from "@/components/admin/adminFormStyles";
 import {
   AdminFilterClearButton,
   AdminFiltersRow,
@@ -30,10 +26,19 @@ import { AdminSelect } from "@/components/admin/AdminSelect";
 import { clientStatusLabel, clientStatusPillClassName } from "@/components/admin/adminConstants";
 import { IconAdminClipboard, IconAdminRefresh } from "@/components/admin/adminIcons";
 import { PedidosSectionSkeleton } from "@/components/admin/skeletons/PedidosSectionSkeleton";
+import { ImageLightbox } from "@/components/media/ImageLightbox";
+import { PaymentReceiptLightbox } from "@/components/orders/PaymentReceiptLightbox";
 import { useAuth } from "@/context/AuthContext";
 import { EmptyState, EmptyStateIconClipboard } from "@/components/ui/EmptyState";
 import { ordersListPath } from "@/lib/adminListQuery";
+import { adminOrderLineCoverLightboxItems } from "@/lib/imageLightboxItems";
+import { isPdfReceiptUrl } from "@/lib/orderPaymentMethods";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import {
+  squareOrderLinePreviewFrameClass,
+  squareOrderLinePreviewImgClass,
+  squareListImagePreviewButtonRingClass,
+} from "@/lib/squareImagePreview";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
 import { authFetch, mediaAbsoluteUrl } from "@/services/authApi";
@@ -94,6 +99,77 @@ function orderIsDeletable(o) {
   return o?.status === "draft";
 }
 
+/** Solo lectura: lo cargó el cliente en checkout. */
+function PedidoDatosPagoPortal({ order, panelId }) {
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const receiptUrl = order?.payment_receipt_url ? mediaAbsoluteUrl(order.payment_receipt_url) : "";
+  const methodLabel =
+    typeof order?.payment_method_label === "string" && order.payment_method_label.trim() !== ""
+      ? order.payment_method_label
+      : "Sin indicar";
+
+  const isPdf = isPdfReceiptUrl(receiptUrl);
+
+  return (
+    <>
+      <AdminDetailSection panelId={panelId} sectionId="payment" title="Datos de pago">
+        <AdminDetailInset className="space-y-0">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-8 lg:gap-10">
+            <div className="shrink-0 sm:max-w-[11rem]">
+              <AdminDetailField label="Método de pago">
+                <span className="font-medium text-zinc-900">{methodLabel}</span>
+              </AdminDetailField>
+            </div>
+            <div className="min-w-0 flex-1">
+              <AdminDetailField label="Comprobante">
+            {receiptUrl ? (
+              <button
+                type="button"
+                onClick={() => setLightboxOpen(true)}
+                className={`group flex w-full max-w-[min(100%,26rem)] flex-col overflow-hidden ${ROUNDED_CONTROL} border border-zinc-200/90 bg-zinc-200/40 text-left shadow-sm transition hover:border-[color-mix(in_srgb,var(--mp-primary)_40%,#d4d4d8)] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_42%,transparent)]`}
+                aria-label="Abrir comprobante en vista ampliada"
+              >
+                <div className="relative min-h-[11rem] w-full overflow-hidden sm:min-h-[13rem]">
+                  {isPdf ? (
+                    <div className="flex h-full min-h-[11rem] flex-col items-center justify-center gap-3 px-4 py-6 text-center sm:min-h-[13rem]">
+                      <span className="rounded-[10px] bg-zinc-800/90 px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-zinc-100">
+                        PDF
+                      </span>
+                      <span className="max-w-[12rem] text-xs font-medium leading-snug text-zinc-600">
+                        Clic para abrir en el visor.
+                      </span>
+                    </div>
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element -- URL de media del pedido */
+                    <img
+                      src={receiptUrl}
+                      alt="Miniatura del comprobante de pago"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  )}
+                </div>
+                <span className="border-t border-zinc-200/90 bg-white px-3 py-2 text-center text-[11px] font-semibold uppercase tracking-wide text-zinc-500 group-hover:text-zinc-800">
+                  Clic para ampliar
+                </span>
+              </button>
+            ) : (
+              <p className="text-sm text-zinc-500">El cliente no adjuntó comprobante en el checkout.</p>
+            )}
+              </AdminDetailField>
+            </div>
+          </div>
+        </AdminDetailInset>
+      </AdminDetailSection>
+      <PaymentReceiptLightbox
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        absoluteUrl={receiptUrl}
+        showDownload
+      />
+    </>
+  );
+}
+
 export function PedidosAdminSection() {
   const { authReady, accessToken } = useAuth();
   const [orders, setOrders] = useState([]);
@@ -102,6 +178,11 @@ export function PedidosAdminSection() {
   const [ready, setReady] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [lineCoverLightbox, setLineCoverLightbox] = useState({
+    open: false,
+    items: [],
+    initialIndex: 0,
+  });
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
   const [filterQ, setFilterQ] = useState("");
@@ -345,7 +426,8 @@ export function PedidosAdminSection() {
                         hint="Resumen y líneas del pedido"
                       />
 
-                      <div className="mt-5 grid w-full gap-6 lg:grid-cols-2 lg:gap-8">
+                      <div className="mt-4 grid w-full grid-cols-1 gap-4 lg:mt-5 lg:grid-cols-2 lg:items-start lg:gap-6 xl:gap-7">
+                        <div className="min-w-0">
                         <AdminDetailSection panelId={panelId} sectionId="meta" title="Datos del pedido">
                           <AdminDetailInset>
                             <AdminDetailField label="Total (USD)">
@@ -370,7 +452,13 @@ export function PedidosAdminSection() {
                             </AdminDetailField>
                           </AdminDetailInset>
                         </AdminDetailSection>
+                        </div>
 
+                        <div className="min-w-0">
+                          <PedidoDatosPagoPortal order={o} panelId={panelId} />
+                        </div>
+
+                        <div className="min-w-0">
                         <AdminDetailSection panelId={panelId} sectionId="lines" title="Líneas">
                           <AdminDetailInset className="space-y-2">
                             {(o.items || []).length === 0 ? (
@@ -387,13 +475,29 @@ export function PedidosAdminSection() {
                                   return (
                                     <li
                                       key={it.id}
-                                      className={`${ROUNDED_CONTROL} flex gap-3 border border-zinc-200 bg-white p-3 sm:gap-4`}
+                                      className={`${ROUNDED_CONTROL} flex items-stretch gap-3 border border-zinc-200 bg-white p-3 sm:gap-4`}
                                     >
-                                      <div
-                                        className="relative h-[4.5rem] w-[6.5rem] shrink-0 overflow-hidden rounded-xl border border-zinc-200/90 bg-zinc-100 sm:h-24 sm:w-32"
-                                        aria-hidden={!coverSrc}
-                                      >
-                                        {coverSrc ? (
+                                      {coverSrc ? (
+                                        <button
+                                          type="button"
+                                          className={`${squareOrderLinePreviewFrameClass} ${squareListImagePreviewButtonRingClass} p-0`}
+                                          aria-label={
+                                            it.ad_space_title
+                                              ? `Ver portada ampliada: ${it.ad_space_title}`
+                                              : it.ad_space_code
+                                                ? `Ver portada ampliada: ${it.ad_space_code}`
+                                                : "Ver portada ampliada"
+                                          }
+                                          onClick={() => {
+                                            const items = adminOrderLineCoverLightboxItems(it);
+                                            if (items.length)
+                                              setLineCoverLightbox({
+                                                open: true,
+                                                items,
+                                                initialIndex: 0,
+                                              });
+                                          }}
+                                        >
                                           <img
                                             src={coverSrc}
                                             alt={
@@ -403,14 +507,19 @@ export function PedidosAdminSection() {
                                                   ? `Portada toma ${it.ad_space_code}`
                                                   : "Portada de la toma"
                                             }
-                                            className="h-full w-full object-cover"
+                                            className={squareOrderLinePreviewImgClass}
                                           />
-                                        ) : (
+                                        </button>
+                                      ) : (
+                                        <div
+                                          className={squareOrderLinePreviewFrameClass}
+                                          aria-hidden
+                                        >
                                           <div className="flex h-full w-full items-center justify-center px-1 text-center text-[10px] font-medium uppercase leading-tight tracking-wide text-zinc-400">
                                             Sin imagen
                                           </div>
-                                        )}
-                                      </div>
+                                        </div>
+                                      )}
                                       <div className="min-w-0 flex-1 space-y-1.5 text-sm text-zinc-800">
                                         <p className="font-mono text-xs font-semibold tracking-tight text-zinc-900">
                                           {it.ad_space_code || "—"}
@@ -420,7 +529,7 @@ export function PedidosAdminSection() {
                                         </p>
                                         {centerLine ? (
                                           <p className="text-xs text-zinc-600">
-                                            <span className="font-semibold text-zinc-700">Centro: </span>
+                                            <span className="font-semibold text-zinc-700">Centro comercial: </span>
                                             {centerLine}
                                           </p>
                                         ) : null}
@@ -442,13 +551,13 @@ export function PedidosAdminSection() {
                             )}
                           </AdminDetailInset>
                         </AdminDetailSection>
-                      </div>
+                        </div>
 
-                      <div className="mt-6 w-full min-w-0">
+                        <div className="min-w-0">
                         <AdminDetailSection panelId={panelId} sectionId="client" title="Cliente (empresa)">
                           <AdminDetailInset className="w-full min-w-0">
                             {o.client_detail ? (
-                              <div className="grid w-full min-w-0 grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 sm:gap-y-5">
+                              <div className="grid w-full min-w-0 grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-4">
                                 <AdminDetailField label="Empresa">
                                   {o.client_detail.company_name || adminDetailEmpty("")}
                                 </AdminDetailField>
@@ -507,6 +616,7 @@ export function PedidosAdminSection() {
                             )}
                           </AdminDetailInset>
                         </AdminDetailSection>
+                        </div>
                       </div>
                     </AdminAccordionRowPanel>
                   ) : null}
@@ -520,6 +630,16 @@ export function PedidosAdminSection() {
           <AdminListPagination page={page} totalCount={totalCount} onPageChange={setPage} />
         </>
       )}
+
+      <ImageLightbox
+        open={lineCoverLightbox.open}
+        onClose={() => setLineCoverLightbox((s) => ({ ...s, open: false }))}
+        items={lineCoverLightbox.items}
+        initialIndex={lineCoverLightbox.initialIndex}
+        showDownload={false}
+        showThumbnails={false}
+        ariaLabel="Portada de la línea del pedido"
+      />
 
       <AdminConfirmDialog
         open={deleteTargetId != null}

@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useCallback, useState } from "react";
 
+import { IconRowEdit, IconRowTrash } from "@/components/admin/rowActionIcons";
+import { ImageLightbox } from "@/components/media/ImageLightbox";
+import { EmptyState, EmptyStateIconCart } from "@/components/ui/EmptyState";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartProvider";
-import { IconRowEdit, IconRowTrash } from "@/components/admin/rowActionIcons";
-import { EmptyState, EmptyStateIconCart } from "@/components/ui/EmptyState";
+import { cartLineThumbSrc, marketplaceItemsFromCartLine } from "@/lib/imageLightboxItems";
 import {
   formatUsdInteger,
   formatUsdMoney,
@@ -22,6 +25,11 @@ import {
   cartLineSubtotalOrNull,
   cartTotalUsd,
 } from "@/lib/rentalDates";
+import {
+  squareAdminTablePortadaFrameClass,
+  squareAdminTablePortadaImgClass,
+  squareListImagePreviewButtonRingClass,
+} from "@/lib/squareImagePreview";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 
 const accent = "mp-text-brand";
@@ -31,6 +39,17 @@ const cardShell = `${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 sha
 export default function CartView() {
   const { authReady, me, isClient, isAdmin } = useAuth();
   const { items, removeItem, clear } = useCart();
+  const [lightbox, setLightbox] = useState({
+    open: false,
+    items: /** @type {{ src: string; alt: string }[]} */ ([]),
+    initialIndex: 0,
+  });
+
+  const openCartLineLightbox = useCallback((item) => {
+    const lbItems = marketplaceItemsFromCartLine(item);
+    if (!lbItems.length) return;
+    setLightbox({ open: true, items: lbItems, initialIndex: 0 });
+  }, []);
 
   const meetsMin = cartAllItemsMeetCheckoutRules(items);
   const subtotal = meetsMin ? cartTotalUsd(items) : 0;
@@ -114,10 +133,40 @@ export default function CartView() {
               typeof item.shopping_center_name === "string" ? item.shopping_center_name : "";
             const detail =
               typeof item.detail_line === "string" ? item.detail_line : "";
+            const thumbSrc = cartLineThumbSrc(item);
             return (
               <li key={item.id} className={cardShell}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 flex-1 gap-3 sm:gap-4">
+                    {thumbSrc ? (
+                      <button
+                        type="button"
+                        onClick={() => openCartLineLightbox(item)}
+                        className={`${squareAdminTablePortadaFrameClass} ${squareListImagePreviewButtonRingClass} shrink-0 p-0`}
+                        aria-label={
+                          typeof item.title === "string" && item.title.trim()
+                            ? `Ver imágenes: ${item.title.trim()}`
+                            : "Ver imágenes de la toma"
+                        }
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={thumbSrc}
+                          alt=""
+                          className={`${squareAdminTablePortadaImgClass} transition duration-200 group-hover:scale-105`}
+                        />
+                      </button>
+                    ) : (
+                      <div
+                        className={`${squareAdminTablePortadaFrameClass} shrink-0 bg-zinc-100`}
+                        aria-hidden
+                      >
+                        <div className="flex h-full w-full items-center justify-center px-1 text-center text-[10px] font-medium uppercase leading-tight tracking-wide text-zinc-400">
+                          Sin imagen
+                        </div>
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
                     <p className="break-words text-base font-semibold text-zinc-900">
                       {item.title}
                       {center ? (
@@ -144,6 +193,7 @@ export default function CartView() {
                         ))}
                       </div>
                     ) : null}
+                    </div>
                   </div>
                   <div className="flex flex-row items-start justify-between gap-4 sm:flex-col sm:items-end">
                     {line != null ? (
@@ -177,6 +227,16 @@ export default function CartView() {
           })}
         </ul>
       )}
+
+      <ImageLightbox
+        open={lightbox.open}
+        onClose={() => setLightbox((s) => ({ ...s, open: false }))}
+        items={lightbox.items}
+        initialIndex={lightbox.initialIndex}
+        showDownload={false}
+        showThumbnails={lightbox.items.length > 1}
+        ariaLabel="Imágenes de la toma en el carrito"
+      />
 
       {items.length > 0 && !meetsMin ? (
         <p

@@ -1,0 +1,71 @@
+import { normalizeMediaUrlForUi } from "@/services/api";
+import { mediaAbsoluteUrl } from "@/services/authApi";
+
+/**
+ * Línea de carrito marketplace (tras `addItem`): URLs ya pueden venir absolutas del API.
+ */
+export function marketplaceItemsFromCartLine(item) {
+  const alt = typeof item?.title === "string" && item.title.trim() ? item.title.trim() : "Toma";
+  const list = [];
+  if (Array.isArray(item?.gallery_images)) {
+    for (const u of item.gallery_images) {
+      if (typeof u !== "string" || !u.trim()) continue;
+      const s = normalizeMediaUrlForUi(u.trim());
+      if (s) list.push({ src: s, alt, thumbnailSrc: s });
+    }
+  }
+  if (list.length === 0) {
+    const s = normalizeMediaUrlForUi(item?.cover_image);
+    if (s) list.push({ src: s, alt, thumbnailSrc: s });
+  }
+  return list;
+}
+
+export function cartLineThumbSrc(item) {
+  if (Array.isArray(item?.gallery_images) && item.gallery_images.length > 0) {
+    const u = item.gallery_images.find((x) => typeof x === "string" && x.trim());
+    if (u) return normalizeMediaUrlForUi(u.trim());
+  }
+  return normalizeMediaUrlForUi(item?.cover_image);
+}
+
+/** Fila de toma en listado admin: `gallery_images[]` con `{ image }` o `cover_image`. */
+export function adminTomaRowLightboxItems(row, altText) {
+  const alt =
+    typeof altText === "string" && altText.trim() ? altText.trim() : "Portada de la toma";
+  const out = [];
+  if (Array.isArray(row?.gallery_images) && row.gallery_images.length > 0) {
+    for (const g of row.gallery_images) {
+      const im = g?.image;
+      if (typeof im !== "string" || !im.trim()) continue;
+      const s = mediaAbsoluteUrl(im.trim());
+      if (s) out.push({ src: s, alt });
+    }
+  }
+  if (out.length === 0 && row?.cover_image) {
+    const s = mediaAbsoluteUrl(row.cover_image);
+    if (s) out.push({ src: s, alt });
+  }
+  return out;
+}
+
+export function adminCenterCoverLightboxItems(center) {
+  if (!center?.cover_image) return [];
+  const s = mediaAbsoluteUrl(center.cover_image);
+  if (!s) return [];
+  const alt = typeof center.name === "string" && center.name.trim() ? center.name.trim() : "Portada del centro";
+  return [{ src: s, alt }];
+}
+
+export function adminOrderLineCoverLightboxItems(line) {
+  if (!line?.ad_space_cover_image) return [];
+  const s = mediaAbsoluteUrl(line.ad_space_cover_image);
+  if (!s) return [];
+  const alt =
+    typeof line.ad_space_title === "string" && line.ad_space_title.trim()
+      ? line.ad_space_title.trim()
+      : line.ad_space_code
+        ? `Portada ${line.ad_space_code}`
+        : "Portada de la toma";
+  return [{ src: s, alt }];
+}

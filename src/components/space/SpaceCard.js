@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvailabilityBar";
+import { spaceStatusLabel, spaceStatusPillClassName } from "@/components/admin/adminConstants";
 import { IconCart } from "@/components/layout/navIcons";
 import { spaceCoverUrlForUi } from "@/lib/spaceCover";
 
@@ -28,6 +29,7 @@ export function SpaceCard({ space, availabilityLabel = "free", showFooterLink = 
         ? space.shopping_center_name
         : "";
   const city = cityRaw;
+  const statusText = spaceStatusLabel(space.status, space.status_label);
   const desc =
     typeof space.description === "string" && space.description.trim() !== ""
       ? space.description.trim()
@@ -77,9 +79,16 @@ export function SpaceCard({ space, availabilityLabel = "free", showFooterLink = 
             <h2 className="min-w-0 flex-1 break-words text-[17px] font-semibold leading-snug tracking-tight text-zinc-900">
               {space.title}
             </h2>
-            <p className="shrink-0 text-right text-lg font-bold tabular-nums text-[#c2410c]">
-              {formatUsdMonthly(space.monthly_price_usd)}
-            </p>
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              <span
+                className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold leading-tight ${spaceStatusPillClassName(space.status)}`}
+              >
+                {statusText}
+              </span>
+              <p className="text-right text-lg font-bold tabular-nums text-[#c2410c]">
+                {formatUsdMonthly(space.monthly_price_usd)}
+              </p>
+            </div>
           </div>
           {desc ? (
             <p className="mt-1.5 line-clamp-2 break-words text-sm text-zinc-500">{desc}</p>

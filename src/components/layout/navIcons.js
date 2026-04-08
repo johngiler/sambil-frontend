@@ -218,6 +218,26 @@ export function IconChevronLeft({ className = "" }) {
   );
 }
 
+export function IconChevronRight({ className = "" }) {
+  return (
+    <svg
+      className={`${iconClass} ${className}`}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden
+    >
+      <path
+        d="M8.25 19.5L15.75 12l-7.5-7.5"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function IconLogout({ className = "" }) {
   return (
     <svg

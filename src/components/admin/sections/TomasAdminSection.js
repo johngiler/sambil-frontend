@@ -33,13 +33,20 @@ import {
   spaceStatusPillClassName,
 } from "@/components/admin/adminConstants";
 import { AdminSelect } from "@/components/admin/AdminSelect";
-import { CoverImageField } from "@/components/admin/CoverImageField";
+import { AdminAdSpaceGalleryField } from "@/components/admin/AdminAdSpaceGalleryField";
 import { IconAdminGrid } from "@/components/admin/adminIcons";
 import { TomasAdminSectionSkeleton } from "@/components/admin/skeletons/TomasAdminSectionSkeleton";
+import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { useAuth } from "@/context/AuthContext";
 import { EmptyState, EmptyStateIconGrid } from "@/components/ui/EmptyState";
 import { spacesAdminListPath } from "@/lib/adminListQuery";
+import { adminTomaRowLightboxItems } from "@/lib/imageLightboxItems";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import {
+  squareAdminTablePortadaFrameClass,
+  squareAdminTablePortadaImgClass,
+  squareListImagePreviewButtonRingClass,
+} from "@/lib/squareImagePreview";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
 import { authFetch, authFetchAllPages, authFetchForm, mediaAbsoluteUrl } from "@/services/authApi";
@@ -62,7 +69,7 @@ function validateTomaCodeForCenter(code, centerCode) {
   const cc = String(centerCode || "")
     .trim()
     .toUpperCase();
-  if (!cc) return "El centro seleccionado no tiene código.";
+  if (!cc) return "El centro comercial seleccionado no tiene código.";
   if (!c) return "Indica el código de la toma.";
   const esc = cc.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const re = new RegExp(`^${esc}-T(\\d+)([A-Z]*)$`);
@@ -129,6 +136,11 @@ export function TomasAdminSection() {
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
+  const [galleryLightbox, setGalleryLightbox] = useState({
+    open: false,
+    items: [],
+    initialIndex: 0,
+  });
   const [filterQ, setFilterQ] = useState("");
   const [filterSpaceStatus, setFilterSpaceStatus] = useState("all");
   const [totalCount, setTotalCount] = useState(0);
@@ -155,10 +167,7 @@ export function TomasAdminSection() {
   const [installationNotes, setInstallationNotes] = useState("");
   const [hemPocketTopCm, setHemPocketTopCm] = useState("");
 
-  const [coverFile, setCoverFile] = useState(null);
-  const [filePreview, setFilePreview] = useState("");
-  const [pendingClearCover, setPendingClearCover] = useState(false);
-  const fileRef = useRef(null);
+  const galleryRef = useRef(null);
 
   const reloadCenters = useCallback(async () => {
     try {
@@ -197,16 +206,6 @@ export function TomasAdminSection() {
     setPage(1);
   }, [debouncedFilterQ, filterSpaceStatus]);
 
-  useEffect(() => {
-    if (!coverFile) {
-      setFilePreview("");
-      return;
-    }
-    const u = URL.createObjectURL(coverFile);
-    setFilePreview(u);
-    return () => URL.revokeObjectURL(u);
-  }, [coverFile]);
-
   function resetForm() {
     setShoppingCenter("");
     setCode("");
@@ -226,9 +225,6 @@ export function TomasAdminSection() {
     setProductionSpecs("");
     setInstallationNotes("");
     setHemPocketTopCm("");
-    setCoverFile(null);
-    setPendingClearCover(false);
-    if (fileRef.current) fileRef.current.value = "";
   }
 
   function openCreate() {
@@ -263,9 +259,6 @@ export function TomasAdminSection() {
     setProductionSpecs(s.production_specs || "");
     setInstallationNotes(s.installation_notes || "");
     setHemPocketTopCm(s.hem_pocket_top_cm != null ? String(s.hem_pocket_top_cm) : "");
-    setCoverFile(null);
-    setPendingClearCover(false);
-    if (fileRef.current) fileRef.current.value = "";
     setModal("edit");
   }
 
@@ -299,37 +292,12 @@ export function TomasAdminSection() {
     };
   }
 
-  function jsonSpaceBody(v, mode) {
-    const centerId = parseInt(String(v.shopping_center), 10);
-    const out = {
-      shopping_center: centerId,
-      type: v.type,
-      title: v.title.trim(),
-      description: v.description.trim(),
-      monthly_price_usd: v.monthly_price_usd.trim(),
-      status: v.status,
-      double_sided: v.double_sided,
-    };
-    if (mode === "create") out.code = v.code.trim();
-    if (v.width.trim()) out.width = v.width.trim();
-    if (v.height.trim()) out.height = v.height.trim();
-    if (v.quantity.trim()) out.quantity = parseInt(v.quantity, 10);
-    if (v.material.trim()) out.material = v.material.trim();
-    if (v.location_description.trim()) out.location_description = v.location_description.trim();
-    if (v.level.trim()) out.level = v.level.trim();
-    if (v.venue_zone.trim()) out.venue_zone = v.venue_zone.trim();
-    if (v.production_specs.trim()) out.production_specs = v.production_specs.trim();
-    if (v.installation_notes.trim()) out.installation_notes = v.installation_notes.trim();
-    if (v.hem_pocket_top_cm.trim()) out.hem_pocket_top_cm = v.hem_pocket_top_cm.trim();
-    return out;
-  }
-
   async function submitSave() {
     setErr("");
     setMsg("");
     const centerId = parseInt(shoppingCenter, 10);
     if (!centerId) {
-      setErr("Selecciona un centro.");
+      setErr("Selecciona un centro comercial.");
       return;
     }
     if (modal === "create") {
@@ -342,30 +310,20 @@ export function TomasAdminSection() {
     }
     try {
       const v = valuesObject();
+      const payload = galleryRef.current?.getPayload?.() ?? { plan: [], newFiles: [] };
       if (modal === "create") {
-        if (coverFile) {
-          const fd = new FormData();
-          buildSpacePayload(fd, { ...v, code: v.code.trim().toUpperCase() });
-          fd.append("cover_image", coverFile);
-          await authFetchForm("/api/admin/spaces/", { method: "POST", formData: fd });
-        } else {
-          await authFetch("/api/admin/spaces/", {
-            method: "POST",
-            body: jsonSpaceBody({ ...v, code: v.code.trim().toUpperCase() }, "create"),
-          });
-        }
+        const fd = new FormData();
+        buildSpacePayload(fd, { ...v, code: v.code.trim().toUpperCase() });
+        fd.append("gallery_plan", JSON.stringify(payload.plan));
+        payload.newFiles.forEach((f) => fd.append("gallery_add", f));
+        await authFetchForm("/api/admin/spaces/", { method: "POST", formData: fd });
         setMsg("Toma creada.");
       } else if (modal === "edit" && selected) {
-        if (coverFile) {
-          const fd = new FormData();
-          buildSpacePayload(fd, v);
-          fd.append("cover_image", coverFile);
-          await authFetchForm(`/api/admin/spaces/${selected.id}/`, { method: "PATCH", formData: fd });
-        } else {
-          const body = jsonSpaceBody(v, "edit");
-          if (pendingClearCover) body.cover_image = null;
-          await authFetch(`/api/admin/spaces/${selected.id}/`, { method: "PATCH", body });
-        }
+        const fd = new FormData();
+        buildSpacePayload(fd, v);
+        fd.append("gallery_plan", JSON.stringify(payload.plan));
+        payload.newFiles.forEach((f) => fd.append("gallery_add", f));
+        await authFetchForm(`/api/admin/spaces/${selected.id}/`, { method: "PATCH", formData: fd });
         setMsg("Toma actualizada.");
       }
       closeModal();
@@ -392,7 +350,13 @@ export function TomasAdminSection() {
   }
 
   const readOnly = modal === "view";
-  const existingCover = selected?.cover_image && !pendingClearCover ? selected.cover_image : null;
+
+  function tomaViewGalleryRows(s) {
+    if (!s) return [];
+    if (Array.isArray(s.gallery_images) && s.gallery_images.length > 0) return s.gallery_images;
+    if (s.cover_image) return [{ id: -1, image: s.cover_image, sort_order: 0 }];
+    return [];
+  }
 
   useEffect(() => {
     setExpandedId(null);
@@ -444,7 +408,7 @@ export function TomasAdminSection() {
               id="tomas-filter-q"
               value={filterQ}
               onChange={setFilterQ}
-              placeholder="Código, título, centro…"
+              placeholder="Código, título, centro comercial…"
             />
             <AdminFilterSelect
               id="tomas-filter-status"
@@ -495,7 +459,7 @@ export function TomasAdminSection() {
                     Título
                   </th>
                   <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Centro
+                    Centro comercial
                   </th>
                   <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Estado
@@ -521,16 +485,45 @@ export function TomasAdminSection() {
                         />
                       </td>
                       <td className="px-2 py-2">
-                        <div className="size-11 shrink-0 overflow-hidden rounded-[10px] border border-zinc-100 bg-zinc-100">
-                          {s.cover_image ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                              src={mediaAbsoluteUrl(s.cover_image)}
-                              alt=""
-                              className="h-full w-full object-cover"
-                            />
-                          ) : null}
-                        </div>
+                        {(() => {
+                          const first =
+                            Array.isArray(s.gallery_images) && s.gallery_images.length > 0
+                              ? s.gallery_images[0]?.image
+                              : s.cover_image;
+                          const thumbSrc = first ? mediaAbsoluteUrl(first) : "";
+                          const lbItems = adminTomaRowLightboxItems(s, s.title);
+                          if (!thumbSrc) {
+                            return <div className={squareAdminTablePortadaFrameClass} aria-hidden />;
+                          }
+                          return (
+                            <button
+                              type="button"
+                              className={`${squareAdminTablePortadaFrameClass} ${squareListImagePreviewButtonRingClass} p-0`}
+                              aria-label={
+                                s.title
+                                  ? `Ver galería: ${s.title}`
+                                  : "Ver imágenes de la toma"
+                              }
+                              onClick={() => {
+                                const items =
+                                  lbItems.length > 0
+                                    ? lbItems
+                                    : thumbSrc
+                                      ? [{ src: thumbSrc, alt: s.title || "Portada" }]
+                                      : [];
+                                if (!items.length) return;
+                                setGalleryLightbox({
+                                  open: true,
+                                  items,
+                                  initialIndex: 0,
+                                });
+                              }}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={thumbSrc} alt="" className={squareAdminTablePortadaImgClass} />
+                            </button>
+                          );
+                        })()}
                       </td>
                       <td className="px-3 py-2.5 font-mono text-xs text-zinc-800">{s.code}</td>
                       <td className="max-w-[10rem] truncate px-3 py-2.5 font-medium text-zinc-900" title={s.title}>
@@ -685,7 +678,7 @@ export function TomasAdminSection() {
         {readOnly && selected ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <CoverImageField readOnly variant="cover" existingUrl={selected.cover_image} />
+              <AdminAdSpaceGalleryField readOnly initialServerImages={tomaViewGalleryRows(selected)} />
             </div>
             <div>
               <p className={adminLabel}>Código</p>
@@ -754,33 +747,23 @@ export function TomasAdminSection() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <CoverImageField
+              <AdminAdSpaceGalleryField
+                ref={galleryRef}
+                key={modal === "edit" && selected ? `edit-${selected.id}` : "create"}
                 readOnly={false}
-                variant="cover"
-                existingUrl={existingCover}
-                filePreviewUrl={filePreview}
-                onFileChange={(f) => {
-                  setCoverFile(f);
-                  setPendingClearCover(false);
-                }}
-                onClearExisting={() => {
-                  setPendingClearCover(true);
-                  setCoverFile(null);
-                  if (fileRef.current) fileRef.current.value = "";
-                }}
-                fileInputRef={fileRef}
+                initialServerImages={modal === "edit" && selected ? selected.gallery_images || [] : []}
               />
             </div>
             <div className="sm:col-span-2">
               <label className={adminLabel} htmlFor="s-center">
-                Centro
+                Centro comercial
               </label>
               <AdminSelect
                 id="s-center"
                 options={centers.map((c) => ({ v: c.id, l: `${c.code} — ${c.name}` }))}
                 value={shoppingCenter}
                 onChange={(v) => setShoppingCenter(v === "" || v == null ? "" : String(v))}
-                placeholder="Selecciona un centro…"
+                placeholder="Selecciona un centro comercial…"
                 inModal
                 aria-label="Centro comercial"
               />
@@ -803,10 +786,10 @@ export function TomasAdminSection() {
                 <p className="mt-1 text-xs text-zinc-500">
                   Formato{" "}
                   <span className="font-mono text-zinc-600">
-                    {"{código del centro}-T{número}[sufijo]"}
+                    {"{código del centro comercial}-T{número}[sufijo]"}
                   </span>
                   . Ejemplos: <span className="font-mono">SCC-T1</span>,{" "}
-                  <span className="font-mono">SLC-T1A</span>. Debe empezar con el código del centro
+                  <span className="font-mono">SLC-T1A</span>. Debe empezar con el código del centro comercial
                   que elijas arriba.
                 </p>
               ) : null}
@@ -979,6 +962,16 @@ export function TomasAdminSection() {
           </div>
         )}
       </AdminModal>
+
+      <ImageLightbox
+        open={galleryLightbox.open}
+        onClose={() => setGalleryLightbox((st) => ({ ...st, open: false }))}
+        items={galleryLightbox.items}
+        initialIndex={galleryLightbox.initialIndex}
+        showDownload={false}
+        showThumbnails={galleryLightbox.items.length > 1}
+        ariaLabel="Galería de la toma"
+      />
 
       <AdminConfirmDialog
         open={deleteTargetId != null}

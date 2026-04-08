@@ -49,7 +49,7 @@ export function CentrosAdminSectionSkeleton() {
                     <Skeleton className={`h-8 w-8 ${ROUNDED_CONTROL}`} />
                   </td>
                   <td className="px-2 py-2">
-                    <Skeleton className={`size-11 ${ROUNDED_CONTROL}`} />
+                    <Skeleton className="h-[60px] w-[60px] shrink-0 rounded-[10px]" />
                   </td>
                   <td className="px-3 py-3">
                     <Skeleton className="h-4 w-20" />

@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { spaceStatusLabel, spaceStatusPillClassName } from "@/components/admin/adminConstants";
 import { adminPrimaryBtn } from "@/components/admin/adminFormStyles";
-import { marketplaceSecondaryBtn } from "@/lib/marketplaceActionButtons";
 import { SpaceMonthRangePicker } from "@/components/catalog/SpaceMonthRangePicker";
+import { marketplaceSecondaryBtn } from "@/lib/marketplaceActionButtons";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartProvider";
+import { spaceAllowsMarketplaceReservation } from "@/lib/spaceMarketplaceReservation";
 import { contractMonthsInclusive } from "@/lib/rentalDates";
 import { postSpaceRentalRangeCheck } from "@/services/api";
 import {
@@ -152,6 +154,37 @@ export function SpaceDetailReservationActions({ space }) {
 
   if (me && !isClient) {
     return null;
+  }
+
+  const canReserveCommercially = spaceAllowsMarketplaceReservation(space.status);
+  if (!canReserveCommercially) {
+    const stLabel = spaceStatusLabel(space.status, space.status_label);
+    return (
+      <section
+        className="mt-10 border-t border-zinc-200 pt-10"
+        aria-labelledby="space-reservation-blocked-heading"
+      >
+        <div
+          className={`overflow-hidden ${ROUNDED_CONTROL} border border-amber-200/90 bg-amber-50/50 px-5 py-6 sm:px-8 sm:py-7`}
+        >
+          <h2 id="space-reservation-blocked-heading" className="text-lg font-semibold tracking-tight text-zinc-950">
+            Reserva no disponible
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-700">
+            Esta toma no admite nuevas reservas en el marketplace con su estado actual. Puedes revisar el detalle o
+            explorar otras tomas del catálogo.
+          </p>
+          <p className="mt-4 text-sm text-zinc-600">
+            Estado comercial:{" "}
+            <span
+              className={`inline-flex align-middle rounded-full px-2.5 py-0.5 text-xs font-semibold ${spaceStatusPillClassName(space.status)}`}
+            >
+              {stLabel}
+            </span>
+          </p>
+        </div>
+      </section>
+    );
   }
 
   return (

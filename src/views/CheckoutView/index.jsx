@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+import { CheckoutPaymentReceiptField } from "@/components/checkout/CheckoutPaymentReceiptField";
 import { CheckoutStepper } from "@/components/checkout/CheckoutStepper";
 import {
   PasswordPairLiveValidation,
@@ -18,6 +19,7 @@ import {
   ivaFromSubtotal,
   totalWithIva,
 } from "@/lib/marketplacePricing";
+import { checkoutPaymentMethodToApi } from "@/lib/orderPaymentMethods";
 import { cartAllItemsMeetCheckoutRules, cartTotalUsd } from "@/lib/rentalDates";
 import { EmptyState, EmptyStateIconInbox } from "@/components/ui/EmptyState";
 import {
@@ -31,7 +33,7 @@ import {
   postGuestCheckoutValidateDatos,
   postValidatePassword,
 } from "@/services/api";
-import { authFetch, saveMyCompany } from "@/services/authApi";
+import { authFetch, authFetchForm, saveMyCompany } from "@/services/authApi";
 
 function formatOrderErrorMessage(raw) {
   if (raw == null || raw === "") return "No se pudo crear el pedido.";
@@ -155,6 +157,8 @@ export default function CheckoutView() {
 
   const [step, setStep] = useState("datos");
   const [paymentMethod, setPaymentMethod] = useState("card");
+  const [paymentReceiptFile, setPaymentReceiptFile] = useState(null);
+  const [paymentUploadError, setPaymentUploadError] = useState("");
   const [company_name, setCompanyName] = useState("");
   const [contact_name, setContactName] = useState("");
   const [email, setEmail] = useState("");
@@ -235,6 +239,7 @@ export default function CheckoutView() {
   async function ensureCompanyThenSubmit() {
     setError("");
     setResult(null);
+    setPaymentUploadError("");
     if (!items.length || !meetsMin) {
       setError("El carrito está vacío o el período no cumple 5 meses.");
       return;
@@ -274,9 +279,28 @@ export default function CheckoutView() {
         body: {},
         token: accessToken,
       });
+      const fd = new FormData();
+      fd.append("payment_method", checkoutPaymentMethodToApi(paymentMethod));
+      if (paymentReceiptFile) {
+        fd.append("payment_receipt", paymentReceiptFile);
+      }
+      try {
+        await authFetchForm(`/api/orders/${submitted.id}/`, {
+          method: "PATCH",
+          formData: fd,
+          token: accessToken,
+        });
+      } catch (patchErr) {
+        setPaymentUploadError(
+          patchErr instanceof Error
+            ? patchErr.message
+            : "No se pudo guardar el método o el comprobante.",
+        );
+      }
       setResult(submitted);
       setGuestCreatedAccount(false);
       setCompletedAsGuest(false);
+      setPaymentReceiptFile(null);
       clear();
     } catch (err) {
       setError(err instanceof Error ? formatOrderErrorMessage(err.message) : "Error al enviar");
@@ -288,6 +312,7 @@ export default function CheckoutView() {
   async function guestSubmit() {
     setError("");
     setResult(null);
+    setPaymentUploadError("");
     if (!items.length || !meetsMin) {
       setError("El carrito está vacío o el período no cumple 5 meses.");
       return;
@@ -326,25 +351,30 @@ export default function CheckoutView() {
 
     setLoading(true);
     try {
-      const submitted = await postGuestCheckout({
-        company_name: company_name.trim(),
-        contact_name: contact_name.trim(),
-        email: email.trim(),
-        phone: phone.trim(),
-        address: "",
-        city: "",
-        create_account: createAccount,
-        password: createAccount ? password : "",
-        password_confirm: createAccount ? passwordConfirm : "",
-        items: items.map((i) => ({
-          ad_space: i.id,
-          start_date: i.start_date,
-          end_date: i.end_date,
-        })),
-      });
+      const submitted = await postGuestCheckout(
+        {
+          company_name: company_name.trim(),
+          contact_name: contact_name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          address: "",
+          city: "",
+          create_account: createAccount,
+          password: createAccount ? password : "",
+          password_confirm: createAccount ? passwordConfirm : "",
+          payment_method: checkoutPaymentMethodToApi(paymentMethod),
+          items: items.map((i) => ({
+            ad_space: i.id,
+            start_date: i.start_date,
+            end_date: i.end_date,
+          })),
+        },
+        { receiptFile: paymentReceiptFile || undefined },
+      );
       setResult(submitted);
       setGuestCreatedAccount(createAccount);
       setCompletedAsGuest(true);
+      setPaymentReceiptFile(null);
       clear();
     } catch (err) {
       setError(err instanceof Error ? formatOrderErrorMessage(err.message) : "Error al enviar");
@@ -361,6 +391,14 @@ export default function CheckoutView() {
           Pedido <span className="font-mono font-medium text-zinc-900">#{result.id}</span> — estado:{" "}
           <span className="capitalize">{result.status}</span>
         </p>
+        {paymentUploadError ? (
+          <p
+            className={`mt-4 ${ROUNDED_CONTROL} border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950`}
+          >
+            Tu solicitud quedó enviada, pero no se pudieron guardar el método de pago o el comprobante:{" "}
+            <span className="break-words font-medium">{paymentUploadError}</span>
+          </p>
+        ) : null}
         {result.hold_expires_at ? (
           <p className="mt-2 break-words text-sm text-zinc-600">
             Reserva en revisión hasta{" "}
@@ -813,6 +851,12 @@ export default function CheckoutView() {
                   );
                 })}
               </div>
+              <CheckoutPaymentReceiptField
+                id="checkout-payment-receipt"
+                value={paymentReceiptFile}
+                onChange={setPaymentReceiptFile}
+                helperText="Opcional con tarjeta; si pagas por transferencia o Zelle, adjunta captura o PDF. Se envía junto con tu solicitud al confirmar el pedido."
+              />
               <div className="flex gap-3">
                 <button
                   type="button"

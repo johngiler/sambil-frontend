@@ -6,12 +6,44 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
 import { sanitizeCartItems } from "@/lib/demoCatalog";
 import { defaultRentalPeriod } from "@/lib/rentalDates";
+import { spaceCoverUrlForUi } from "@/lib/spaceCover";
+import { getSpace, normalizeMediaUrlForUi } from "@/services/api";
 import { storageKeySuffix } from "@/lib/tenant";
+
+function cartLineHasUsableMedia(item) {
+  if (!item || typeof item !== "object") return false;
+  if (normalizeMediaUrlForUi(item.cover_image)) return true;
+  if (
+    Array.isArray(item.gallery_images) &&
+    item.gallery_images.some((u) => typeof u === "string" && u.trim() && normalizeMediaUrlForUi(u))
+  ) {
+    return true;
+  }
+  return false;
+}
+
+/** Portada + lista de galería para persistir en la línea del carrito. */
+function coverAndGalleryFromSpace(space) {
+  const galleryUrls = Array.isArray(space?.gallery_images)
+    ? space.gallery_images.filter((u) => typeof u === "string" && u.trim() !== "")
+    : [];
+  const galleryNormalized = galleryUrls
+    .map((u) => normalizeMediaUrlForUi(u.trim()) || u.trim())
+    .filter(Boolean);
+  let coverUrl = spaceCoverUrlForUi(space);
+  if (!coverUrl && galleryNormalized.length > 0) {
+    coverUrl = galleryNormalized[0];
+  } else if (coverUrl) {
+    coverUrl = normalizeMediaUrlForUi(coverUrl) || coverUrl;
+  }
+  return { coverUrl: coverUrl || "", galleryNormalized };
+}
 
 const LEGACY_CART = "sambil-marketplace-cart";
 const LEGACY_PERIOD = "sambil-marketplace-rental";
@@ -80,6 +112,7 @@ const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
   const [items, setItems] = useState([]);
+  const mediaHydrateAttemptedRef = useRef(new Set());
 
   useEffect(() => {
     clearLegacyCartKeys();
@@ -97,6 +130,54 @@ export function CartProvider({ children }) {
     setItems(migrated);
   }, []);
 
+  /** Líneas guardadas sin media: una petición por id para rellenar portada/galería. */
+  useEffect(() => {
+    if (typeof window === "undefined" || !items.length) return;
+
+    const targets = items.filter((i) => {
+      if (cartLineHasUsableMedia(i)) return false;
+      const sid = String(i.id);
+      if (mediaHydrateAttemptedRef.current.has(sid)) return false;
+      return true;
+    });
+    if (!targets.length) return;
+
+    let cancelled = false;
+
+    (async () => {
+      for (const line of targets) {
+        const sid = String(line.id);
+        try {
+          const space = await getSpace(line.id);
+          if (cancelled) return;
+          const { coverUrl, galleryNormalized } = coverAndGalleryFromSpace(space);
+          mediaHydrateAttemptedRef.current.add(sid);
+          if (!coverUrl && galleryNormalized.length === 0) continue;
+
+          setItems((prev) => {
+            const next = prev.map((x) =>
+              String(x.id) === sid
+                ? {
+                    ...x,
+                    ...(coverUrl ? { cover_image: coverUrl } : {}),
+                    ...(galleryNormalized.length > 0 ? { gallery_images: galleryNormalized } : {}),
+                  }
+                : x,
+            );
+            writeStorage(next);
+            return next;
+          });
+        } catch {
+          /* sin add a ref: permite reintentar si cambia items */
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [items]);
+
   const addItem = useCallback((space, range) => {
     if (!range?.start_date || !range?.end_date) return;
     const detailLine =
@@ -109,6 +190,8 @@ export function CartProvider({ children }) {
             : "";
     const centerName =
       typeof space.shopping_center_name === "string" ? space.shopping_center_name.trim() : "";
+    const { coverUrl, galleryNormalized } = coverAndGalleryFromSpace(space);
+
     setItems((prev) => {
       const base = prev.length ? prev : readStorage();
       const next = base
@@ -123,6 +206,8 @@ export function CartProvider({ children }) {
             end_date: range.end_date,
             ...(centerName ? { shopping_center_name: centerName } : {}),
             ...(detailLine ? { detail_line: detailLine } : {}),
+            ...(coverUrl ? { cover_image: coverUrl } : {}),
+            ...(galleryNormalized.length > 0 ? { gallery_images: galleryNormalized } : {}),
           },
         ]);
       writeStorage(next);
