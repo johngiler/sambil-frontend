@@ -23,6 +23,7 @@ import {
   AdminFilterSelect,
   FilterClearAction,
 } from "@/components/admin/AdminListFilters";
+import { AdminListQuerySync } from "@/components/admin/AdminListQuerySync";
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
 import { AdminSelect } from "@/components/admin/AdminSelect";
 import {
@@ -269,7 +270,9 @@ export function PedidosAdminSection() {
   }
 
   return (
-    <div className={adminPanelCard}>
+    <>
+      <AdminListQuerySync onQuery={setFilterQ} />
+      <div className={adminPanelCard}>
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className={adminSectionHeaderIconWrap}>
@@ -751,5 +754,6 @@ export function PedidosAdminSection() {
         </p>
       </AdminConfirmDialog>
     </div>
+    </>
   );
 }

@@ -9,14 +9,15 @@ import { ClientesAdminSection } from "@/components/admin/sections/ClientesAdminS
 import { PedidosAdminSection } from "@/components/admin/sections/PedidosAdminSection";
 import { TomasAdminSection } from "@/components/admin/sections/TomasAdminSection";
 import { UsuariosAdminSection } from "@/components/admin/sections/UsuariosAdminSection";
+import { AdminDashboardCharts } from "@/components/admin/AdminDashboardCharts";
+import { AdminDashboardKpiCards } from "@/components/admin/AdminDashboardKpiCards";
+import { AdminRecentActivityCard } from "@/components/admin/AdminRecentActivityCard";
 import { DashboardChromeSkeleton } from "@/components/admin/skeletons/DashboardChromeSkeleton";
 import { ResumenTabSkeleton } from "@/components/admin/skeletons/ResumenTabSkeleton";
 import { IconChevronLeft } from "@/components/layout/navIcons";
 import { useAuth } from "@/context/AuthContext";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { authJsonFetcher } from "@/lib/swr/fetchers";
-import { parsePaginatedResponse } from "@/services/api";
-
 /** Etiqueta de rol como en el panel Usuarios (UserProfile). */
 const MARKETPLACE_ROLE_BADGE_LABEL = {
   admin: "Administrador marketplace",
@@ -28,26 +29,22 @@ function marketplaceRoleBadgeLabel(role) {
   return MARKETPLACE_ROLE_BADGE_LABEL[role] ?? role;
 }
 
-const DASHBOARD_KPI_KEYS = {
-  centers: "/api/admin/centers/",
-  spaces: "/api/admin/spaces/",
-  clients: "/api/clients/",
-  users: "/api/admin/users/",
-  orders: "/api/orders/",
-};
+const DASHBOARD_STATS_PATH = "/api/admin/dashboard/stats/";
+const DASHBOARD_ACTIVITY_PATH = "/api/admin/dashboard/activity/?limit=40";
 
 function ResumenTab() {
   const { authReady, accessToken } = useAuth();
-  const fetchKpis = authReady && !!accessToken;
+  const fetchStats = authReady && !!accessToken;
 
-  const { data: dc, isLoading: l0 } = useSWR(fetchKpis ? DASHBOARD_KPI_KEYS.centers : null, authJsonFetcher);
-  const { data: ds, isLoading: l1 } = useSWR(fetchKpis ? DASHBOARD_KPI_KEYS.spaces : null, authJsonFetcher);
-  const { data: dcl, isLoading: l2 } = useSWR(fetchKpis ? DASHBOARD_KPI_KEYS.clients : null, authJsonFetcher);
-  const { data: du, isLoading: l3 } = useSWR(fetchKpis ? DASHBOARD_KPI_KEYS.users : null, authJsonFetcher);
-  const { data: do_, isLoading: l4 } = useSWR(fetchKpis ? DASHBOARD_KPI_KEYS.orders : null, authJsonFetcher);
+  const { data, error, isLoading } = useSWR(fetchStats ? DASHBOARD_STATS_PATH : null, authJsonFetcher);
+  const {
+    data: activityData,
+    error: activityError,
+    isLoading: activityLoading,
+  } = useSWR(fetchStats ? DASHBOARD_ACTIVITY_PATH : null, authJsonFetcher);
 
-  const { nCenters, nSpaces, nClients, nUsers, nOrders, ready } = useMemo(() => {
-    if (!fetchKpis) {
+  const { nCenters, nSpaces, nClients, nUsers, nOrders, ready, chartStats } = useMemo(() => {
+    if (!fetchStats) {
       return {
         nCenters: "—",
         nSpaces: "—",
@@ -55,10 +52,10 @@ function ResumenTab() {
         nUsers: "—",
         nOrders: "—",
         ready: true,
+        chartStats: null,
       };
     }
-    const loading = l0 || l1 || l2 || l3 || l4;
-    if (loading) {
+    if (isLoading) {
       return {
         nCenters: "—",
         nSpaces: "—",
@@ -66,46 +63,59 @@ function ResumenTab() {
         nUsers: "—",
         nOrders: "—",
         ready: false,
+        chartStats: null,
       };
     }
-    const fmt = (d) => (d != null ? String(parsePaginatedResponse(d).count) : "?");
+    if (error) {
+      return {
+        nCenters: "—",
+        nSpaces: "—",
+        nClients: "—",
+        nUsers: "—",
+        nOrders: "—",
+        ready: true,
+        chartStats: null,
+      };
+    }
+    const c = data?.counts;
+    const fmt = (n) => (typeof n === "number" && Number.isFinite(n) ? String(n) : "0");
     return {
-      nCenters: fmt(dc),
-      nSpaces: fmt(ds),
-      nClients: fmt(dcl),
-      nUsers: fmt(du),
-      nOrders: fmt(do_),
+      nCenters: fmt(c?.centers),
+      nSpaces: fmt(c?.spaces),
+      nClients: fmt(c?.clients),
+      nUsers: fmt(c?.users),
+      nOrders: fmt(c?.orders),
       ready: true,
+      chartStats: data ?? null,
     };
-  }, [fetchKpis, l0, l1, l2, l3, l4, dc, ds, dcl, du, do_]);
+  }, [fetchStats, isLoading, error, data]);
 
   if (!ready) {
     return <ResumenTabSkeleton />;
   }
 
+  const errMsg = error != null ? (error instanceof Error ? error.message : "No se pudieron cargar las métricas.") : null;
+
   return (
     <div className="space-y-6">
-      <div className={`${ROUNDED_CONTROL} border border-dashed border-zinc-300 bg-zinc-50/80 p-5 text-sm text-zinc-700`}>
-        <p className="font-medium text-zinc-900">KPIs y gráficos</p>
-        <p className="mt-1">
-          Fase 2: aquí irán métricas operativas (conversión, ocupación, ingresos, etc.). Por ahora solo
-          conteos rápidos.
+      {errMsg ? (
+        <p className={`${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`} role="alert">
+          {errMsg}
         </p>
-      </div>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        {[
-          ["Centros comerciales", nCenters],
-          ["Tomas (espacios)", nSpaces],
-          ["Clientes", nClients],
-          ["Usuarios", nUsers],
-          ["Pedidos", nOrders],
-        ].map(([label, val]) => (
-          <div key={label} className={`${ROUNDED_CONTROL} border border-zinc-200 bg-white p-4 shadow-sm`}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">{label}</p>
-            <p className="mt-2 text-2xl font-bold tabular-nums text-zinc-900">{val}</p>
-          </div>
-        ))}
-      </div>
+      ) : null}
+      <AdminDashboardKpiCards
+        nCenters={nCenters}
+        nSpaces={nSpaces}
+        nClients={nClients}
+        nUsers={nUsers}
+        nOrders={nOrders}
+      />
+      {chartStats ? <AdminDashboardCharts stats={chartStats} /> : null}
+      <AdminRecentActivityCard
+        activities={Array.isArray(activityData?.activities) ? activityData.activities : []}
+        loading={Boolean(fetchStats && activityLoading)}
+        error={activityError}
+      />
     </div>
   );
 }

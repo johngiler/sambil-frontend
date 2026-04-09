@@ -22,6 +22,12 @@ export function dashboardUsuariosSearchHref(query) {
   return `/dashboard/usuarios?q=${encodeURIComponent(q)}`;
 }
 
+export function dashboardPedidosSearchHref(query) {
+  const q = String(query ?? "").trim();
+  if (!q) return "/dashboard/pedidos";
+  return `/dashboard/pedidos?q=${encodeURIComponent(q)}`;
+}
+
 /** Enlace interno al listado admin con filtro `q` (evita propagación en filas de tabla). */
 export function AdminDashboardFilterLink({ href, children, className = "", ...rest }) {
   return (
