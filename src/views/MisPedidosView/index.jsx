@@ -395,6 +395,14 @@ export default function MisPedidosView() {
             const lineSub = first != null ? Number(first.subtotal) : NaN;
             const lineDisplay = Number.isFinite(lineSub) ? lineSub : Number(o.total_amount);
             const totalIva = totalWithIva(Number(o.total_amount));
+            const multi = items.length > 1;
+            const orderRef =
+              typeof o.code === "string" && o.code.trim() !== ""
+                ? o.code.trim()
+                : orderListReference(
+                    o.id,
+                    typeof o.workspace_slug === "string" ? o.workspace_slug.trim() : undefined,
+                  );
             return (
               <li
                 key={o.id}
@@ -409,41 +417,113 @@ export default function MisPedidosView() {
                 >
                   <div className="min-w-0 flex-1 space-y-4">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="font-mono text-sm font-bold text-zinc-900">
-                        {orderListReference(o.id)}
+                      <span className="font-mono text-sm font-bold tracking-tight text-zinc-900">
+                        {orderRef}
                       </span>
                       <StatusBadge status={o.status} label={o.status_label || o.status} />
                     </div>
                     <div className="flex flex-wrap items-start justify-between gap-3 border-t border-zinc-100 pt-3">
-                      <div className="min-w-0">
-                        <p className="text-sm text-zinc-600">
-                          {first?.ad_space != null && first.ad_space !== "" ? (
-                            <>
-                              <CatalogSpaceLink
-                                spaceId={first.ad_space}
-                                stopPropagation
-                                className="text-zinc-800"
-                              >
-                                {firstTitle}
-                              </CatalogSpaceLink>
-                              {firstCenter ? (
-                                <>
-                                  <span className="text-zinc-400"> · </span>
-                                  <span>{firstCenter}</span>
-                                </>
-                              ) : null}
-                            </>
-                          ) : (
-                            lineDesc
-                          )}
-                        </p>
-                        {items.length > 1 ? (
-                          <p className="mt-1 text-xs text-zinc-400">+{items.length - 1} línea(s) más</p>
+                      <div className="min-w-0 flex-1">
+                        {!multi && first ? (
+                          <p className="text-sm text-zinc-600">
+                            {first.ad_space != null && first.ad_space !== "" ? (
+                              <>
+                                <CatalogSpaceLink
+                                  spaceId={first.ad_space}
+                                  stopPropagation
+                                  className="text-zinc-800"
+                                >
+                                  {firstTitle}
+                                </CatalogSpaceLink>
+                                {firstCenter ? (
+                                  <>
+                                    <span className="text-zinc-400"> · </span>
+                                    <span>{firstCenter}</span>
+                                  </>
+                                ) : null}
+                              </>
+                            ) : (
+                              lineDesc
+                            )}
+                          </p>
+                        ) : null}
+                        {multi ? (
+                          <div>
+                            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                              {items.length} tomas en este pedido
+                            </p>
+                            <ul className="mt-2 space-y-2">
+                              {items.map((it) => {
+                                const t =
+                                  typeof it.ad_space_title === "string" && it.ad_space_title.trim()
+                                    ? it.ad_space_title.trim()
+                                    : it.ad_space_code || "Toma";
+                                const center =
+                                  typeof it.shopping_center_name === "string"
+                                    ? it.shopping_center_name.trim()
+                                    : "";
+                                const code =
+                                  typeof it.ad_space_code === "string" && it.ad_space_code.trim()
+                                    ? it.ad_space_code.trim()
+                                    : "";
+                                const sub = Number(it.subtotal);
+                                return (
+                                  <li
+                                    key={it.id}
+                                    className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-zinc-100 pb-2 text-sm last:border-0 last:pb-0"
+                                  >
+                                    <div className="min-w-0 flex-1 text-zinc-600">
+                                      {code ? (
+                                        <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+                                          {code}
+                                        </span>
+                                      ) : null}
+                                      {code ? <span className="mx-1.5 text-zinc-300">·</span> : null}
+                                      {it.ad_space != null && it.ad_space !== "" ? (
+                                        <CatalogSpaceLink
+                                          spaceId={it.ad_space}
+                                          stopPropagation
+                                          className="text-zinc-800"
+                                        >
+                                          {t}
+                                        </CatalogSpaceLink>
+                                      ) : (
+                                        <span className="text-zinc-800">{t}</span>
+                                      )}
+                                      {center ? (
+                                        <>
+                                          <span className="text-zinc-400"> · </span>
+                                          <span>{center}</span>
+                                        </>
+                                      ) : null}
+                                    </div>
+                                    <span className="shrink-0 text-sm font-bold tabular-nums text-[#d98e32]">
+                                      {Number.isFinite(sub) ? formatUsdInteger(sub) : "—"}
+                                    </span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          </div>
+                        ) : null}
+                        {!multi && !first ? (
+                          <p className="text-sm text-zinc-500">Sin líneas en este pedido.</p>
                         ) : null}
                       </div>
-                      <p className="shrink-0 text-lg font-bold tabular-nums text-[#d98e32]">
-                        {formatUsdInteger(lineDisplay)}
-                      </p>
+                      {!multi ? (
+                        <p className="shrink-0 text-lg font-bold tabular-nums text-[#d98e32]">
+                          {formatUsdInteger(lineDisplay)}
+                        </p>
+                      ) : (
+                        <div className="shrink-0 text-right">
+                          <p className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-zinc-400">
+                            Subtotal (USD)
+                          </p>
+                          <p className="text-lg font-bold tabular-nums text-[#d98e32]">
+                            {formatUsdInteger(Number(o.total_amount))}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 pt-3">
                       <time

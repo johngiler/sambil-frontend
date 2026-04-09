@@ -322,7 +322,7 @@ export function PedidosAdminSection() {
               id="pedidos-filter-q"
               value={filterQ}
               onChange={setFilterQ}
-              placeholder="Buscar por cliente…"
+              placeholder="Cliente, número o referencia (#…-ORDER-…)"
             />
             <AdminFilterSelect
               id="pedidos-filter-status"
@@ -362,6 +362,7 @@ export function PedidosAdminSection() {
             <thead className="bg-zinc-50 text-xs uppercase text-zinc-500">
               <tr>
                 <th className="w-10 px-2 py-3" aria-hidden />
+                <th className="min-w-[8.5rem] px-3 py-2">Pedido</th>
                 <th className="px-3 py-2">Alta</th>
                 <th className="px-3 py-2">Cliente</th>
                 <th className="px-3 py-2">Estado</th>
@@ -374,6 +375,8 @@ export function PedidosAdminSection() {
               const open = expandedId === o.id;
               const panelId = `pedido-extra-${o.id}`;
               const clientQ = clientDisplayName(o);
+              const orderRef =
+                typeof o.code === "string" && o.code.trim() ? o.code.trim() : "";
               return (
                 <Fragment key={o.id}>
                   <tr className="border-t border-zinc-100">
@@ -384,6 +387,20 @@ export function PedidosAdminSection() {
                         rowId={o.id}
                         controlsId={panelId}
                       />
+                    </td>
+                    <td className="max-w-[13rem] px-3 py-2 align-middle">
+                      <div className="flex items-start gap-1">
+                        <span
+                          className="min-w-0 flex-1 break-all font-mono text-[11px] font-semibold leading-snug tracking-tight text-zinc-800"
+                          title={orderRef || `#${o.id}`}
+                        >
+                          {orderRef || "—"}
+                        </span>
+                        <AdminCopyIconButton
+                          value={orderRef}
+                          ariaLabel="Copiar referencia del pedido"
+                        />
+                      </div>
                     </td>
                     <td className="whitespace-nowrap px-3 py-2 text-xs text-zinc-600">
                       {formatPedidoAlta(o.created_at)}
@@ -409,7 +426,7 @@ export function PedidosAdminSection() {
                           value={o.status}
                           onChange={(v) => v != null && v !== "" && patchOrderStatus(o.id, String(v))}
                           compact
-                          aria-label={`Estado pedido ${o.id}`}
+                          aria-label={`Estado pedido ${orderRef || o.id}`}
                         />
                       </div>
                     </td>
@@ -431,7 +448,7 @@ export function PedidosAdminSection() {
                     </td>
                   </tr>
                   {open ? (
-                    <AdminAccordionRowPanel colSpan={6} panelId={panelId} fullWidthContent>
+                    <AdminAccordionRowPanel colSpan={7} panelId={panelId} fullWidthContent>
                       <AdminAccordionDetailHeader
                         badgeText={formatPedidoAlta(o.created_at)}
                         titleLabel="Pedido"
@@ -447,6 +464,17 @@ export function PedidosAdminSection() {
                               <span className="text-lg font-bold tabular-nums text-zinc-900">
                                 ${formatUsdAmount(o.total_amount)}
                               </span>
+                            </AdminDetailField>
+                            <AdminDetailField label="Referencia">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-mono text-sm font-semibold tracking-tight text-zinc-800">
+                                  {orderRef || "—"}
+                                </span>
+                                <AdminCopyIconButton
+                                  value={orderRef}
+                                  ariaLabel="Copiar referencia del pedido"
+                                />
+                              </div>
                             </AdminDetailField>
                             <AdminDetailField label="Creada">
                               {o.created_at

@@ -10,6 +10,9 @@ export function PedidosSectionSkeleton() {
           <tr>
             <th className="w-10 px-2 py-3" aria-hidden />
             <th className="px-3 py-3">
+              <Skeleton className="h-3 w-20" />
+            </th>
+            <th className="px-3 py-3">
               <Skeleton className="h-3 w-14" />
             </th>
             <th className="px-3 py-3">
@@ -31,6 +34,9 @@ export function PedidosSectionSkeleton() {
             <tr key={i} className="border-t border-zinc-100">
               <td className="px-2 py-2">
                 <Skeleton className={`h-8 w-8 ${ROUNDED_CONTROL}`} />
+              </td>
+              <td className="px-3 py-3">
+                <Skeleton className="h-4 w-24" />
               </td>
               <td className="px-3 py-3">
                 <Skeleton className="h-4 w-28" />

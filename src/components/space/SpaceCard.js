@@ -33,6 +33,8 @@ export function SpaceCard({ space, availabilityLabel = "free", showFooterLink = 
     cityLine.localeCompare(centerName, undefined, { sensitivity: "accent" }) !== 0;
   const hasLocationBadge = centerName !== "" || cityLine !== "";
   const statusText = spaceStatusLabel(space.status, space.status_label);
+  const code =
+    typeof space.code === "string" && space.code.trim() !== "" ? space.code.trim() : "";
   const desc =
     typeof space.description === "string" && space.description.trim() !== ""
       ? space.description.trim()
@@ -103,6 +105,11 @@ export function SpaceCard({ space, availabilityLabel = "free", showFooterLink = 
           <h2 className="w-full text-balance break-words text-[15px] font-semibold leading-snug tracking-tight text-zinc-900">
             {space.title}
           </h2>
+          {code ? (
+            <p className="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
+              {code}
+            </p>
+          ) : null}
           <div className="mt-2.5 flex w-full items-center justify-between gap-3">
             <span
               className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold leading-tight ${spaceStatusPillClassName(space.status)}`}
