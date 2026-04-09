@@ -1,5 +1,27 @@
 const c = "h-[1.125rem] w-[1.125rem] shrink-0";
 
+/** Dólar en círculo (métricas económicas en panel). */
+export function IconAdminCurrency({ className = "" }) {
+  return (
+    <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 21a9 9 0 100-18 9 9 0 000 18z"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M12 7v10M9 10h4.5a1.5 1.5 0 010 3H9"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function IconAdminChart({ className = "" }) {
   return (
     <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>

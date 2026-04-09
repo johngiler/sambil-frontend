@@ -22,6 +22,25 @@ export function ResumenTabSkeleton() {
 
       <div className="space-y-5">
         <div
+          className={`${ROUNDED_CONTROL} border border-emerald-200/50 bg-gradient-to-br from-emerald-50/60 via-white to-teal-50/30 p-4 sm:p-5`}
+        >
+          <div className="grid gap-6 lg:grid-cols-2 lg:items-center">
+            <div>
+              <div className="flex gap-3">
+                <Skeleton className="size-11 shrink-0 rounded-xl" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <Skeleton className="h-4 w-52" />
+                  <Skeleton className="h-3 w-full max-w-sm" />
+                </div>
+              </div>
+              <Skeleton className="mt-4 h-10 w-40" />
+              <Skeleton className="mt-3 h-3 w-56" />
+            </div>
+            <Skeleton className="h-[168px] w-full rounded-xl" />
+          </div>
+        </div>
+
+        <div
           className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-gradient-to-br from-zinc-50 to-zinc-100/80 p-4 sm:p-6`}
         >
           <Skeleton className="h-4 w-56" />
