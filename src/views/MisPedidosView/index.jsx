@@ -10,7 +10,7 @@ import { MisPedidosSkeleton } from "@/components/orders/MisPedidosSkeleton";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { useAuth } from "@/context/AuthContext";
 import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
-import { formatUsdInteger, totalWithIva } from "@/lib/marketplacePricing";
+import { formatUsdInteger, formatUsdMoney, IVA_RATE, totalWithIva } from "@/lib/marketplacePricing";
 import { orderListReference } from "@/lib/orderDisplay";
 import {
   squareAdminTablePortadaFrameClass,
@@ -58,6 +58,30 @@ function formatDateTimeFull(iso) {
     return String(iso);
   }
 }
+
+/** Fecha de contrato en formato corto (evita desfase UTC con `YYYY-MM-DD`). */
+function formatContractDay(value) {
+  if (value == null || value === "") return "—";
+  const s = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const [y, mo, d] = s.split("-").map(Number);
+    return new Date(y, mo - 1, d).toLocaleDateString("es-VE", { dateStyle: "medium" });
+  }
+  try {
+    return new Date(s).toLocaleDateString("es-VE", { dateStyle: "medium" });
+  } catch {
+    return s;
+  }
+}
+
+function formatContractRange(start, end) {
+  const a = formatContractDay(start);
+  const b = formatContractDay(end);
+  if (a === "—" && b === "—") return "—";
+  return `${a} → ${b}`;
+}
+
+const IVA_PERCENT_LABEL = `${Math.round(IVA_RATE * 100)} %`;
 
 /** Acento visual según el estado destino del evento */
 function timelineTone(toStatus) {
@@ -111,6 +135,24 @@ function StatusBadge({ label, status }) {
       {label}
     </span>
   );
+}
+
+/** URL de portada o primera imagen de galería para miniatura de línea. */
+function orderLineCoverUrl(it) {
+  if (!it) return "";
+  if (it.ad_space_cover_image) {
+    const u = mediaAbsoluteUrl(it.ad_space_cover_image);
+    if (u) return u;
+  }
+  if (Array.isArray(it.ad_space_gallery_images)) {
+    for (const raw of it.ad_space_gallery_images) {
+      if (typeof raw === "string" && raw.trim()) {
+        const u = mediaAbsoluteUrl(raw.trim());
+        if (u) return u;
+      }
+    }
+  }
+  return "";
 }
 
 /** Número de fotos distintas de una línea (URLs únicas tras resolver media). */
@@ -353,7 +395,10 @@ export default function MisPedidosView() {
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
       <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">Mis pedidos</h1>
       <p className="mt-2 max-w-xl text-sm text-zinc-600">
-        Consulta el estado y abre un pedido para ver el historial detallado.
+        Los importes por toma y el subtotal del pedido son{" "}
+        <span className="font-medium text-zinc-800">sin IVA</span>. El total final incluye IVA (
+        {IVA_PERCENT_LABEL}). Abre un pedido para ver periodo de reserva por línea e historial de
+        estados.
       </p>
 
       {err ? (
@@ -379,16 +424,17 @@ export default function MisPedidosView() {
             const panelId = `pedido-panel-${o.id}`;
             const items = Array.isArray(o.items) ? o.items : [];
             const first = items[0];
-            const firstTitle =
-              first && typeof first.ad_space_title === "string"
-                ? first.ad_space_title
-                : first?.ad_space_code || "Línea";
-            const firstCenter =
-              first && typeof first.shopping_center_name === "string"
-                ? first.shopping_center_name
-                : "";
-            const lineDesc = firstCenter ? `${firstTitle} · ${firstCenter}` : firstTitle;
             const lineSub = first != null ? Number(first.subtotal) : NaN;
+            const singleCode =
+              first == null
+                ? ""
+                : typeof first.ad_space_code === "string" && first.ad_space_code.trim()
+                  ? first.ad_space_code.trim()
+                  : first.ad_space != null && first.ad_space !== ""
+                    ? `#${first.ad_space}`
+                    : "Toma";
+            const singleThumb = first ? orderLineCoverUrl(first) : "";
+            const singleCodeLabel = singleCode.replace(/^#/, "") || "toma";
             const lineDisplay = Number.isFinite(lineSub) ? lineSub : Number(o.total_amount);
             const totalIva = totalWithIva(Number(o.total_amount));
             const multi = items.length > 1;
@@ -421,79 +467,104 @@ export default function MisPedidosView() {
                     <div className="flex flex-wrap items-start justify-between gap-3 border-t border-zinc-100 pt-3">
                       <div className="min-w-0 flex-1">
                         {!multi && first ? (
-                          <p className="text-sm text-zinc-600">
-                            {first.ad_space != null && first.ad_space !== "" ? (
-                              <>
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-zinc-200/90 bg-zinc-100"
+                              aria-hidden={!singleThumb}
+                            >
+                              {singleThumb ? (
+                                /* eslint-disable-next-line @next/next/no-img-element -- miniatura de catálogo */
+                                <img
+                                  src={singleThumb}
+                                  alt=""
+                                  className="h-full w-full object-cover"
+                                />
+                              ) : (
+                                <span className="flex h-full w-full items-center justify-center text-[10px] font-medium text-zinc-400">
+                                  —
+                                </span>
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              {first.ad_space != null && first.ad_space !== "" ? (
                                 <CatalogSpaceLink
                                   spaceId={first.ad_space}
                                   stopPropagation
-                                  className="text-zinc-800"
+                                  variant="mono"
+                                  className="text-[13px] font-semibold"
                                 >
-                                  {firstTitle}
+                                  {singleCode}
                                 </CatalogSpaceLink>
-                                {firstCenter ? (
-                                  <>
-                                    <span className="text-zinc-400"> · </span>
-                                    <span>{firstCenter}</span>
-                                  </>
-                                ) : null}
-                              </>
-                            ) : (
-                              lineDesc
-                            )}
-                          </p>
+                              ) : (
+                                <span className="font-mono text-[13px] font-semibold text-zinc-800">
+                                  {singleCode}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                         ) : null}
                         {multi ? (
                           <div>
                             <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                              {items.length} tomas en este pedido
+                              {items.length}{" "}
+                              {items.length === 1 ? "toma en este pedido" : "tomas en este pedido"}{" "}
+                              <span className="font-normal normal-case text-zinc-400">
+                                (precio por toma sin IVA)
+                              </span>
                             </p>
-                            <ul className="mt-2 space-y-2">
+                            <ul className="mt-2 space-y-2.5">
                               {items.map((it) => {
-                                const t =
-                                  typeof it.ad_space_title === "string" && it.ad_space_title.trim()
-                                    ? it.ad_space_title.trim()
-                                    : it.ad_space_code || "Toma";
-                                const center =
-                                  typeof it.shopping_center_name === "string"
-                                    ? it.shopping_center_name.trim()
-                                    : "";
+                                const thumb = orderLineCoverUrl(it);
                                 const code =
                                   typeof it.ad_space_code === "string" && it.ad_space_code.trim()
                                     ? it.ad_space_code.trim()
-                                    : "";
+                                    : it.ad_space != null && it.ad_space !== ""
+                                        ? `#${it.ad_space}`
+                                        : "Toma";
                                 const sub = Number(it.subtotal);
+                                const codeLabel = code.replace(/^#/, "") || "toma";
                                 return (
                                   <li
                                     key={it.id}
-                                    className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 border-b border-zinc-100 pb-2 text-sm last:border-0 last:pb-0"
+                                    className="flex items-center gap-2.5 border-b border-zinc-100 pb-2.5 last:border-0 last:pb-0"
                                   >
-                                    <div className="min-w-0 flex-1 text-zinc-600">
-                                      {code ? (
-                                        <span className="font-mono text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
-                                          {code}
+                                    <div
+                                      className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-zinc-200/90 bg-zinc-100"
+                                      aria-hidden={!thumb}
+                                    >
+                                      {thumb ? (
+                                        /* eslint-disable-next-line @next/next/no-img-element -- miniatura de catálogo */
+                                        <img
+                                          src={thumb}
+                                          alt=""
+                                          className="h-full w-full object-cover"
+                                        />
+                                      ) : (
+                                        <span className="flex h-full w-full items-center justify-center text-[10px] font-medium text-zinc-400">
+                                          —
                                         </span>
-                                      ) : null}
-                                      {code ? <span className="mx-1.5 text-zinc-300">·</span> : null}
+                                      )}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
                                       {it.ad_space != null && it.ad_space !== "" ? (
                                         <CatalogSpaceLink
                                           spaceId={it.ad_space}
                                           stopPropagation
-                                          className="text-zinc-800"
+                                          variant="mono"
+                                          className="text-[13px] font-semibold"
                                         >
-                                          {t}
+                                          {code}
                                         </CatalogSpaceLink>
                                       ) : (
-                                        <span className="text-zinc-800">{t}</span>
+                                        <span className="font-mono text-[13px] font-semibold text-zinc-800">
+                                          {code}
+                                        </span>
                                       )}
-                                      {center ? (
-                                        <>
-                                          <span className="text-zinc-400"> · </span>
-                                          <span>{center}</span>
-                                        </>
-                                      ) : null}
                                     </div>
-                                    <span className="shrink-0 text-sm font-bold tabular-nums text-[#d98e32]">
+                                    <span
+                                      className="shrink-0 text-sm font-bold tabular-nums text-[#d98e32]"
+                                      aria-label={`Importe sin IVA para ${codeLabel}`}
+                                    >
                                       {Number.isFinite(sub) ? formatUsdInteger(sub) : "—"}
                                     </span>
                                   </li>
@@ -507,13 +578,21 @@ export default function MisPedidosView() {
                         ) : null}
                       </div>
                       {!multi ? (
-                        <p className="shrink-0 text-lg font-bold tabular-nums text-[#d98e32]">
-                          {formatUsdInteger(lineDisplay)}
-                        </p>
+                        <div className="shrink-0 text-right">
+                          <p className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-zinc-400">
+                            Subtotal (sin IVA)
+                          </p>
+                          <p
+                            className="text-lg font-bold tabular-nums text-[#d98e32]"
+                            aria-label={`Importe sin IVA para ${singleCodeLabel}`}
+                          >
+                            {formatUsdInteger(lineDisplay)}
+                          </p>
+                        </div>
                       ) : (
                         <div className="shrink-0 text-right">
                           <p className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-zinc-400">
-                            Subtotal (USD)
+                            Subtotal pedido (sin IVA)
                           </p>
                           <p className="text-lg font-bold tabular-nums text-[#d98e32]">
                             {formatUsdInteger(Number(o.total_amount))}
@@ -522,17 +601,27 @@ export default function MisPedidosView() {
                       )}
                     </div>
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-zinc-100 pt-3">
-                      <time
-                        dateTime={o.submitted_at || o.created_at}
-                        className="text-sm font-semibold tabular-nums text-zinc-900"
-                      >
-                        {o.submitted_at || o.created_at
-                          ? formatDateTimeFull(o.submitted_at || o.created_at)
-                          : "—"}
-                      </time>
-                      <span className="text-lg font-bold tabular-nums text-[#d98e32]">
-                        {formatUsdInteger(totalIva)}
-                      </span>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+                          {o.submitted_at ? "Enviado el" : "Registrado el"}
+                        </p>
+                        <time
+                          dateTime={o.submitted_at || o.created_at}
+                          className="text-sm font-semibold tabular-nums text-zinc-900"
+                        >
+                          {o.submitted_at || o.created_at
+                            ? formatDateTimeFull(o.submitted_at || o.created_at)
+                            : "—"}
+                        </time>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] font-semibold uppercase leading-tight tracking-wide text-zinc-400">
+                          Total con IVA ({IVA_PERCENT_LABEL})
+                        </p>
+                        <span className="text-lg font-bold tabular-nums text-[#d98e32]">
+                          {formatUsdMoney(totalIva)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <Chevron expanded={expanded} />
@@ -544,25 +633,18 @@ export default function MisPedidosView() {
                   >
                     <div className="grid gap-6 sm:grid-cols-1">
                       <div className="rounded-xl border border-zinc-100 bg-white/90 p-4 shadow-sm">
-                        <SectionTitle id={`${panelId}-lineas`}>Reserva — líneas</SectionTitle>
+                        <SectionTitle id={`${panelId}-lineas`}>Detalle por toma</SectionTitle>
+                        <p className="mt-2 text-xs leading-relaxed text-zinc-500">
+                          Cada fila es una toma distinta: fechas del periodo reservado e importe de esa
+                          línea <span className="font-medium text-zinc-600">sin IVA</span>. No todas
+                          las tomas comparten las mismas fechas si reservaste periodos distintos.
+                        </p>
                         <ul
-                          className="mt-3 space-y-3 text-sm"
+                          className="mt-4 space-y-3 text-sm"
                           aria-labelledby={`${panelId}-lineas`}
                         >
                           {(o.items || []).map((it) => {
-                            const lineCover =
-                              (it.ad_space_cover_image
-                                ? mediaAbsoluteUrl(it.ad_space_cover_image)
-                                : "") ||
-                              (Array.isArray(it.ad_space_gallery_images)
-                                ? it.ad_space_gallery_images
-                                    .map((u) =>
-                                      typeof u === "string" && u.trim()
-                                        ? mediaAbsoluteUrl(u.trim())
-                                        : "",
-                                    )
-                                    .find(Boolean) || ""
-                                : "");
+                            const lineCover = orderLineCoverUrl(it);
                             const lineImgCount = orderLineItemImageCount(it);
                             return (
                               <li
@@ -601,14 +683,22 @@ export default function MisPedidosView() {
                                         {it.ad_space_title}
                                       </CatalogSpaceLink>
                                     ) : null}
-                                    <p className="mt-0.5 text-xs text-zinc-500">
-                                      Contrato {it.start_date} → {it.end_date}
+                                    <p className="mt-1 text-xs text-zinc-600">
+                                      <span className="font-medium text-zinc-700">Periodo reservado:</span>{" "}
+                                      <span className="tabular-nums text-zinc-600">
+                                        {formatContractRange(it.start_date, it.end_date)}
+                                      </span>
                                     </p>
                                   </div>
                                 </div>
-                                <span className="shrink-0 tabular-nums text-sm font-semibold text-zinc-800">
-                                  ${it.subtotal} USD
-                                </span>
+                                <div className="shrink-0 text-right sm:pt-0.5">
+                                  <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+                                    Línea (sin IVA)
+                                  </p>
+                                  <span className="tabular-nums text-sm font-semibold text-zinc-900">
+                                    {formatUsdMoney(Number(it.subtotal))}
+                                  </span>
+                                </div>
                               </li>
                             );
                           })}
