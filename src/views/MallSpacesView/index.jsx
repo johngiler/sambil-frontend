@@ -66,8 +66,8 @@ export default async function MallSpacesView({ centerSlug }) {
           </div>
         ) : (
           <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 xl:gap-6">
-            {spaces.map((s) => (
-              <SpaceCardWithCart key={s.id} space={s} />
+            {spaces.map((s, index) => (
+              <SpaceCardWithCart key={s.id} space={s} priority={index < 4} />
             ))}
           </div>
         )}

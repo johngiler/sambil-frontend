@@ -28,9 +28,13 @@ export function AdminShell({ children }) {
   }
 
   return (
-    <div className="flex min-h-[min(100dvh,1200px)] w-full max-w-[100vw]">
+    <div className="flex min-h-[min(100dvh,1200px)] w-full min-w-0 max-w-[100vw] overflow-x-hidden">
       <AdminSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
-      <div className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:py-8">
+      <div
+        className={`min-w-0 w-full flex-1 px-4 py-6 sm:px-6 lg:py-8${
+          mobileOpen ? " max-lg:pointer-events-none" : ""
+        }`}
+      >
         <AdminMobileNavToggle onClick={() => setMobileOpen(true)} />
         {children}
       </div>

@@ -28,7 +28,11 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es" className={`${jakarta.variable} ${geistMono.variable} h-full`}>
+    <html
+      lang="es"
+      className={`${jakarta.variable} ${geistMono.variable} h-full`}
+      data-scroll-behavior="smooth"
+    >
       <body
         className="flex min-h-full flex-col antialiased [padding:env(safe-area-inset-top)_env(safe-area-inset-right)_env(safe-area-inset-bottom)_env(safe-area-inset-left)]"
         data-mp-app="marketplace"

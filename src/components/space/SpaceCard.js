@@ -18,9 +18,15 @@ function formatUsdMonthly(n) {
 
 /**
  * Tarjeta de toma en catálogo (título a ancho completo; fila estado / precio; badge centro + ciudad).
- * @param {{ space: Record<string, unknown>, availabilityLabel?: "free" | "occupied", showFooterLink?: boolean, inCart?: boolean }} props
+ * @param {{ space: Record<string, unknown>, availabilityLabel?: "free" | "occupied", showFooterLink?: boolean, inCart?: boolean, priority?: boolean }} props
  */
-export function SpaceCard({ space, availabilityLabel = "free", showFooterLink = true, inCart = false }) {
+export function SpaceCard({
+  space,
+  availabilityLabel = "free",
+  showFooterLink = true,
+  inCart = false,
+  priority = false,
+}) {
   const cover = spaceCoverUrlForUi(space);
   const centerName =
     typeof space.shopping_center_name === "string" ? space.shopping_center_name.trim() : "";
@@ -60,6 +66,7 @@ export function SpaceCard({ space, availabilityLabel = "free", showFooterLink = 
               fill
               className="object-cover"
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              priority={priority}
             />
           ) : (
             <>

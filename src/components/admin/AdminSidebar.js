@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { ADMIN_NAV } from "@/components/admin/adminNavConfig";
 import {
@@ -16,6 +16,12 @@ import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 
 const ADMIN_SIDEBAR_COLLAPSED_KEY = "sambil-admin-sidebar-collapsed";
 
+/** Coincide con el breakpoint `lg` de Tailwind (1024px). */
+function isMobileAdminNav() {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(max-width: 1023px)").matches;
+}
+
 function navActive(pathname, href) {
   if (href === "/dashboard") {
     return pathname === "/dashboard" || pathname === "/dashboard/";
@@ -25,6 +31,7 @@ function navActive(pathname, href) {
 
 export function AdminSidebar({ mobileOpen, setMobileOpen }) {
   const pathname = usePathname() || "";
+  const router = useRouter();
   const { displayName } = useWorkspace();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -68,7 +75,15 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
             href={href}
             className={linkClass(active)}
             title={label}
-            onClick={() => setMobileOpen(false)}
+            onClick={(e) => {
+              if (isMobileAdminNav()) {
+                e.preventDefault();
+                setMobileOpen(false);
+                router.push(href);
+                return;
+              }
+              setMobileOpen(false);
+            }}
           >
             <Icon className={`shrink-0 ${active ? "text-white" : "text-zinc-500"}`} />
             <span className={collapsed ? "lg:sr-only" : ""}>{label}</span>
@@ -83,7 +98,7 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
   return (
     <>
       <div
-        className={`fixed inset-0 z-40 bg-zinc-900/40 backdrop-blur-[2px] transition-opacity lg:hidden ${
+        className={`fixed inset-0 z-[55] bg-zinc-900/40 backdrop-blur-[2px] transition-opacity lg:hidden ${
           mobileOpen ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
         aria-hidden={!mobileOpen}
@@ -91,11 +106,9 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
       />
 
       <aside
-        className={`relative flex h-full w-[min(17rem,88vw)] shrink-0 flex-col border-r border-zinc-200 bg-zinc-50 shadow-xl transition-[width,transform] duration-200 ease-out lg:static lg:z-20 lg:h-auto lg:min-h-[calc(100dvh-4rem)] lg:shrink-0 lg:shadow-none ${
+        className={`flex w-[min(17rem,88vw)] flex-col border-r border-zinc-200 bg-zinc-50 transition-[width,transform] duration-200 ease-out max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-[60] max-lg:h-[100dvh] max-lg:shadow-xl lg:static lg:z-20 lg:h-auto lg:min-h-[calc(100dvh-4rem)] lg:shrink-0 lg:shadow-none ${
           collapsed ? "lg:w-[4.25rem]" : "lg:w-56"
-        } fixed left-0 top-0 z-50 lg:translate-x-0 ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
+        } ${mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full"} lg:translate-x-0`}
       >
         <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-3 lg:hidden">
           <p className="text-sm font-semibold text-zinc-900">Menú</p>
@@ -153,7 +166,15 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
             }`}
             title="Volver al marketplace"
             aria-label="Volver al marketplace"
-            onClick={() => setMobileOpen(false)}
+            onClick={(e) => {
+              if (isMobileAdminNav()) {
+                e.preventDefault();
+                setMobileOpen(false);
+                router.push("/");
+                return;
+              }
+              setMobileOpen(false);
+            }}
           >
             <IconChevronLeft className="shrink-0 text-zinc-600" />
             <span className={collapsed ? "lg:sr-only" : ""}>Volver al marketplace</span>

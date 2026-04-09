@@ -308,12 +308,13 @@ export function HomeSpacesCatalogClient() {
       ) : (
         <div className="space-y-6">
           <ul className="grid list-none gap-[10px] p-0 sm:grid-cols-2 lg:grid-cols-4">
-            {spaces.map((space) => (
+            {spaces.map((space, index) => (
               <li key={space.id}>
                 <SpaceCardWithCart
                   space={space}
                   availabilityLabel="occupied"
                   showFooterLink={false}
+                  priority={index < 4}
                 />
               </li>
             ))}

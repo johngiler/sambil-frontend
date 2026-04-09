@@ -44,7 +44,7 @@ export function MarketplaceShell({ children }) {
   return (
     <>
       <Header />
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="min-w-0 w-full flex-1">{children}</main>
       <Footer />
     </>
   );

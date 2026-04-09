@@ -134,10 +134,10 @@ export default function DashboardView({ section = "resumen" }) {
   const roleBadge = marketplaceRoleBadgeLabel(role);
 
   return (
-    <div className="mx-auto max-w-6xl">
-      <header>
-        <h1 className="flex flex-wrap items-center gap-x-3 gap-y-2 text-2xl font-bold text-zinc-900 sm:text-3xl">
-          <span>Panel de administración</span>
+    <div className="mx-auto w-full min-w-0 max-w-6xl">
+      <header className="min-w-0">
+        <h1 className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-2xl font-bold text-zinc-900 sm:text-3xl">
+          <span className="min-w-0">Panel de administración</span>
           {roleBadge ? (
             <span
               className="inline-flex max-w-full items-center rounded-full border border-orange-200/90 bg-gradient-to-r from-orange-50/95 via-amber-50/80 to-white px-4 py-1.5 text-sm font-semibold text-orange-950 shadow-sm ring-1 ring-orange-100/70"
