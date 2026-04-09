@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 4;
@@ -127,6 +127,25 @@ function ToolbarIconButton({ label, onClick, disabled, children }) {
   );
 }
 
+function lightboxThumbUrl(it) {
+  if (!it || typeof it.src !== "string" || !it.src) return "";
+  const raw = it.thumbnailSrc;
+  if (raw != null) {
+    const t = String(raw).trim();
+    if (t) return t;
+  }
+  return it.src;
+}
+
+/** Oculta la entrada si falló la carga de la URL principal o de la miniatura. */
+function lightboxItemExcluded(it, failedUrls) {
+  if (!it?.src) return true;
+  if (failedUrls.has(it.src)) return true;
+  const th = lightboxThumbUrl(it);
+  if (th && failedUrls.has(th)) return true;
+  return false;
+}
+
 /**
  * Visor modal de una o varias imágenes: zoom, desplazamiento, anterior/siguiente, miniaturas y descarga opcionales.
  *
@@ -151,14 +170,28 @@ export function ImageLightbox({
   loop = true,
   ariaLabel = "Visor de imágenes",
 }) {
-  const safeItems = Array.isArray(items) ? items.filter((it) => it && typeof it.src === "string" && it.src) : [];
-  const count = safeItems.length;
+  const safeItems = useMemo(
+    () => (Array.isArray(items) ? items.filter((it) => it && typeof it.src === "string" && it.src) : []),
+    [items],
+  );
+  const itemsSignature = useMemo(
+    () => (Array.isArray(items) ? items.map((x) => (x && x.src) || "").join("\u0001") : ""),
+    [items],
+  );
+
+  const [failedUrls, setFailedUrls] = useState(() => new Set());
   const [index, setIndex] = useState(0);
   const [scale, setScale] = useState(1);
   const [tx, setTx] = useState(0);
   const [ty, setTy] = useState(0);
   const [panning, setPanning] = useState(false);
   const panRef = useRef(null);
+
+  const visibleItems = useMemo(
+    () => safeItems.filter((it) => !lightboxItemExcluded(it, failedUrls)),
+    [safeItems, failedUrls],
+  );
+  const count = visibleItems.length;
 
   const resetView = useCallback(() => {
     setScale(1);
@@ -167,17 +200,21 @@ export function ImageLightbox({
   }, []);
 
   useEffect(() => {
+    setFailedUrls(new Set());
+  }, [open, itemsSignature]);
+
+  useEffect(() => {
     if (!open) return;
-    const i = clamp(initialIndex, 0, Math.max(0, count - 1));
+    const i = clamp(initialIndex, 0, Math.max(0, safeItems.length - 1));
     setIndex(i);
     resetView();
-  }, [open, initialIndex, count, resetView]);
+  }, [open, initialIndex, safeItems.length, resetView]);
 
   useLayoutEffect(() => {
-    if (!open || count === 0) return;
-    const d = clamp(index, 0, count - 1);
+    if (!open || visibleItems.length === 0) return;
+    const d = clamp(index, 0, visibleItems.length - 1);
     if (d !== index) setIndex(d);
-  }, [open, count, index]);
+  }, [open, visibleItems.length, index]);
 
   useEffect(() => {
     if (!open) return;
@@ -222,6 +259,16 @@ export function ImageLightbox({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose, count, goPrev, goNext]);
+
+  const markUrlFailed = useCallback((url) => {
+    if (!url) return;
+    setFailedUrls((prev) => {
+      if (prev.has(url)) return prev;
+      const n = new Set(prev);
+      n.add(url);
+      return n;
+    });
+  }, []);
 
   const zoomIn = useCallback(() => {
     setScale((s) => snapZoom(s + ZOOM_STEP));
@@ -280,8 +327,7 @@ export function ImageLightbox({
 
   /** Índice acotado: el estado puede quedar fuera de rango un frame al reabrir o si `items` se filtra distinto. */
   const displayIndex = clamp(index, 0, count - 1);
-  const current = safeItems[displayIndex];
-  const thumbSrc = (it) => (it.thumbnailSrc && String(it.thumbnailSrc)) || it.src;
+  const current = visibleItems[displayIndex];
   if (!current || typeof current.src !== "string" || !current.src) return null;
   const atStart = displayIndex <= 0;
   const atEnd = displayIndex >= count - 1;
@@ -339,6 +385,7 @@ export function ImageLightbox({
                 alt={current.alt || `Imagen ${displayIndex + 1} de ${count}`}
                 className="max-h-[min(70vh,640px)] max-w-full select-none object-contain"
                 draggable={false}
+                onError={() => markUrlFailed(current.src)}
               />
             </div>
           </div>
@@ -361,7 +408,7 @@ export function ImageLightbox({
                       role="tablist"
                       aria-label="Seleccionar imagen"
                     >
-                      {safeItems.map((_, i) => (
+                      {visibleItems.map((_, i) => (
                         <button
                           key={`dot-${i}`}
                           type="button"
@@ -419,7 +466,7 @@ export function ImageLightbox({
           <div className="bg-zinc-900 px-2 py-2 sm:px-3" data-lightbox-toolbar>
             {/* Padding extra: el ring + ring-offset quedan fuera del botón; sin esto el overflow-x del carril los recorta. */}
             <div className="flex gap-2 overflow-x-auto px-2.5 py-2 [scrollbar-width:thin]">
-              {safeItems.map((it, i) => (
+              {visibleItems.map((it, i) => (
                 <button
                   key={`${it.src}-${i}`}
                   type="button"
@@ -435,10 +482,11 @@ export function ImageLightbox({
                   <span className="block h-full w-full overflow-hidden rounded-[10px]">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={thumbSrc(it)}
+                      src={lightboxThumbUrl(it)}
                       alt=""
                       className="h-full w-full object-cover"
                       draggable={false}
+                      onError={() => markUrlFailed(lightboxThumbUrl(it))}
                     />
                   </span>
                 </button>
