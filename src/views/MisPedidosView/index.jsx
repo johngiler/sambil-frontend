@@ -2,13 +2,22 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
+import {
+  AdminFilterClearButton,
+  AdminFilterSearchInput,
+  AdminFilterSelect,
+  AdminFiltersRow,
+} from "@/components/admin/AdminListFilters";
+import { AdminListPagination } from "@/components/admin/AdminListPagination";
+import { ORDER_STATUS_FILTER_OPTIONS, orderStatusPillClassName } from "@/components/admin/adminConstants";
 import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
 import { MisPedidosSkeleton } from "@/components/orders/MisPedidosSkeleton";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { useAuth } from "@/context/AuthContext";
+import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
 import { formatUsdInteger, formatUsdMoney, IVA_RATE, totalWithIva } from "@/lib/marketplacePricing";
 import { orderListReference } from "@/lib/orderDisplay";
@@ -17,8 +26,10 @@ import {
   squareAdminTablePortadaImgClass,
   squareListImagePreviewButtonRingClass,
 } from "@/lib/squareImagePreview";
+import { ordersListPath } from "@/lib/adminListQuery";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
-import { ORDERS_MINE_SWR_KEY, ordersMineAllPagesFetcher } from "@/lib/swr/fetchers";
+import { authJsonFetcher } from "@/lib/swr/fetchers";
+import { parsePaginatedResponse } from "@/services/api";
 import { mediaAbsoluteUrl } from "@/services/authApi";
 
 function formatDate(iso) {
@@ -122,15 +133,11 @@ function timelineTone(toStatus) {
   };
 }
 
-function StatusBadge({ label, status }) {
-  const paid = status === "paid";
+function OrderStatusBadge({ label, status }) {
+  const pill = orderStatusPillClassName(status);
   return (
     <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold shadow-sm ${
-        paid
-          ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-          : "border-zinc-200/90 bg-white text-zinc-800"
-      }`}
+      className={`inline-flex max-w-full items-center rounded-full border border-transparent px-2.5 py-0.5 text-xs font-semibold shadow-sm ${pill}`}
     >
       {label}
     </span>
@@ -328,6 +335,10 @@ export default function MisPedidosView() {
   const { authReady, me, isAdmin, isClient, accessToken } = useAuth();
   const [openId, setOpenId] = useState(null);
   const [err, setErr] = useState("");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterSearch, setFilterSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const debouncedSearch = useDebouncedValue(filterSearch, 400);
   const [lineLightbox, setLineLightbox] = useState({
     open: false,
     items: /** @type {Array<{ src: string; alt?: string; thumbnailSrc?: string }>} */ ([]),
@@ -347,13 +358,32 @@ export default function MisPedidosView() {
   }, []);
 
   const canFetchOrders = authReady && isClient && !!accessToken;
-  const {
-    data: rows = [],
-    error: ordersError,
-    isLoading: ordersLoading,
-  } = useSWR(canFetchOrders ? ORDERS_MINE_SWR_KEY : null, ordersMineAllPagesFetcher, {
+  const listKey = canFetchOrders ? ordersListPath(page, debouncedSearch, filterStatus) : null;
+  const { data, error: ordersError, isLoading: ordersLoading } = useSWR(listKey, authJsonFetcher, {
     keepPreviousData: true,
   });
+
+  const { rows, totalCount } = useMemo(() => {
+    if (!data) return { rows: [], totalCount: 0 };
+    const p = parsePaginatedResponse(data);
+    return { rows: p.results, totalCount: p.count };
+  }, [data]);
+
+  const filtersActive = filterStatus !== "all" || filterSearch.trim() !== "";
+
+  function clearFilters() {
+    setFilterStatus("all");
+    setFilterSearch("");
+    setPage(1);
+  }
+
+  useEffect(() => {
+    setPage(1);
+  }, [filterStatus, debouncedSearch]);
+
+  useEffect(() => {
+    setOpenId(null);
+  }, [listKey]);
 
   useEffect(() => {
     setErr(
@@ -401,23 +431,55 @@ export default function MisPedidosView() {
         estados.
       </p>
 
+      <AdminFiltersRow className="!mb-2">
+        <AdminFilterSearchInput
+          id="mis-pedidos-search"
+          value={filterSearch}
+          onChange={setFilterSearch}
+          placeholder="Referencia, # o ID del pedido…"
+        />
+        <AdminFilterSelect
+          id="mis-pedidos-status"
+          label="Estado"
+          value={filterStatus}
+          onChange={setFilterStatus}
+          options={ORDER_STATUS_FILTER_OPTIONS}
+        />
+        <AdminFilterClearButton onClick={clearFilters} show={filtersActive} />
+      </AdminFiltersRow>
+
       {err ? (
-        <p className={`mt-6 ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}>{err}</p>
+        <p className={`mt-4 ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}>{err}</p>
       ) : null}
 
       {loading ? (
         <MisPedidosSkeleton />
       ) : rows.length === 0 ? (
         <div
-          className={`mt-8 ${ROUNDED_CONTROL} border border-zinc-200 bg-zinc-50/80 px-5 py-8 text-center shadow-sm`}
+          className={`mt-5 ${ROUNDED_CONTROL} border border-zinc-200 bg-zinc-50/80 px-5 py-8 text-center shadow-sm`}
         >
-          <p className="text-sm text-zinc-600">No tienes pedidos todavía.</p>
-          <Link href="/" className={`${marketplacePrimaryBtn} mt-4 px-5 py-2.5 text-sm font-semibold`}>
-            Ver centros y catálogo
-          </Link>
+          <p className="text-sm text-zinc-600">
+            {filtersActive
+              ? "No hay pedidos que coincidan con los filtros."
+              : "No tienes pedidos todavía."}
+          </p>
+          {filtersActive ? (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className={`${marketplacePrimaryBtn} mt-4 px-5 py-2.5 text-sm font-semibold`}
+            >
+              Limpiar filtros
+            </button>
+          ) : (
+            <Link href="/" className={`${marketplacePrimaryBtn} mt-4 inline-flex px-5 py-2.5 text-sm font-semibold`}>
+              Ver centros y catálogo
+            </Link>
+          )}
         </div>
       ) : (
-        <ul className="mt-10 space-y-4">
+        <>
+          <ul className="mt-4 space-y-4">
           {rows.map((o) => {
             const expanded = openId === o.id;
             const timeline = Array.isArray(o.status_timeline) ? o.status_timeline : [];
@@ -462,7 +524,7 @@ export default function MisPedidosView() {
                       <span className="font-mono text-sm font-bold tracking-tight text-zinc-900">
                         {orderRef}
                       </span>
-                      <StatusBadge status={o.status} label={o.status_label || o.status} />
+                      <OrderStatusBadge status={o.status} label={o.status_label || o.status} />
                     </div>
                     <div className="flex flex-wrap items-start justify-between gap-3 border-t border-zinc-100 pt-3">
                       <div className="min-w-0 flex-1">
@@ -716,7 +778,9 @@ export default function MisPedidosView() {
               </li>
             );
           })}
-        </ul>
+          </ul>
+          <AdminListPagination page={page} totalCount={totalCount} onPageChange={setPage} />
+        </>
       )}
 
       <ImageLightbox

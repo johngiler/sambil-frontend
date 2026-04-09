@@ -25,7 +25,12 @@ import {
 } from "@/components/admin/AdminListFilters";
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
 import { AdminSelect } from "@/components/admin/AdminSelect";
-import { clientStatusLabel, clientStatusPillClassName } from "@/components/admin/adminConstants";
+import {
+  clientStatusLabel,
+  clientStatusPillClassName,
+  ORDER_STATUS,
+  ORDER_STATUS_FILTER_OPTIONS,
+} from "@/components/admin/adminConstants";
 import { IconAdminClipboard, IconAdminRefresh } from "@/components/admin/adminIcons";
 import { PedidosSectionSkeleton } from "@/components/admin/skeletons/PedidosSectionSkeleton";
 import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
@@ -52,23 +57,6 @@ import {
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
 import { authFetch, mediaAbsoluteUrl } from "@/services/authApi";
-
-const ORDER_STATUS = [
-  { v: "draft", l: "Borrador" },
-  { v: "submitted", l: "Enviada" },
-  { v: "client_approved", l: "Solicitud aprobada" },
-  { v: "art_approved", l: "Arte aprobado" },
-  { v: "invoiced", l: "Facturada" },
-  { v: "paid", l: "Pagada" },
-  { v: "permit_pending", l: "Permiso alcaldía" },
-  { v: "installation", l: "Instalación" },
-  { v: "active", l: "Activa" },
-  { v: "expired", l: "Vencida" },
-  { v: "cancelled", l: "Cancelada" },
-  { v: "rejected", l: "Rechazada" },
-];
-
-const ORDER_STATUS_FILTER_OPTIONS = [{ v: "all", l: "Todos los estados" }, ...ORDER_STATUS];
 
 function formatPedidoAlta(iso) {
   if (!iso) return "—";

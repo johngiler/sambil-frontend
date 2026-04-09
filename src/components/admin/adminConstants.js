@@ -60,3 +60,46 @@ export function spaceStatusPillClassName(status) {
   if (s === "blocked") return "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200/80";
   return "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200/80";
 }
+
+/** Estados de pedido (API `status`); mismas etiquetas que el panel Pedidos. */
+export const ORDER_STATUS = [
+  { v: "draft", l: "Borrador" },
+  { v: "submitted", l: "Enviada" },
+  { v: "client_approved", l: "Solicitud aprobada" },
+  { v: "art_approved", l: "Arte aprobado" },
+  { v: "invoiced", l: "Facturada" },
+  { v: "paid", l: "Pagada" },
+  { v: "permit_pending", l: "Permiso alcaldía" },
+  { v: "installation", l: "Instalación" },
+  { v: "active", l: "Activa" },
+  { v: "expired", l: "Vencida" },
+  { v: "cancelled", l: "Cancelada" },
+  { v: "rejected", l: "Rechazada" },
+];
+
+export const ORDER_STATUS_FILTER_OPTIONS = [{ v: "all", l: "Todos los estados" }, ...ORDER_STATUS];
+
+export function orderStatusLabel(status, statusLabelFromApi) {
+  if (typeof statusLabelFromApi === "string" && statusLabelFromApi.trim() !== "") {
+    return statusLabelFromApi.trim();
+  }
+  const o = ORDER_STATUS.find((x) => String(x.v) === String(status ?? ""));
+  return o ? o.l : status ? String(status) : "—";
+}
+
+/** Píldora de estado de pedido (listados cliente y admin). */
+export function orderStatusPillClassName(status) {
+  const s = String(status ?? "");
+  if (s === "draft") return "bg-zinc-100 text-zinc-800 ring-1 ring-zinc-300/80";
+  if (s === "submitted") return "bg-sky-50 text-sky-900 ring-1 ring-sky-200/80";
+  if (s === "client_approved") return "bg-indigo-50 text-indigo-900 ring-1 ring-indigo-200/80";
+  if (s === "art_approved") return "bg-violet-50 text-violet-900 ring-1 ring-violet-200/80";
+  if (s === "invoiced") return "bg-amber-50 text-amber-950 ring-1 ring-amber-200/80";
+  if (s === "paid") return "bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200/80";
+  if (s === "permit_pending") return "bg-orange-50 text-orange-950 ring-1 ring-orange-200/80";
+  if (s === "installation") return "bg-teal-50 text-teal-900 ring-1 ring-teal-200/80";
+  if (s === "active") return "bg-emerald-50 text-emerald-900 ring-1 ring-emerald-300/90";
+  if (s === "expired") return "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200/80";
+  if (s === "cancelled" || s === "rejected") return "bg-rose-50 text-rose-900 ring-1 ring-rose-200/80";
+  return "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200/80";
+}

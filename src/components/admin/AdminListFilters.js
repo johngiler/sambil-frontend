@@ -150,9 +150,11 @@ export function AdminFilterClearButton({ onClick, show = true }) {
 }
 
 /** Contenedor de filtros encima de la tabla. */
-export function AdminFiltersRow({ children }) {
+export function AdminFiltersRow({ children, className = "" }) {
   return (
-    <div className="group mb-5 mt-5 flex flex-col gap-3 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.05)] transition-[box-shadow,border-color] duration-200 hover:border-zinc-200 hover:shadow-[0_8px_28px_rgba(15,23,42,0.07)]">
+    <div
+      className={`group mb-5 mt-5 flex flex-col gap-3 overflow-hidden rounded-2xl border border-zinc-200/90 bg-white shadow-[0_2px_12px_rgba(15,23,42,0.05)] transition-[box-shadow,border-color] duration-200 hover:border-zinc-200 hover:shadow-[0_8px_28px_rgba(15,23,42,0.07)] ${className}`.trim()}
+    >
       <div className="mp-admin-filters-top-accent" aria-hidden />
       <div className="px-4 pb-4 sm:px-5 sm:pb-5">
         <div className="flex min-w-0 flex-col gap-4 rounded-xl border border-zinc-200/60 bg-zinc-50/50 p-4 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-6 sm:gap-y-4 sm:p-5">

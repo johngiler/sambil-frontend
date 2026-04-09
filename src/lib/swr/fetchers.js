@@ -65,14 +65,6 @@ export const AUTH_ME_SWR_KEY = "/api/auth/me/";
 /** Ficha de empresa del cliente en sesión (`/api/me/company/`; 204 → `null`). */
 export const MY_COMPANY_SWR_KEY = "/api/me/company/";
 
-/** Clave estable para «mis pedidos» (todas las páginas). */
-export const ORDERS_MINE_SWR_KEY = ["GET", "orders", "mine", "all-pages"];
-
-export async function ordersMineAllPagesFetcher() {
-  const { authFetchAllPages } = await import("@/services/authApi");
-  return authFetchAllPages("/api/orders/?page_size=100");
-}
-
 /** Centros admin: todas las páginas (selectores y filtros). */
 export const ADMIN_CENTERS_ALL_SWR_KEY = ["GET", "admin", "centers", "all-pages"];
 
