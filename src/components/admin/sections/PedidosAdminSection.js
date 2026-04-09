@@ -389,9 +389,9 @@ export function PedidosAdminSection() {
                       />
                     </td>
                     <td className="max-w-[13rem] px-3 py-2 align-middle">
-                      <div className="flex items-start gap-1">
+                      <div className="flex items-center gap-1">
                         <span
-                          className="min-w-0 flex-1 break-all font-mono text-[11px] font-semibold leading-snug tracking-tight text-zinc-800"
+                          className="min-w-0 flex-1 break-all font-mono text-sm font-semibold leading-snug text-zinc-800"
                           title={orderRef || `#${o.id}`}
                         >
                           {orderRef || "—"}
