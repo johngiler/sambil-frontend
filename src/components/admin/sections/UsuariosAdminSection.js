@@ -8,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react";
+import useSWR from "swr";
 
 import {
   AdminAccordionDetailHeader,
@@ -39,15 +40,15 @@ import { CoverImageField } from "@/components/admin/CoverImageField";
 import { useAuth } from "@/context/AuthContext";
 import { EmptyState, EmptyStateIconUsers } from "@/components/ui/EmptyState";
 import { usersAdminListPath } from "@/lib/adminListQuery";
+import {
+  ADMIN_CLIENTS_ALL_SWR_KEY,
+  adminClientsAllPagesFetcher,
+  authJsonFetcher,
+} from "@/lib/swr/fetchers";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
-import {
-  authFetch,
-  authFetchAllPages,
-  authFetchForm,
-  mediaAbsoluteUrl,
-} from "@/services/authApi";
+import { authFetch, authFetchForm, mediaAbsoluteUrl } from "@/services/authApi";
 import {
   AdminFilterClearButton,
   AdminFiltersRow,
@@ -120,8 +121,6 @@ function roleLabel(role) {
 
 export function UsuariosAdminSection() {
   const { authReady, accessToken, me, refreshUser } = useAuth();
-  const [rows, setRows] = useState([]);
-  const [ready, setReady] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -131,7 +130,6 @@ export function UsuariosAdminSection() {
   const [passwordLinkUserId, setPasswordLinkUserId] = useState(null);
   const [filterQ, setFilterQ] = useState("");
   const [filterRole, setFilterRole] = useState("all");
-  const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const debouncedFilterQ = useDebouncedValue(filterQ, 400);
   const filtersActive = filterQ.trim() !== "" || filterRole !== "all";
@@ -142,30 +140,49 @@ export function UsuariosAdminSection() {
   const [showUserPassword, setShowUserPassword] = useState(false);
   const [role, setRole] = useState("client");
   const [linkedClientId, setLinkedClientId] = useState("");
-  const [clientRows, setClientRows] = useState([]);
 
   const [coverFile, setCoverFile] = useState(null);
   const [filePreview, setFilePreview] = useState("");
   const [pendingClearCover, setPendingClearCover] = useState(false);
   const fileRef = useRef(null);
 
-  const reload = useCallback(async () => {
-    const d = await authFetch(
-      usersAdminListPath(page, debouncedFilterQ, filterRole),
-    );
-    const { results, count } = parsePaginatedResponse(d);
-    setRows(results);
-    setTotalCount(count);
-  }, [page, debouncedFilterQ, filterRole]);
+  const usersListKey =
+    authReady && accessToken ? usersAdminListPath(page, debouncedFilterQ, filterRole) : null;
+  const {
+    data: usersData,
+    error: usersSwrError,
+    isLoading: usersLoading,
+    mutate: mutateUsers,
+  } = useSWR(usersListKey, authJsonFetcher, { keepPreviousData: true });
 
-  const reloadClients = useCallback(async () => {
-    try {
-      const all = await authFetchAllPages("/api/clients/?page_size=100");
-      setClientRows(all);
-    } catch {
-      setClientRows([]);
-    }
-  }, []);
+  const clientsAllKey = authReady && accessToken ? ADMIN_CLIENTS_ALL_SWR_KEY : null;
+  const {
+    data: clientsAllData,
+    error: clientsSwrError,
+    isLoading: clientsLoading,
+    mutate: mutateClientsAll,
+  } = useSWR(clientsAllKey, adminClientsAllPagesFetcher);
+
+  const rows = useMemo(
+    () => (usersData ? parsePaginatedResponse(usersData).results : []),
+    [usersData],
+  );
+  const totalCount = useMemo(
+    () => (usersData ? parsePaginatedResponse(usersData).count : 0),
+    [usersData],
+  );
+  const clientRows = useMemo(
+    () => (Array.isArray(clientsAllData) ? clientsAllData : []),
+    [clientsAllData],
+  );
+
+  const reloadUsers = useCallback(() => mutateUsers(), [mutateUsers]);
+  const reloadClients = useCallback(() => mutateClientsAll(), [mutateClientsAll]);
+
+  const ready =
+    !(authReady && accessToken) ||
+    ((!usersLoading && (usersData !== undefined || usersSwrError !== undefined)) &&
+      (!clientsLoading && (clientsAllData !== undefined || clientsSwrError !== undefined)));
 
   const clientSelectOptions = useMemo(() => {
     const base = [{ v: "", l: "Sin cliente vinculado" }];
@@ -180,23 +197,18 @@ export function UsuariosAdminSection() {
   }, [clientRows]);
 
   useEffect(() => {
-    if (!authReady || !accessToken) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        await reload();
-        await reloadClients();
-      } catch (e) {
-        if (!cancelled)
-          setErr(e instanceof Error ? e.message : "Error al cargar");
-      } finally {
-        if (!cancelled) setReady(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [authReady, accessToken, reload, reloadClients]);
+    const u = usersSwrError
+      ? usersSwrError instanceof Error
+        ? usersSwrError.message
+        : String(usersSwrError)
+      : "";
+    const c = clientsSwrError
+      ? clientsSwrError instanceof Error
+        ? clientsSwrError.message
+        : String(clientsSwrError)
+      : "";
+    setErr(u || c);
+  }, [usersSwrError, clientsSwrError]);
 
   useEffect(() => {
     setPage(1);
@@ -375,7 +387,7 @@ export function UsuariosAdminSection() {
         }
       }
       closeModal();
-      await reload();
+      await reloadUsers();
       await reloadClients();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error");
@@ -395,7 +407,7 @@ export function UsuariosAdminSection() {
     try {
       await authFetch(`/api/admin/users/${u.id}/`, { method: "DELETE" });
       setMsg("Usuario eliminado.");
-      await reload();
+      await reloadUsers();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error");
       throw e;

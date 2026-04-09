@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
+import useSWR from "swr";
 
 import { CentrosAdminSection } from "@/components/admin/sections/CentrosAdminSection";
 import { ClientesAdminSection } from "@/components/admin/sections/ClientesAdminSection";
@@ -13,8 +14,8 @@ import { ResumenTabSkeleton } from "@/components/admin/skeletons/ResumenTabSkele
 import { IconChevronLeft } from "@/components/layout/navIcons";
 import { useAuth } from "@/context/AuthContext";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
+import { authJsonFetcher } from "@/lib/swr/fetchers";
 import { parsePaginatedResponse } from "@/services/api";
-import { authFetch } from "@/services/authApi";
 
 /** Etiqueta de rol como en el panel Usuarios (UserProfile). */
 const MARKETPLACE_ROLE_BADGE_LABEL = {
@@ -27,47 +28,56 @@ function marketplaceRoleBadgeLabel(role) {
   return MARKETPLACE_ROLE_BADGE_LABEL[role] ?? role;
 }
 
-function ResumenTab() {
-  const [nCenters, setNCenters] = useState("—");
-  const [nSpaces, setNSpaces] = useState("—");
-  const [nClients, setNClients] = useState("—");
-  const [nUsers, setNUsers] = useState("—");
-  const [nOrders, setNOrders] = useState("—");
-  const [ready, setReady] = useState(false);
+const DASHBOARD_KPI_KEYS = {
+  centers: "/api/admin/centers/",
+  spaces: "/api/admin/spaces/",
+  clients: "/api/clients/",
+  users: "/api/admin/users/",
+  orders: "/api/orders/",
+};
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const [dc, ds, dcl, du, do_] = await Promise.all([
-          authFetch("/api/admin/centers/"),
-          authFetch("/api/admin/spaces/"),
-          authFetch("/api/clients/"),
-          authFetch("/api/admin/users/"),
-          authFetch("/api/orders/"),
-        ]);
-        if (cancelled) return;
-        setNCenters(String(parsePaginatedResponse(dc).count));
-        setNSpaces(String(parsePaginatedResponse(ds).count));
-        setNClients(String(parsePaginatedResponse(dcl).count));
-        setNUsers(String(parsePaginatedResponse(du).count));
-        setNOrders(String(parsePaginatedResponse(do_).count));
-      } catch {
-        if (!cancelled) {
-          setNCenters("?");
-          setNSpaces("?");
-          setNClients("?");
-          setNUsers("?");
-          setNOrders("?");
-        }
-      } finally {
-        if (!cancelled) setReady(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
+function ResumenTab() {
+  const { authReady, accessToken } = useAuth();
+  const fetchKpis = authReady && !!accessToken;
+
+  const { data: dc, isLoading: l0 } = useSWR(fetchKpis ? DASHBOARD_KPI_KEYS.centers : null, authJsonFetcher);
+  const { data: ds, isLoading: l1 } = useSWR(fetchKpis ? DASHBOARD_KPI_KEYS.spaces : null, authJsonFetcher);
+  const { data: dcl, isLoading: l2 } = useSWR(fetchKpis ? DASHBOARD_KPI_KEYS.clients : null, authJsonFetcher);
+  const { data: du, isLoading: l3 } = useSWR(fetchKpis ? DASHBOARD_KPI_KEYS.users : null, authJsonFetcher);
+  const { data: do_, isLoading: l4 } = useSWR(fetchKpis ? DASHBOARD_KPI_KEYS.orders : null, authJsonFetcher);
+
+  const { nCenters, nSpaces, nClients, nUsers, nOrders, ready } = useMemo(() => {
+    if (!fetchKpis) {
+      return {
+        nCenters: "—",
+        nSpaces: "—",
+        nClients: "—",
+        nUsers: "—",
+        nOrders: "—",
+        ready: true,
+      };
+    }
+    const loading = l0 || l1 || l2 || l3 || l4;
+    if (loading) {
+      return {
+        nCenters: "—",
+        nSpaces: "—",
+        nClients: "—",
+        nUsers: "—",
+        nOrders: "—",
+        ready: false,
+      };
+    }
+    const fmt = (d) => (d != null ? String(parsePaginatedResponse(d).count) : "?");
+    return {
+      nCenters: fmt(dc),
+      nSpaces: fmt(ds),
+      nClients: fmt(dcl),
+      nUsers: fmt(du),
+      nOrders: fmt(do_),
+      ready: true,
     };
-  }, []);
+  }, [fetchKpis, l0, l1, l2, l3, l4, dc, ds, dcl, du, do_]);
 
   if (!ready) {
     return <ResumenTabSkeleton />;

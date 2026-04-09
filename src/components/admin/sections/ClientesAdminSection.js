@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useSWR, { mutate as globalMutate } from "swr";
 
 import {
   AdminAccordionDetailHeader,
@@ -38,6 +39,7 @@ import { CoverImageField } from "@/components/admin/CoverImageField";
 import { useAuth } from "@/context/AuthContext";
 import { EmptyState, EmptyStateIconBriefcase } from "@/components/ui/EmptyState";
 import { clientsListPath } from "@/lib/adminListQuery";
+import { ADMIN_CLIENTS_ALL_SWR_KEY, authJsonFetcher } from "@/lib/swr/fetchers";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
@@ -108,8 +110,6 @@ function LinkedUsernamesAdminLinks({ usernames }) {
 
 export function ClientesAdminSection() {
   const { authReady, accessToken } = useAuth();
-  const [rows, setRows] = useState([]);
-  const [ready, setReady] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -119,7 +119,6 @@ export function ClientesAdminSection() {
   const [generatingClientId, setGeneratingClientId] = useState(null);
   const [filterQ, setFilterQ] = useState("");
   const [filterClientStatus, setFilterClientStatus] = useState("all");
-  const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const debouncedFilterQ = useDebouncedValue(filterQ, 400);
   const filtersActive = filterQ.trim() !== "" || filterClientStatus !== "all";
@@ -139,29 +138,28 @@ export function ClientesAdminSection() {
   const [pendingClearCover, setPendingClearCover] = useState(false);
   const fileRef = useRef(null);
 
-  const reload = useCallback(async () => {
-    const d = await authFetch(clientsListPath(page, debouncedFilterQ, filterClientStatus));
-    const { results, count } = parsePaginatedResponse(d);
-    setRows(results);
-    setTotalCount(count);
-  }, [page, debouncedFilterQ, filterClientStatus]);
+  const listKey =
+    authReady && accessToken ? clientsListPath(page, debouncedFilterQ, filterClientStatus) : null;
+  const { data, error: swrError, isLoading, mutate: mutateClients } = useSWR(listKey, authJsonFetcher, {
+    keepPreviousData: true,
+  });
+
+  const rows = useMemo(() => (data ? parsePaginatedResponse(data).results : []), [data]);
+  const totalCount = useMemo(() => (data ? parsePaginatedResponse(data).count : 0), [data]);
+
+  const reloadClientes = useCallback(async () => {
+    await Promise.all([mutateClients(), globalMutate(ADMIN_CLIENTS_ALL_SWR_KEY)]);
+  }, [mutateClients]);
+
+  const ready =
+    !(authReady && accessToken) ||
+    (!isLoading && (data !== undefined || swrError !== undefined));
 
   useEffect(() => {
-    if (!authReady || !accessToken) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        await reload();
-      } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : "Error al cargar");
-      } finally {
-        if (!cancelled) setReady(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [authReady, accessToken, reload]);
+    setErr(
+      swrError ? (swrError instanceof Error ? swrError.message : String(swrError)) : "",
+    );
+  }, [swrError]);
 
   useEffect(() => {
     setPage(1);
@@ -251,7 +249,7 @@ export function ClientesAdminSection() {
       } else {
         setMsg(`Usuario generado para ${data?.email || c.email}.`);
       }
-      await reload();
+      await reloadClientes();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "No se pudo generar el usuario.");
     } finally {
@@ -324,7 +322,7 @@ export function ClientesAdminSection() {
         setMsg("Cliente actualizado.");
       }
       closeModal();
-      await reload();
+      await reloadClientes();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error");
     }
@@ -339,7 +337,7 @@ export function ClientesAdminSection() {
     try {
       await authFetch(`/api/clients/${id}/`, { method: "DELETE" });
       setMsg("Cliente eliminado.");
-      await reload();
+      await reloadClientes();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error");
       throw e;

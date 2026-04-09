@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import useSWR from "swr";
 
 import { CoverImageField } from "@/components/admin/CoverImageField";
 import { useAuth } from "@/context/AuthContext";
 import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
+import { AUTH_ME_SWR_KEY, authJsonFetcher } from "@/lib/swr/fetchers";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { changeMePassword, patchMe } from "@/services/authApi";
 
@@ -64,6 +66,12 @@ export default function PerfilView() {
   const [pwdOk, setPwdOk] = useState("");
   const [pwdSaving, setPwdSaving] = useState(false);
 
+  const profileKey = authReady && accessToken && me ? AUTH_ME_SWR_KEY : null;
+  const { data: profileSwr, mutate: mutateProfileSwr } = useSWR(profileKey, authJsonFetcher, {
+    fallbackData: me ?? undefined,
+  });
+  const profileDisplay = profileSwr ?? me;
+
   useEffect(() => {
     if (!authReady) return;
     if (!me) {
@@ -72,15 +80,21 @@ export default function PerfilView() {
   }, [authReady, me, router]);
 
   useEffect(() => {
-    if (!me) return;
-    setEmail(me.email || "");
-    setFirstName(me.first_name || "");
-    setLastName(me.last_name || "");
+    if (!profileDisplay) return;
+    setEmail(profileDisplay.email || "");
+    setFirstName(profileDisplay.first_name || "");
+    setLastName(profileDisplay.last_name || "");
     setCoverFile(null);
     setFilePreview(null);
     setPendingClearCover(false);
     if (fileRef.current) fileRef.current.value = "";
-  }, [me?.id, me?.email, me?.first_name, me?.last_name, me?.cover_image]);
+  }, [
+    profileDisplay?.id,
+    profileDisplay?.email,
+    profileDisplay?.first_name,
+    profileDisplay?.last_name,
+    profileDisplay?.cover_image,
+  ]);
 
   useEffect(() => {
     if (!coverFile) {
@@ -126,7 +140,8 @@ export default function PerfilView() {
           { token: accessToken },
         );
       }
-      await refreshUser();
+      const m = await refreshUser();
+      if (m) await mutateProfileSwr(m, { revalidate: false });
       setCoverFile(null);
       setPendingClearCover(false);
       setFilePreview(null);
@@ -214,7 +229,7 @@ export default function PerfilView() {
           <CoverImageField
             readOnly={false}
             variant="avatar"
-            existingUrl={pendingClearCover ? "" : me.cover_image}
+            existingUrl={pendingClearCover ? "" : profileDisplay?.cover_image}
             filePreviewUrl={filePreview}
             onFileChange={(f) => {
               setCoverFile(f);
@@ -235,7 +250,7 @@ export default function PerfilView() {
             <div
               className={`mt-1.5 ${ROUNDED_CONTROL} border border-dashed border-zinc-200 bg-zinc-50/80 px-3.5 py-2.5 font-mono text-sm text-zinc-800`}
             >
-              {me.username}
+              {profileDisplay?.username}
             </div>
             <p className="mt-1.5 text-xs text-zinc-500">No editable desde aquí.</p>
           </div>

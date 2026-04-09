@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import useSWR from "swr";
 
 import {
   AdminAccordionDetailHeader,
@@ -38,6 +39,7 @@ import {
   dashboardClientesSearchHref,
 } from "@/lib/adminDashboardLinks";
 import { ordersListPath } from "@/lib/adminListQuery";
+import { authJsonFetcher } from "@/lib/swr/fetchers";
 import { subtitleCityAfterCenterName } from "@/lib/shoppingCenterDisplay";
 import { adminOrderLineCoverLightboxItems } from "@/lib/imageLightboxItems";
 import { isPdfReceiptUrl } from "@/lib/orderPaymentMethods";
@@ -176,10 +178,7 @@ function PedidoDatosPagoPortal({ order, panelId }) {
 
 export function PedidosAdminSection() {
   const { authReady, accessToken } = useAuth();
-  const [orders, setOrders] = useState([]);
-  const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
-  const [ready, setReady] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [lineCoverLightbox, setLineCoverLightbox] = useState({
@@ -195,29 +194,32 @@ export function PedidosAdminSection() {
 
   const filtersActive = filterQ.trim() !== "" || filterOrderStatus !== "all";
 
-  const reloadOrders = useCallback(async () => {
-    const d = await authFetch(ordersListPath(page, debouncedFilterQ, filterOrderStatus));
-    const { results, count } = parsePaginatedResponse(d);
-    setOrders(results);
-    setTotalCount(count);
-  }, [page, debouncedFilterQ, filterOrderStatus]);
+  const listKey =
+    authReady && accessToken ? ordersListPath(page, debouncedFilterQ, filterOrderStatus) : null;
+  const { data, error: swrError, isLoading, mutate: mutateOrders } = useSWR(listKey, authJsonFetcher, {
+    keepPreviousData: true,
+  });
+
+  const orders = useMemo(
+    () => (data ? parsePaginatedResponse(data).results : []),
+    [data],
+  );
+  const totalCount = useMemo(
+    () => (data ? parsePaginatedResponse(data).count : 0),
+    [data],
+  );
 
   useEffect(() => {
-    if (!authReady || !accessToken) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        await reloadOrders();
-      } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : "Error al cargar");
-      } finally {
-        if (!cancelled) setReady(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [authReady, accessToken, reloadOrders]);
+    setErr(
+      swrError ? (swrError instanceof Error ? swrError.message : String(swrError)) : "",
+    );
+  }, [swrError]);
+
+  const reloadOrders = useCallback(() => mutateOrders(), [mutateOrders]);
+
+  const ready =
+    !(authReady && accessToken) ||
+    (!isLoading && (data !== undefined || swrError !== undefined));
 
   useEffect(() => {
     setPage(1);

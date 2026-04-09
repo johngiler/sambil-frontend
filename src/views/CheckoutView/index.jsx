@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import useSWR from "swr";
 
 import { CheckoutPaymentReceiptField } from "@/components/checkout/CheckoutPaymentReceiptField";
 import { CheckoutStepper } from "@/components/checkout/CheckoutStepper";
@@ -27,6 +28,7 @@ import {
   marketplaceSecondaryBtn,
 } from "@/lib/marketplaceActionButtons";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
+import { authJsonFetcher, MY_COMPANY_SWR_KEY } from "@/lib/swr/fetchers";
 import {
   postGuestCheckout,
   postGuestCheckoutEmailAvailable,
@@ -180,21 +182,29 @@ export default function CheckoutView() {
   const [guestCompanyNotice, setGuestCompanyNotice] = useState("");
   const [guestDatosPasswordChecking, setGuestDatosPasswordChecking] = useState(false);
 
+  const loggedIn = authReady && accessToken && me;
+  const { data: companyFromSwr, mutate: mutateCheckoutCompany } = useSWR(
+    loggedIn ? MY_COMPANY_SWR_KEY : null,
+    authJsonFetcher,
+    { fallbackData: company === undefined ? undefined : company },
+  );
+  const effectiveCompany = companyFromSwr !== undefined ? companyFromSwr : company;
+
   const meetsMin = cartAllItemsMeetCheckoutRules(items);
   const subtotal = meetsMin ? cartTotalUsd(items) : 0;
   const iva = ivaFromSubtotal(subtotal);
   const grandTotal = totalWithIva(subtotal);
 
   useEffect(() => {
-    if (company && typeof company === "object") {
-      setCompanyName(company.company_name || "");
-      setContactName(company.contact_name || "");
-      setEmail(company.email || "");
-      setPhone(company.phone || "");
+    if (effectiveCompany && typeof effectiveCompany === "object") {
+      setCompanyName(effectiveCompany.company_name || "");
+      setContactName(effectiveCompany.contact_name || "");
+      setEmail(effectiveCompany.email || "");
+      setPhone(effectiveCompany.phone || "");
     } else if (me?.email) {
       setEmail(me.email);
     }
-  }, [company, me]);
+  }, [effectiveCompany, me]);
 
   useEffect(() => {
     setGuestPasswordPolicyError("");
@@ -260,6 +270,7 @@ export default function CheckoutView() {
           token: accessToken,
         });
         setCompanyData(saved);
+        await mutateCheckoutCompany(saved, { revalidate: false });
       }
 
       const orderPayload = {

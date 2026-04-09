@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useSWR, { mutate as globalMutate } from "swr";
 
 import { AdminAccordionToggle } from "@/components/admin/AdminAccordionToggle";
 import { AdminCreatePlusIcon } from "@/components/admin/AdminCreatePlusIcon";
@@ -24,6 +25,7 @@ import { IconBuildingSection } from "@/components/admin/rowActionIcons";
 import { useAuth } from "@/context/AuthContext";
 import { EmptyState, EmptyStateIconBuilding } from "@/components/ui/EmptyState";
 import { centersAdminListPath } from "@/lib/adminListQuery";
+import { ADMIN_CENTERS_ALL_SWR_KEY, authJsonFetcher } from "@/lib/swr/fetchers";
 import { adminCenterCoverLightboxItems } from "@/lib/imageLightboxItems";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import {
@@ -73,8 +75,6 @@ function centerCatalogEnabled(c) {
 
 export function CentrosAdminSection() {
   const { authReady, accessToken } = useAuth();
-  const [rows, setRows] = useState([]);
-  const [ready, setReady] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -88,7 +88,6 @@ export function CentrosAdminSection() {
   });
   const [filterQ, setFilterQ] = useState("");
   const [filterActive, setFilterActive] = useState("all");
-  const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const debouncedFilterQ = useDebouncedValue(filterQ, 400);
   const filtersActive = filterQ.trim() !== "" || filterActive !== "all";
@@ -113,30 +112,28 @@ export function CentrosAdminSection() {
   const [pendingClearCover, setPendingClearCover] = useState(false);
   const fileRef = useRef(null);
 
-  const reload = useCallback(async () => {
-    const d = await authFetch(centersAdminListPath(page, debouncedFilterQ, filterActive));
-    const { results, count } = parsePaginatedResponse(d);
-    setRows(results);
-    setTotalCount(count);
-  }, [page, debouncedFilterQ, filterActive]);
+  const listKey =
+    authReady && accessToken ? centersAdminListPath(page, debouncedFilterQ, filterActive) : null;
+  const { data, error: swrError, isLoading, mutate: mutateCenters } = useSWR(listKey, authJsonFetcher, {
+    keepPreviousData: true,
+  });
+
+  const rows = useMemo(() => (data ? parsePaginatedResponse(data).results : []), [data]);
+  const totalCount = useMemo(() => (data ? parsePaginatedResponse(data).count : 0), [data]);
+
+  const reloadCenters = useCallback(async () => {
+    await Promise.all([mutateCenters(), globalMutate(ADMIN_CENTERS_ALL_SWR_KEY)]);
+  }, [mutateCenters]);
+
+  const ready =
+    !(authReady && accessToken) ||
+    (!isLoading && (data !== undefined || swrError !== undefined));
 
   useEffect(() => {
-    if (!authReady || !accessToken) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        await reload();
-      } catch (e) {
-        if (!cancelled)
-          setErr(e instanceof Error ? e.message : "Error al cargar");
-      } finally {
-        if (!cancelled) setReady(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [authReady, accessToken, reload]);
+    setErr(
+      swrError ? (swrError instanceof Error ? swrError.message : String(swrError)) : "",
+    );
+  }, [swrError]);
 
   useEffect(() => {
     setPage(1);
@@ -311,7 +308,7 @@ export function CentrosAdminSection() {
         setMsg("Centro actualizado.");
       }
       closeModal();
-      await reload();
+      await reloadCenters();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error");
     }
@@ -326,7 +323,7 @@ export function CentrosAdminSection() {
     try {
       await authFetch(`/api/admin/centers/${id}/`, { method: "DELETE" });
       setMsg("Centro eliminado.");
-      await reload();
+      await reloadCenters();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Error");
       throw e;

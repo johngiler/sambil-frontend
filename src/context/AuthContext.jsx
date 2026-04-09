@@ -12,6 +12,7 @@ import {
 import { clearLegacyAuthKeys, getAccessToken } from "@/lib/authStorage";
 import { useRouter } from "next/navigation";
 
+import { invalidateAllSwrCache } from "@/lib/swr/invalidate";
 import {
   fetchMe,
   fetchMyCompany,
@@ -86,9 +87,11 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (username, password) => {
     await loginRequest(username, password);
     setAccessTokenState(getAccessToken());
+    void invalidateAllSwrCache();
   }, []);
 
   const logout = useCallback(() => {
+    void invalidateAllSwrCache();
     logoutStorage();
     setAccessTokenState(null);
     setMe(null);

@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import useSWR from "swr";
 
 import {
   AdminAccordionDetailHeader,
@@ -40,6 +41,11 @@ import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { useAuth } from "@/context/AuthContext";
 import { EmptyState, EmptyStateIconGrid } from "@/components/ui/EmptyState";
 import { spacesAdminListPath } from "@/lib/adminListQuery";
+import {
+  ADMIN_CENTERS_ALL_SWR_KEY,
+  adminCentersAllPagesFetcher,
+  authJsonFetcher,
+} from "@/lib/swr/fetchers";
 import { adminTomaRowLightboxItems } from "@/lib/imageLightboxItems";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import {
@@ -49,7 +55,7 @@ import {
 } from "@/lib/squareImagePreview";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
-import { authFetch, authFetchAllPages, authFetchForm, mediaAbsoluteUrl } from "@/services/authApi";
+import { authFetch, authFetchForm, mediaAbsoluteUrl } from "@/services/authApi";
 import {
   AdminFilterClearButton,
   AdminFiltersRow,
@@ -140,9 +146,6 @@ function spaceTypeLabel(v) {
 
 export function TomasAdminSection() {
   const { authReady, accessToken } = useAuth();
-  const [centers, setCenters] = useState([]);
-  const [rows, setRows] = useState([]);
-  const [ready, setReady] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -156,7 +159,6 @@ export function TomasAdminSection() {
   });
   const [filterQ, setFilterQ] = useState("");
   const [filterSpaceStatus, setFilterSpaceStatus] = useState("all");
-  const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const debouncedFilterQ = useDebouncedValue(filterQ, 400);
   const filtersActive = filterQ.trim() !== "" || filterSpaceStatus !== "all";
@@ -182,38 +184,56 @@ export function TomasAdminSection() {
 
   const galleryRef = useRef(null);
 
-  const reloadCenters = useCallback(async () => {
-    try {
-      const all = await authFetchAllPages("/api/admin/centers/?page_size=100");
-      setCenters(all);
-    } catch {
-      setCenters([]);
-    }
-  }, []);
-  const reloadSpaces = useCallback(async () => {
-    const d = await authFetch(spacesAdminListPath(page, debouncedFilterQ, filterSpaceStatus));
-    const { results, count } = parsePaginatedResponse(d);
-    setRows(results);
-    setTotalCount(count);
-  }, [page, debouncedFilterQ, filterSpaceStatus]);
+  const centersAllKey = authReady && accessToken ? ADMIN_CENTERS_ALL_SWR_KEY : null;
+  const {
+    data: centersData,
+    error: centersSwrError,
+    isLoading: centersLoading,
+    mutate: mutateCentersAll,
+  } = useSWR(centersAllKey, adminCentersAllPagesFetcher);
+
+  const spacesListKey =
+    authReady && accessToken ? spacesAdminListPath(page, debouncedFilterQ, filterSpaceStatus) : null;
+  const {
+    data: spacesData,
+    error: spacesSwrError,
+    isLoading: spacesLoading,
+    mutate: mutateSpaces,
+  } = useSWR(spacesListKey, authJsonFetcher, { keepPreviousData: true });
+
+  const centers = useMemo(
+    () => (Array.isArray(centersData) ? centersData : []),
+    [centersData],
+  );
+  const rows = useMemo(
+    () => (spacesData ? parsePaginatedResponse(spacesData).results : []),
+    [spacesData],
+  );
+  const totalCount = useMemo(
+    () => (spacesData ? parsePaginatedResponse(spacesData).count : 0),
+    [spacesData],
+  );
+
+  const reloadSpaces = useCallback(() => mutateSpaces(), [mutateSpaces]);
+
+  const ready =
+    !(authReady && accessToken) ||
+    ((!centersLoading && (centersData !== undefined || centersSwrError !== undefined)) &&
+      (!spacesLoading && (spacesData !== undefined || spacesSwrError !== undefined)));
 
   useEffect(() => {
-    if (!authReady || !accessToken) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        await reloadCenters();
-        await reloadSpaces();
-      } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : "Error al cargar");
-      } finally {
-        if (!cancelled) setReady(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [authReady, accessToken, reloadCenters, reloadSpaces]);
+    const ce = centersSwrError
+      ? centersSwrError instanceof Error
+        ? centersSwrError.message
+        : String(centersSwrError)
+      : "";
+    const sp = spacesSwrError
+      ? spacesSwrError instanceof Error
+        ? spacesSwrError.message
+        : String(spacesSwrError)
+      : "";
+    setErr(ce || sp);
+  }, [centersSwrError, spacesSwrError]);
 
   useEffect(() => {
     setPage(1);

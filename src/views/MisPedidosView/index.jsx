@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import useSWR from "swr";
 
 import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
 import { MisPedidosSkeleton } from "@/components/orders/MisPedidosSkeleton";
@@ -17,7 +18,8 @@ import {
   squareListImagePreviewButtonRingClass,
 } from "@/lib/squareImagePreview";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
-import { authFetchAllPages, mediaAbsoluteUrl } from "@/services/authApi";
+import { ORDERS_MINE_SWR_KEY, ordersMineAllPagesFetcher } from "@/lib/swr/fetchers";
+import { mediaAbsoluteUrl } from "@/services/authApi";
 
 function formatDate(iso) {
   if (!iso) return "—";
@@ -282,9 +284,7 @@ function Chevron({ expanded }) {
 export default function MisPedidosView() {
   const router = useRouter();
   const { authReady, me, isAdmin, isClient, accessToken } = useAuth();
-  const [rows, setRows] = useState([]);
   const [openId, setOpenId] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
   const [lineLightbox, setLineLightbox] = useState({
     open: false,
@@ -304,12 +304,24 @@ export default function MisPedidosView() {
     });
   }, []);
 
-  const load = useCallback(async () => {
-    if (!accessToken) return;
-    setErr("");
-    const all = await authFetchAllPages("/api/orders/?page_size=100", { token: accessToken });
-    setRows(all);
-  }, [accessToken]);
+  const canFetchOrders = authReady && isClient && !!accessToken;
+  const {
+    data: rows = [],
+    error: ordersError,
+    isLoading: ordersLoading,
+  } = useSWR(canFetchOrders ? ORDERS_MINE_SWR_KEY : null, ordersMineAllPagesFetcher, {
+    keepPreviousData: true,
+  });
+
+  useEffect(() => {
+    setErr(
+      ordersError
+        ? ordersError instanceof Error
+          ? ordersError.message
+          : String(ordersError)
+        : "",
+    );
+  }, [ordersError]);
 
   useEffect(() => {
     if (!authReady) return;
@@ -327,23 +339,7 @@ export default function MisPedidosView() {
     }
   }, [authReady, me, isAdmin, isClient, router]);
 
-  useEffect(() => {
-    if (!authReady || !me || isAdmin || !isClient || !accessToken) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        await load();
-      } catch (e) {
-        if (!cancelled) setErr(e instanceof Error ? e.message : "Error al cargar pedidos");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [authReady, me, isAdmin, isClient, accessToken, load]);
+  const loading = canFetchOrders && ordersLoading && !ordersError;
 
   if (!authReady || !me || isAdmin || !isClient) {
     return (

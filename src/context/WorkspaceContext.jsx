@@ -4,13 +4,14 @@ import {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
-  useState,
 } from "react";
+import useSWR from "swr";
 
-import { workspaceSlugRequestHeaders } from "@/lib/tenant";
-import { apiUrl, parseJsonText } from "@/services/api";
+import {
+  WORKSPACE_CURRENT_SWR_KEY,
+  workspaceCurrentFetcher,
+} from "@/lib/swr/fetchers";
 
 const WorkspaceContext = createContext(undefined);
 
@@ -33,59 +34,34 @@ const WorkspaceContext = createContext(undefined);
  */
 
 export function WorkspaceProvider({ children }) {
-  const [workspace, setWorkspace] = useState(null);
-  const [workspaceStatus, setWorkspaceStatus] = useState(
-    /** @type {'loading' | 'ready' | 'missing' | 'error'} */ ("loading"),
+  const { data, error, isLoading, mutate } = useSWR(WORKSPACE_CURRENT_SWR_KEY, workspaceCurrentFetcher, {
+    revalidateOnFocus: true,
+    dedupingInterval: 5000,
+    errorRetryCount: 1,
+  });
+
+  const workspace = data?.workspace ?? null;
+
+  const workspaceStatus = useMemo(() => {
+    if (isLoading && !data && !error) return "loading";
+    if (error) return "error";
+    if (data?.workspaceStatus === "missing") return "missing";
+    if (data?.workspaceStatus === "ready") return "ready";
+    return "loading";
+  }, [isLoading, data, error]);
+
+  const workspaceFetchError = useMemo(() => {
+    if (error instanceof Error) return error.message;
+    if (error) return String(error);
+    return null;
+  }, [error]);
+
+  const reloadWorkspace = useCallback(
+    async (_signal) => {
+      await mutate();
+    },
+    [mutate],
   );
-  const [workspaceFetchError, setWorkspaceFetchError] = useState(null);
-
-  const reloadWorkspace = useCallback(async (signal) => {
-    try {
-      const res = await fetch(apiUrl("/api/workspace/current/"), {
-        cache: "no-store",
-        headers: { ...workspaceSlugRequestHeaders() },
-        ...(signal ? { signal } : {}),
-      });
-      const text = await res.text();
-      const data = parseJsonText(text);
-      if (!res.ok) {
-        setWorkspace(null);
-        if (res.status === 404) {
-          setWorkspaceStatus("missing");
-          setWorkspaceFetchError(null);
-        } else {
-          setWorkspaceStatus("error");
-          const detail =
-            data && typeof data === "object" && !Array.isArray(data) && data.detail != null
-              ? String(data.detail)
-              : `Error ${res.status}`;
-          setWorkspaceFetchError(detail);
-        }
-        return;
-      }
-      if (!data || typeof data !== "object" || Array.isArray(data)) {
-        setWorkspace(null);
-        setWorkspaceStatus("error");
-        setWorkspaceFetchError("Respuesta inválida del servidor.");
-        return;
-      }
-      setWorkspace(data);
-      setWorkspaceStatus("ready");
-      setWorkspaceFetchError(null);
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") return;
-      setWorkspace(null);
-      setWorkspaceStatus("error");
-      setWorkspaceFetchError(e instanceof Error ? e.message : String(e));
-    }
-  }, []);
-
-  useEffect(() => {
-    const ac = new AbortController();
-    setWorkspaceStatus("loading");
-    void reloadWorkspace(ac.signal);
-    return () => ac.abort();
-  }, [reloadWorkspace]);
 
   const displayName = useMemo(() => {
     if (!workspace) return "Marketplace";
@@ -104,12 +80,10 @@ export function WorkspaceProvider({ children }) {
       displayName,
       reloadWorkspace,
     }),
-    [workspace, workspaceStatus, workspaceFetchError, displayName, reloadWorkspace],
+    [workspace, loading, workspaceStatus, workspaceFetchError, displayName, reloadWorkspace],
   );
 
-  return (
-    <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>
-  );
+  return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
 }
 
 export function useWorkspace() {

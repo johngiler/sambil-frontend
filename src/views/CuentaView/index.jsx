@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import useSWR from "swr";
 
 import { CoverImageField } from "@/components/admin/CoverImageField";
 import { useAuth } from "@/context/AuthContext";
 import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
+import { authJsonFetcher, MY_COMPANY_SWR_KEY } from "@/lib/swr/fetchers";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { saveMyCompany } from "@/services/authApi";
 
@@ -51,8 +53,17 @@ export default function CuentaView() {
   const [filePreview, setFilePreview] = useState(null);
   const [pendingClearCover, setPendingClearCover] = useState(false);
   const [error, setError] = useState("");
+  const [companyLoadErr, setCompanyLoadErr] = useState("");
   const [ok, setOk] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const companyListKey =
+    authReady && accessToken && me && !isAdmin ? MY_COMPANY_SWR_KEY : null;
+  const { data: companyData, error: companySwrError, mutate: mutateMyCompany } = useSWR(
+    companyListKey,
+    authJsonFetcher,
+    { fallbackData: company === undefined ? undefined : company },
+  );
 
   useEffect(() => {
     if (!authReady) return;
@@ -66,20 +77,40 @@ export default function CuentaView() {
   }, [authReady, me, isAdmin, router]);
 
   useEffect(() => {
-    if (company && typeof company === "object") {
-      setCompanyName(company.company_name || "");
-      setRif(company.rif || "");
-      setContactName(company.contact_name || "");
-      setEmail(company.email || "");
-      setPhone(company.phone || "");
-      setAddress(company.address || "");
-      setCity(company.city || "");
+    if (companySwrError) {
+      setCompanyLoadErr(
+        companySwrError instanceof Error ? companySwrError.message : String(companySwrError),
+      );
+      return;
+    }
+    setCompanyLoadErr("");
+    if (companyData === undefined) return;
+    if (companyData && typeof companyData === "object") {
+      setCompanyName(companyData.company_name || "");
+      setRif(companyData.rif || "");
+      setContactName(companyData.contact_name || "");
+      setEmail(companyData.email || "");
+      setPhone(companyData.phone || "");
+      setAddress(companyData.address || "");
+      setCity(companyData.city || "");
+      setCoverFile(null);
+      setFilePreview(null);
+      setPendingClearCover(false);
+      if (companyFileRef.current) companyFileRef.current.value = "";
+    } else {
+      setCompanyName("");
+      setRif("");
+      setContactName("");
+      setEmail("");
+      setPhone("");
+      setAddress("");
+      setCity("");
       setCoverFile(null);
       setFilePreview(null);
       setPendingClearCover(false);
       if (companyFileRef.current) companyFileRef.current.value = "";
     }
-  }, [company]);
+  }, [companyData, companySwrError]);
 
   useEffect(() => {
     if (!coverFile) {
@@ -106,7 +137,7 @@ export default function CuentaView() {
     setOk("");
     setSaving(true);
     try {
-      const hasProfile = company && typeof company === "object";
+      const hasProfile = companyData && typeof companyData === "object";
       const useMultipart = coverFile != null || pendingClearCover;
       let data;
       if (useMultipart) {
@@ -140,6 +171,7 @@ export default function CuentaView() {
         });
       }
       setCompanyData(data);
+      await mutateMyCompany(data, { revalidate: false });
       setCoverFile(null);
       setPendingClearCover(false);
       setFilePreview(null);
@@ -156,7 +188,7 @@ export default function CuentaView() {
     }
   }
 
-  const hasProfile = company && typeof company === "object";
+  const hasProfile = companyData && typeof companyData === "object";
   const profileRoleBadge = marketplaceRoleLabel(role);
 
   return (
@@ -220,7 +252,7 @@ export default function CuentaView() {
                   readOnly={false}
                   variant="avatar"
                   label="Logo o foto de la empresa"
-                  existingUrl={pendingClearCover ? "" : company?.cover_image}
+                  existingUrl={pendingClearCover ? "" : companyData?.cover_image}
                   filePreviewUrl={filePreview}
                   onFileChange={(f) => {
                     setCoverFile(f);
@@ -342,6 +374,14 @@ export default function CuentaView() {
           </section>
           </div>
 
+        {companyLoadErr ? (
+          <p
+            className={`mt-6 break-words ${ROUNDED_CONTROL} border border-red-100 bg-red-50 px-3 py-2.5 text-sm text-red-800`}
+            role="alert"
+          >
+            {companyLoadErr}
+          </p>
+        ) : null}
         {error ? (
           <p
             className={`mt-6 break-words ${ROUNDED_CONTROL} border border-red-100 bg-red-50 px-3 py-2.5 text-sm text-red-800`}
