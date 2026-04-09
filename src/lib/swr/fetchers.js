@@ -1,11 +1,6 @@
-import { getAccessToken } from "@/lib/authStorage";
 import { workspaceSlugRequestHeaders } from "@/lib/tenant";
-import {
-  apiUrl,
-  errorMessageFromParsed,
-  parseFetchResponse,
-  parseJsonText,
-} from "@/services/api";
+import { authFetch } from "@/services/authApi";
+import { apiUrl, parseJsonText } from "@/services/api";
 
 /** Clave SWR para el workspace público del tenant (solo cabecera `X-Workspace-Slug`). */
 export const WORKSPACE_CURRENT_SWR_KEY = "/api/workspace/current/";
@@ -45,18 +40,7 @@ export async function authJsonFetcher(path) {
   if (typeof path !== "string" || !path.startsWith("/")) {
     throw new Error("authJsonFetcher: la clave debe ser una ruta que empiece con /");
   }
-  const token = getAccessToken();
-  const res = await fetch(apiUrl(path), {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      ...workspaceSlugRequestHeaders(),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  });
-  const parsed = await parseFetchResponse(res);
-  if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
-  return parsed.data;
+  return authFetch(path);
 }
 
 /** Usuario autenticado (`/api/auth/me/`). */

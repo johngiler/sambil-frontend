@@ -6,6 +6,7 @@ import {
   parsePaginatedResponse,
 } from "@/services/api";
 import { workspaceSlugRequestHeaders } from "@/lib/tenant";
+import { emitAuthTokensChanged } from "@/lib/authStorageSync";
 import { clearTokens, getAccessToken, getRefreshToken, setTokens } from "@/lib/authStorage";
 import { decodeJwtPayload } from "@/lib/jwtDecode";
 
@@ -24,7 +25,7 @@ function humanizeLoginError(detail) {
   return raw || "Credenciales inválidas";
 }
 
-async function fetchWithAuth(path, { method = "GET", body, token } = {}) {
+async function fetchWithAuth(path, { method = "GET", body, token, _retry401 = false } = {}) {
   const t = token ?? getAccessToken();
   const res = await fetch(apiUrl(path), {
     method,
@@ -36,7 +37,14 @@ async function fetchWithAuth(path, { method = "GET", body, token } = {}) {
     body: body !== undefined && body !== null ? JSON.stringify(body) : undefined,
     cache: "no-store",
   });
-  return parseFetchResponse(res);
+  const parsed = await parseFetchResponse(res);
+  if (parsed.status === 401 && !_retry401 && getRefreshToken()) {
+    const newAccess = await refreshAccessToken();
+    if (newAccess) {
+      return fetchWithAuth(path, { method, body, _retry401: true });
+    }
+  }
+  return parsed;
 }
 
 export async function loginRequest(username, password) {
@@ -69,32 +77,48 @@ export async function loginRequest(username, password) {
     throw new Error(msg);
   }
   setTokens(parsed.data.access, parsed.data.refresh);
+  emitAuthTokensChanged();
   return parsed.data;
 }
 
+let refreshInFlight = null;
+
 export async function refreshAccessToken() {
-  const refresh = getRefreshToken();
-  if (!refresh) return null;
-  const res = await fetch(apiUrl("/api/auth/token/refresh/"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...workspaceSlugRequestHeaders(),
-    },
-    body: JSON.stringify({ refresh }),
-    cache: "no-store",
-  });
-  const parsed = await parseFetchResponse(res);
-  if (!parsed.ok || !parsed.data?.access) {
-    clearTokens();
-    return null;
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    const refresh = getRefreshToken();
+    if (!refresh) return null;
+    const res = await fetch(apiUrl("/api/auth/token/refresh/"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...workspaceSlugRequestHeaders(),
+      },
+      body: JSON.stringify({ refresh }),
+      cache: "no-store",
+    });
+    const parsed = await parseFetchResponse(res);
+    if (!parsed.ok || !parsed.data?.access) {
+      clearTokens();
+      emitAuthTokensChanged();
+      return null;
+    }
+    setTokens(parsed.data.access, getRefreshToken());
+    emitAuthTokensChanged();
+    return parsed.data.access;
+  })();
+
+  try {
+    return await refreshInFlight;
+  } finally {
+    refreshInFlight = null;
   }
-  setTokens(parsed.data.access, getRefreshToken());
-  return parsed.data.access;
 }
 
 export function logoutStorage() {
   clearTokens();
+  emitAuthTokensChanged();
 }
 
 export async function fetchMe(accessToken) {
@@ -233,7 +257,7 @@ export async function authFetchAllPages(path, { token } = {}) {
 }
 
 /** Multipart (crear/editar con archivo). No fijar Content-Type. */
-export async function authFetchForm(path, { method = "POST", formData, token } = {}) {
+export async function authFetchForm(path, { method = "POST", formData, token, _retry401 = false } = {}) {
   const t = token ?? getAccessToken();
   const res = await fetch(apiUrl(path), {
     method,
@@ -245,6 +269,12 @@ export async function authFetchForm(path, { method = "POST", formData, token } =
     cache: "no-store",
   });
   const parsed = await parseFetchResponse(res);
+  if (parsed.status === 401 && !_retry401 && getRefreshToken()) {
+    const newAccess = await refreshAccessToken();
+    if (newAccess) {
+      return authFetchForm(path, { method, formData, _retry401: true });
+    }
+  }
   if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
   return parsed.data;
 }

@@ -336,14 +336,39 @@ export async function getCenterBySlug(slug) {
   return fetchJsonFirst([path, pathCatalog]);
 }
 
+/** Mensaje amigable cuando el backend devuelve detalle técnico de JWT (p. ej. tras access expirado). */
+function humanizeJwtAuthDetail(detail, status) {
+  if (status !== 401) return null;
+  const raw =
+    typeof detail === "string"
+      ? detail
+      : Array.isArray(detail)
+        ? detail.map(String).join(" ")
+        : "";
+  if (
+    /not valid for any token type|token not valid|given token not valid|token is invalid|expired|signature has expired/i.test(
+      raw,
+    )
+  ) {
+    return "Tu sesión expiró o no es válida. Inicia sesión de nuevo.";
+  }
+  return null;
+}
+
 export function errorMessageFromParsed({ data, text, status }) {
   if (typeof data === "object" && data !== null) {
     const d = /** @type {Record<string, unknown>} */ (data).detail;
+    const jwtMsg = humanizeJwtAuthDetail(d, status);
+    if (jwtMsg) return jwtMsg;
     if (typeof d === "string" && d.trim()) return d.trim();
     if (Array.isArray(d) && d.length) return d.map(String).filter(Boolean).join(" ");
     return JSON.stringify(data);
   }
-  if (typeof data === "string" && data.trim()) return data.trim();
+  if (typeof data === "string" && data.trim()) {
+    const jwtMsg = humanizeJwtAuthDetail(data, status);
+    if (jwtMsg) return jwtMsg;
+    return data.trim();
+  }
   return text || `HTTP ${status}`;
 }
 

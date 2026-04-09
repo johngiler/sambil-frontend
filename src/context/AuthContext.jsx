@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 
+import { AUTH_TOKENS_CHANGED_EVENT } from "@/lib/authStorageSync";
 import { clearLegacyAuthKeys, getAccessToken } from "@/lib/authStorage";
 import { useRouter } from "next/navigation";
 
@@ -36,6 +37,13 @@ export function AuthProvider({ children }) {
     clearLegacyAuthKeys();
     setAccessTokenState(getAccessToken());
     setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const syncFromStorage = () => setAccessTokenState(getAccessToken());
+    window.addEventListener(AUTH_TOKENS_CHANGED_EVENT, syncFromStorage);
+    return () => window.removeEventListener(AUTH_TOKENS_CHANGED_EVENT, syncFromStorage);
   }, []);
 
   useEffect(() => {
