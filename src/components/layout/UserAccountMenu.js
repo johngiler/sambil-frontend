@@ -17,7 +17,7 @@ const menuItem =
 
 const menuDanger = `${menuItem} text-red-700 hover:bg-red-50 focus:bg-red-50`;
 
-const triggerClass = `mp-ring-brand inline-flex min-h-11 max-w-[14rem] shrink-0 items-center gap-2 ${ROUNDED_CONTROL} border border-transparent px-2.5 text-sm font-medium text-zinc-600 transition-colors duration-200 ease-out hover:border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 focus-visible:outline-none sm:min-h-0 sm:py-1`;
+const triggerClass = `mp-ring-brand inline-flex min-h-11 max-w-[14rem] shrink-0 items-center gap-2 ${ROUNDED_CONTROL} border border-transparent px-2 text-sm font-medium text-zinc-600 transition-colors duration-200 ease-out hover:border-zinc-200 hover:bg-zinc-50 hover:text-zinc-900 focus-visible:outline-none sm:min-h-0 sm:py-1`;
 
 export function UserAccountMenu({
   me,

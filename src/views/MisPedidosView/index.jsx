@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
@@ -332,6 +332,7 @@ function Chevron({ expanded }) {
 
 export default function MisPedidosView() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { authReady, me, isAdmin, isClient, accessToken } = useAuth();
   const [openId, setOpenId] = useState(null);
   const [err, setErr] = useState("");
@@ -339,6 +340,11 @@ export default function MisPedidosView() {
   const [filterSearch, setFilterSearch] = useState("");
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(filterSearch, 400);
+
+  const searchFromUrl = searchParams.get("search") ?? "";
+  useEffect(() => {
+    setFilterSearch(searchFromUrl);
+  }, [searchFromUrl]);
   const [lineLightbox, setLineLightbox] = useState({
     open: false,
     items: /** @type {Array<{ src: string; alt?: string; thumbnailSrc?: string }>} */ ([]),

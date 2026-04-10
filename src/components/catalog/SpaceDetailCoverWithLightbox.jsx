@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
+import { SpaceDetailFavoriteButton } from "@/components/catalog/SpaceDetailFavoriteButton";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
 
 /**
@@ -55,13 +56,14 @@ function useGalleryUrlsThatLoad(urls) {
 
 /**
  * Portada(s) del detalle de toma en marketplace: clic abre {@link ImageLightbox}.
- * @param {{ galleryUrls: string[]; coverAlt: string; figureClassName?: string; imageSizes?: string }} props
+ * @param {{ galleryUrls: string[]; coverAlt: string; figureClassName?: string; imageSizes?: string; spaceId?: number|string }} props
  */
 export function SpaceDetailCoverWithLightbox({
   galleryUrls,
   coverAlt,
   figureClassName = "mt-8",
   imageSizes = "(max-width: 1024px) 100vw, min(560px, 45vw)",
+  spaceId,
 }) {
   const [open, setOpen] = useState(false);
   const urls = useMemo(
@@ -83,16 +85,19 @@ export function SpaceDetailCoverWithLightbox({
   const extraCount = n > 1 ? n - 1 : 0;
   const showExtraBadge = validUrls !== null && extraCount > 0;
 
+  const openLabel = n > 1 ? "Abrir galería de imágenes" : "Abrir imagen ampliada";
+
   return (
     <>
       <figure className={figureClassName}>
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="group relative block w-full overflow-hidden rounded-2xl border border-zinc-200/90 bg-zinc-100 text-left shadow-sm ring-1 ring-zinc-200/60 transition hover:ring-[color-mix(in_srgb,var(--mp-primary)_35%,#d4d4d8)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_45%,transparent)]"
-          aria-label={n > 1 ? "Abrir galería de imágenes" : "Abrir imagen ampliada"}
-        >
-          <div className="relative aspect-square w-full">
+        <div className="group relative w-full overflow-hidden rounded-2xl border border-zinc-200/90 bg-zinc-100 text-left shadow-sm ring-1 ring-zinc-200/60 transition hover:ring-[color-mix(in_srgb,var(--mp-primary)_35%,#d4d4d8)]">
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="absolute inset-0 z-0 cursor-zoom-in rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_45%,transparent)]"
+            aria-label={openLabel}
+          />
+          <div className="pointer-events-none relative aspect-square w-full">
             <Image
               src={hero}
               alt={coverAlt}
@@ -102,12 +107,15 @@ export function SpaceDetailCoverWithLightbox({
               priority
             />
           </div>
+          {spaceId != null && spaceId !== "" ? (
+            <SpaceDetailFavoriteButton spaceId={spaceId} variant="overlay" />
+          ) : null}
           {showExtraBadge ? (
-            <span className="absolute bottom-3 right-3 rounded-full bg-black/65 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
+            <span className="pointer-events-none absolute bottom-3 right-3 z-[1] rounded-full bg-black/65 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
               +{extraCount} foto{extraCount === 1 ? "" : "s"}
             </span>
           ) : null}
-        </button>
+        </div>
       </figure>
       <ImageLightbox
         open={open}

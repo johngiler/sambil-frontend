@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 
-/** Misma estructura que `ResumenTab`: KPI + gráficos + actividad reciente al final. */
+/** Misma estructura que `ResumenTab`: KPI + precio medio por toma + métricas + gráficos + actividad. */
 export function ResumenTabSkeleton() {
   return (
     <div className="space-y-6">
@@ -20,26 +20,88 @@ export function ResumenTabSkeleton() {
         ))}
       </div>
 
-      <div className="space-y-5">
-        <div
-          className={`${ROUNDED_CONTROL} border border-emerald-200/50 bg-gradient-to-br from-emerald-50/60 via-white to-teal-50/30 p-4 sm:p-5`}
-        >
-          <div className="grid gap-6 lg:grid-cols-2 lg:items-center">
-            <div>
-              <div className="flex gap-3">
-                <Skeleton className="size-11 shrink-0 rounded-xl" />
-                <div className="min-w-0 flex-1 space-y-2">
-                  <Skeleton className="h-4 w-52" />
-                  <Skeleton className="h-3 w-full max-w-sm" />
-                </div>
+      <div
+        className={`${ROUNDED_CONTROL} border border-emerald-200/50 bg-gradient-to-br from-emerald-50/60 via-white to-teal-50/30 p-4 sm:p-5`}
+      >
+        <div className="grid gap-6 lg:grid-cols-2 lg:items-center">
+          <div>
+            <div className="flex gap-3">
+              <Skeleton className="size-11 shrink-0 rounded-xl" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <Skeleton className="h-4 w-52" />
+                <Skeleton className="h-3 w-full max-w-sm" />
               </div>
-              <Skeleton className="mt-4 h-10 w-40" />
-              <Skeleton className="mt-3 h-3 w-56" />
             </div>
-            <Skeleton className="h-[168px] w-full rounded-xl" />
+            <Skeleton className="mt-4 h-10 w-40" />
+            <Skeleton className="mt-3 h-3 w-56" />
           </div>
+          <Skeleton className="h-[168px] w-full rounded-xl" />
         </div>
+      </div>
 
+      {/* Métricas operativas (misma posición que `AdminDashboardMetrics` en ResumenTab) */}
+      <div className="space-y-4">
+        <div>
+          <Skeleton className="h-6 w-56" />
+          <Skeleton className="mt-2 h-3 w-full max-w-2xl" />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div
+              key={`m-${i}`}
+              className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 shadow-sm sm:p-5`}
+            >
+              <Skeleton className="h-3 w-40" />
+              <Skeleton className="mt-2 h-3 w-full max-w-[12rem]" />
+              <Skeleton className="mt-4 h-8 w-20" />
+            </div>
+          ))}
+        </div>
+        <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 shadow-sm sm:p-5`}>
+          <Skeleton className="h-3 w-48" />
+          <Skeleton className="mt-2 h-3 w-64 max-w-full" />
+          <Skeleton className="mt-4 h-[280px] w-full rounded-xl" />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {[0, 1].map((j) => (
+            <div
+              key={`m2-${j}`}
+              className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 shadow-sm sm:p-5`}
+            >
+              <Skeleton className="h-3 w-44" />
+              <Skeleton className="mt-2 h-3 w-full max-w-sm" />
+              <Skeleton className="mt-4 h-24 w-full rounded-lg" />
+            </div>
+          ))}
+        </div>
+        <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 shadow-sm sm:p-5`}>
+          <Skeleton className="h-3 w-40" />
+          <Skeleton className="mt-2 h-3 w-full max-w-lg" />
+        </div>
+        <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 shadow-sm sm:p-5`}>
+          <Skeleton className="h-3 w-52" />
+          <Skeleton className="mt-2 h-3 w-full max-w-md" />
+          <Skeleton className="mt-4 h-20 w-full rounded-lg" />
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
+          {[0, 1].map((k) => (
+            <div
+              key={`m3-${k}`}
+              className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 shadow-sm sm:p-5`}
+            >
+              <Skeleton className="h-3 w-44" />
+              <Skeleton className="mt-2 h-3 w-full max-w-xs" />
+              <Skeleton className="mt-4 h-16 w-full rounded-lg" />
+            </div>
+          ))}
+        </div>
+        <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 shadow-sm sm:p-5`}>
+          <Skeleton className="h-3 w-48" />
+          <Skeleton className="mt-4 h-24 w-full rounded-lg" />
+        </div>
+      </div>
+
+      <div className="space-y-5">
         <div
           className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-gradient-to-br from-zinc-50 to-zinc-100/80 p-4 sm:p-6`}
         >

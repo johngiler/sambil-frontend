@@ -183,23 +183,22 @@ export default function PerfilView() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
-      <nav className="flex flex-wrap gap-2 text-sm" aria-label="Sección de cuenta">
-        {isClient ? (
-          <Link href="/cuenta" className={`${pillBase} ${pillInactive}`}>
-            Mi empresa
-          </Link>
-        ) : null}
-        {isAdmin ? (
-          <Link href="/cuenta/negocio" className={`${pillBase} ${pillInactive}`}>
-            Mi negocio
-          </Link>
-        ) : null}
-        <span className={`${pillBase} ${pillCurrent}`} aria-current="page">
-          Mi perfil
-        </span>
-      </nav>
+      {!isClient ? (
+        <nav className="flex flex-wrap gap-2 text-sm" aria-label="Sección de cuenta">
+          {isAdmin ? (
+            <Link href="/cuenta/negocio" className={`${pillBase} ${pillInactive}`}>
+              Mi negocio
+            </Link>
+          ) : null}
+          <span className={`${pillBase} ${pillCurrent}`} aria-current="page">
+            Mi perfil
+          </span>
+        </nav>
+      ) : null}
 
-      <div className="relative mt-8 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white px-5 py-6 shadow-[0_2px_12px_rgba(15,23,42,0.06)] sm:px-6 sm:py-7">
+      <div
+        className={`relative ${isClient ? "mt-6" : "mt-8"} overflow-hidden rounded-2xl border border-zinc-200/80 bg-white px-5 py-6 shadow-[0_2px_12px_rgba(15,23,42,0.06)] sm:px-6 sm:py-7`}
+      >
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] mp-admin-filters-top-accent" aria-hidden />
         <div className="flex flex-wrap items-center gap-3">
           <h1 className="text-balance text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">

@@ -18,7 +18,7 @@ function formatUsdMonthly(n) {
 
 /**
  * Tarjeta de toma en catálogo (título a ancho completo; fila estado / precio; badge centro + ciudad).
- * @param {{ space: Record<string, unknown>, availabilityLabel?: "free" | "occupied", showFooterLink?: boolean, inCart?: boolean, priority?: boolean }} props
+ * @param {{ space: Record<string, unknown>, availabilityLabel?: "free" | "occupied", showFooterLink?: boolean, inCart?: boolean, priority?: boolean, secondaryAvailability?: { year: number, monthsOccupied: unknown } | null, cardFooter?: import("react").ReactNode }} props
  */
 export function SpaceCard({
   space,
@@ -26,6 +26,8 @@ export function SpaceCard({
   showFooterLink = true,
   inCart = false,
   priority = false,
+  secondaryAvailability = null,
+  cardFooter = null,
 }) {
   const cover = spaceCoverUrlForUi(space);
   const centerName =
@@ -136,6 +138,21 @@ export function SpaceCard({
               labelMetric={availabilityLabel}
             />
           </div>
+          {secondaryAvailability != null &&
+          typeof secondaryAvailability.year === "number" &&
+          secondaryAvailability.monthsOccupied != null ? (
+            <div className="mt-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                Disponibilidad {secondaryAvailability.year}
+              </p>
+              <div className="mt-2">
+                <SpaceMonthAvailabilityBar
+                  monthsOccupied={secondaryAvailability.monthsOccupied}
+                  labelMetric={availabilityLabel}
+                />
+              </div>
+            </div>
+          ) : null}
           {showFooterLink ? (
             <span className="mt-3 inline-block text-sm font-semibold text-zinc-800 no-underline underline-offset-4 group-hover:underline">
               Ver detalle
@@ -143,6 +160,9 @@ export function SpaceCard({
           ) : null}
         </div>
       </Link>
+      {cardFooter != null ? (
+        <div className="border-t border-zinc-100 px-4 py-3">{cardFooter}</div>
+      ) : null}
     </article>
   );
 }

@@ -12,6 +12,7 @@ import {
   IconCart,
   IconCentros,
   IconClose,
+  IconHeart,
   IconLock,
   IconLogout,
   IconMenu,
@@ -49,6 +50,8 @@ export function Header() {
     !catalogSpaceDetail && (path === "/" || path.startsWith("/m/") || path.startsWith("/catalog"));
   const cartActive = path.startsWith("/cart");
   const ordersActive = path.startsWith("/cuenta/pedidos");
+  const contractsActive = path.startsWith("/cuenta/contratos");
+  const favoritesActive = path.startsWith("/cuenta/favoritos");
   /** Activo: fondo oscuro; texto e iconos en blanco (no mezclar con `navLink` para evitar `text-zinc-600` de Tailwind). */
   const navItem = (active) =>
     active
@@ -170,10 +173,20 @@ export function Header() {
                   </span>
                 </Link>
                 {authReady && me && isClient ? (
-                  <Link href="/cuenta/pedidos" className={mobileRow} onClick={closeMenu}>
-                    <IconPay className="text-zinc-500" />
-                    Mis pedidos
-                  </Link>
+                  <>
+                    <Link href="/cuenta/pedidos" className={mobileRow} onClick={closeMenu}>
+                      <IconPay className="text-zinc-500" />
+                      Mis pedidos
+                    </Link>
+                    <Link href="/cuenta/contratos" className={mobileRow} onClick={closeMenu}>
+                      <IconLock className="text-zinc-500" />
+                      Mis contratos
+                    </Link>
+                    <Link href="/cuenta/favoritos" className={mobileRow} onClick={closeMenu}>
+                      <IconHeart className="text-zinc-500" />
+                      Mis favoritos
+                    </Link>
+                  </>
                 ) : null}
                 {authReady && me ? (
                   <>
@@ -246,28 +259,46 @@ export function Header() {
         </Link>
 
         <nav
-          className="hidden items-center gap-x-3 sm:flex md:gap-x-6"
+          className="hidden items-center gap-x-2 sm:flex sm:gap-x-3 md:gap-x-4"
           aria-label="Principal"
         >
           <Link href="/" className={navItem(catalogActive)}>
             <IconCentros />
             <span className="whitespace-nowrap">Catálogo</span>
           </Link>
+          {authReady && me && isClient ? (
+            <>
+              <Link href="/cuenta/pedidos" className={navItem(ordersActive)} aria-label="Mis pedidos">
+                <IconPay />
+                <span className="whitespace-nowrap">Mis pedidos</span>
+              </Link>
+              <Link href="/cuenta/contratos" className={navItem(contractsActive)} aria-label="Mis contratos">
+                <IconLock />
+                <span className="whitespace-nowrap">Mis contratos</span>
+              </Link>
+              <Link href="/cuenta/favoritos" className={navItem(favoritesActive)} aria-label="Mis favoritos">
+                <IconHeart />
+                <span className="whitespace-nowrap">Mis favoritos</span>
+              </Link>
+            </>
+          ) : null}
           {showMarketplaceCart ? (
-            <Link href="/cart" className={navItem(cartActive)} aria-label="Carrito">
+            <Link
+              href="/cart"
+              className={navItem(cartActive)}
+              aria-label={
+                items.length > 0
+                  ? `Carrito, ${items.length} ${items.length === 1 ? "producto" : "productos"}`
+                  : "Carrito"
+              }
+            >
               <IconCart />
               <span className="whitespace-nowrap">Carrito</span>
               {items.length > 0 ? (
                 <span className="rounded-full bg-[var(--mp-secondary)] px-1.5 text-[11px] font-bold tabular-nums text-white">
-                  {items.length}
+                  {items.length > 99 ? "99+" : items.length}
                 </span>
               ) : null}
-            </Link>
-          ) : null}
-          {authReady && me && isClient ? (
-            <Link href="/cuenta/pedidos" className={navItem(ordersActive)} aria-label="Mis pedidos">
-              <IconPay />
-              <span className="whitespace-nowrap">Mis pedidos</span>
             </Link>
           ) : null}
           {authReady && me ? (

@@ -143,6 +143,7 @@ export default async function SpaceDetailView({ spaceId }) {
             coverAlt={coverAlt}
             figureClassName="mt-0"
             imageSizes="(max-width: 1024px) 100vw, min(420px, 55vw)"
+            spaceId={space.id}
           />
           {space.description ? (
             <div className="mt-5 max-w-md">

@@ -193,21 +193,7 @@ export default function CuentaView() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
-      <nav className="flex flex-wrap gap-2 text-sm" aria-label="Sección de cuenta">
-        <Link
-          href="/cuenta/perfil"
-          className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white px-3 py-1.5 font-medium text-zinc-700 shadow-sm transition hover:border-[color-mix(in_srgb,var(--mp-primary)_40%,transparent)] hover:text-[color:var(--mp-primary)]`}
-        >
-          Mi perfil
-        </Link>
-        <span
-          className={`${ROUNDED_CONTROL} border border-[color-mix(in_srgb,var(--mp-primary)_45%,#d4d4d8)] bg-[color-mix(in_srgb,var(--mp-primary)_10%,color-mix(in_srgb,var(--mp-secondary)_5%,#fff))] px-3 py-1.5 text-sm font-semibold text-[color:var(--mp-primary)] ring-1 ring-[color-mix(in_srgb,var(--mp-primary)_18%,transparent)]`}
-          aria-current="page"
-        >
-          Mi empresa
-        </span>
-      </nav>
-      <p className="mt-3 text-xs text-zinc-500">
+      <p className="mt-6 text-xs text-zinc-500">
         En perfil puedes cambiar usuario, nombre y foto de perfil. Aquí también puedes subir logo o foto de tu empresa.
       </p>
 

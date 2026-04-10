@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useId, useMemo } from "react";
 import useSWR from "swr";
 
 import { CentrosAdminSection } from "@/components/admin/sections/CentrosAdminSection";
@@ -11,6 +11,8 @@ import { TomasAdminSection } from "@/components/admin/sections/TomasAdminSection
 import { UsuariosAdminSection } from "@/components/admin/sections/UsuariosAdminSection";
 import { AdminDashboardCharts } from "@/components/admin/AdminDashboardCharts";
 import { AdminDashboardKpiCards } from "@/components/admin/AdminDashboardKpiCards";
+import { AdminDashboardMetrics } from "@/components/admin/AdminDashboardMetrics";
+import { AdminDashboardSpaceMonthlyPriceCard } from "@/components/admin/AdminDashboardSpaceMonthlyPriceCard";
 import { AdminRecentActivityCard } from "@/components/admin/AdminRecentActivityCard";
 import { DashboardChromeSkeleton } from "@/components/admin/skeletons/DashboardChromeSkeleton";
 import { ResumenTabSkeleton } from "@/components/admin/skeletons/ResumenTabSkeleton";
@@ -33,6 +35,7 @@ const DASHBOARD_STATS_PATH = "/api/admin/dashboard/stats/";
 const DASHBOARD_ACTIVITY_PATH = "/api/admin/dashboard/activity/?limit=40";
 
 function ResumenTab() {
+  const priceGradId = `dash-econ-${useId().replace(/:/g, "")}`;
   const { authReady, accessToken } = useAuth();
   const fetchStats = authReady && !!accessToken;
 
@@ -110,6 +113,8 @@ function ResumenTab() {
         nUsers={nUsers}
         nOrders={nOrders}
       />
+      <AdminDashboardSpaceMonthlyPriceCard economics={chartStats?.economics} gradId={priceGradId} />
+      {chartStats?.metrics ? <AdminDashboardMetrics metrics={chartStats.metrics} /> : null}
       {chartStats ? <AdminDashboardCharts stats={chartStats} /> : null}
       <AdminRecentActivityCard
         activities={Array.isArray(activityData?.activities) ? activityData.activities : []}
