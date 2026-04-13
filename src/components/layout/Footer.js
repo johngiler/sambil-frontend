@@ -203,7 +203,7 @@ export function Footer() {
       />
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
         <div className="flex flex-col gap-12 sm:gap-14 lg:flex-row lg:items-stretch lg:justify-between lg:gap-0">
-          <div className="flex max-w-lg flex-col items-start gap-4 min-[480px]:flex-row min-[480px]:items-center sm:gap-6 max-lg:border-b max-lg:border-white/[0.06] max-lg:pb-10 lg:max-w-md lg:shrink-0 lg:border-r lg:border-white/[0.06] lg:pr-8 xl:max-w-lg xl:pr-10">
+          <div className="flex max-w-lg flex-col items-start gap-4 min-[480px]:flex-row min-[480px]:items-center sm:gap-6 max-lg:border-b max-lg:border-white/[0.12] max-lg:pb-10 lg:max-w-md lg:shrink-0 lg:border-r lg:border-white/[0.12] lg:pr-8 xl:max-w-lg xl:pr-10">
             {footerIsotypeUrl ? (
               <div className="flex h-[100px] w-[100px] shrink-0 items-center justify-center">
                 <img
@@ -232,7 +232,7 @@ export function Footer() {
             <div
               className={`min-w-0 max-w-full overflow-x-auto [-webkit-overflow-scrolling:touch] ${
                 showLegalColumn
-                  ? "min-[480px]:border-r min-[480px]:border-white/[0.06] max-[479px]:border-b max-[479px]:border-white/[0.06] max-[479px]:pb-10"
+                  ? "min-[480px]:border-r min-[480px]:border-white/[0.12] max-[479px]:border-b max-[479px]:border-white/[0.12] max-[479px]:pb-10"
                   : ""
               }`}
             >
@@ -273,7 +273,7 @@ export function Footer() {
                   {country ? (
                     <li>
                       <p
-                        className={`m-0 leading-relaxed text-zinc-300 ${contactValueRowClass}`}
+                        className={`m-0 leading-relaxed text-zinc-400 ${contactValueRowClass}`}
                         aria-label={`País: ${country}`}
                       >
                         <IconMapPin className={contactValueIconClass} />
