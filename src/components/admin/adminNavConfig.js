@@ -7,14 +7,21 @@ import {
   IconAdminUserPlus,
 } from "@/components/admin/adminIcons";
 
-/** segment coincide con la URL bajo /dashboard/… */
-export const ADMIN_NAV = [
-  { segment: "resumen", href: "/dashboard", label: "Resumen", Icon: IconAdminChart },
-  { segment: "centros", href: "/dashboard/centros", label: "Centros comerciales", Icon: IconAdminBuilding },
-  { segment: "tomas", href: "/dashboard/tomas", label: "Tomas", Icon: IconAdminGrid },
-  { segment: "usuarios", href: "/dashboard/usuarios", label: "Usuarios", Icon: IconAdminUserPlus },
-  { segment: "clientes", href: "/dashboard/clientes", label: "Clientes", Icon: IconAdminBriefcase },
-  { segment: "pedidos", href: "/dashboard/pedidos", label: "Pedidos", Icon: IconAdminClipboard },
-];
+import { ADMIN_NAV_PATHS } from "@/components/admin/adminNavPaths";
 
-export const ADMIN_SECTIONS = new Set(ADMIN_NAV.map((n) => n.segment));
+const ICON_BY_SEGMENT = {
+  resumen: IconAdminChart,
+  centros: IconAdminBuilding,
+  tomas: IconAdminGrid,
+  usuarios: IconAdminUserPlus,
+  clientes: IconAdminBriefcase,
+  pedidos: IconAdminClipboard,
+};
+
+/** segment coincide con la URL bajo /dashboard/… */
+export const ADMIN_NAV = ADMIN_NAV_PATHS.map((n) => ({
+  ...n,
+  Icon: ICON_BY_SEGMENT[n.segment],
+}));
+
+export { ADMIN_NAV_PATHS, ADMIN_SECTIONS } from "@/components/admin/adminNavPaths";

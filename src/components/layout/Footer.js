@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 
+import { ADMIN_NAV_PATHS } from "@/components/admin/adminNavPaths";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { normalizeMediaUrlForUi } from "@/services/api";
@@ -12,10 +13,107 @@ const linkClass =
 const sectionTitle =
   "text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500";
 
+function GuestMarketplaceExploreLinks() {
+  return (
+    <>
+      <li>
+        <Link href="/" className={linkClass}>
+          Catálogo
+        </Link>
+      </li>
+      <li>
+        <Link href="/cart" className={linkClass}>
+          Carrito
+        </Link>
+      </li>
+      <li>
+        <Link href="/checkout" className={linkClass}>
+          Checkout
+        </Link>
+      </li>
+    </>
+  );
+}
+
+function FooterExploreList({ me, authReady, isClient, isAdmin }) {
+  if (!authReady || !me) {
+    return <GuestMarketplaceExploreLinks />;
+  }
+  if (isAdmin) {
+    return (
+      <>
+        {ADMIN_NAV_PATHS.map((item) => (
+          <li key={item.segment}>
+            <Link href={item.href} className={linkClass}>
+              {item.label}
+            </Link>
+          </li>
+        ))}
+        <li>
+          <Link href="/cuenta/negocio" className={linkClass}>
+            Mi negocio
+          </Link>
+        </li>
+        <li>
+          <Link href="/cuenta/perfil" className={linkClass}>
+            Mi perfil
+          </Link>
+        </li>
+      </>
+    );
+  }
+  if (isClient) {
+    return (
+      <>
+        <li>
+          <Link href="/" className={linkClass}>
+            Catálogo
+          </Link>
+        </li>
+        <li>
+          <Link href="/cart" className={linkClass}>
+            Carrito
+          </Link>
+        </li>
+        <li>
+          <Link href="/checkout" className={linkClass}>
+            Checkout
+          </Link>
+        </li>
+        <li>
+          <Link href="/cuenta/pedidos" className={linkClass}>
+            Mis pedidos
+          </Link>
+        </li>
+        <li>
+          <Link href="/cuenta/contratos" className={linkClass}>
+            Mis contratos
+          </Link>
+        </li>
+        <li>
+          <Link href="/cuenta/favoritos" className={linkClass}>
+            Mis favoritos
+          </Link>
+        </li>
+        <li>
+          <Link href="/cuenta" className={linkClass}>
+            Mi empresa
+          </Link>
+        </li>
+        <li>
+          <Link href="/cuenta/perfil" className={linkClass}>
+            Mi perfil
+          </Link>
+        </li>
+      </>
+    );
+  }
+  return <GuestMarketplaceExploreLinks />;
+}
+
 export function Footer() {
-  const { me, isClient, isAdmin } = useAuth();
+  const { me, authReady, isClient, isAdmin } = useAuth();
   const { workspace, displayName } = useWorkspace();
-  const showMarketplaceCart = !me || isClient;
   /** Solo isotipo del API (`logo_mark_url`); si no viene, no se muestra imagen. */
   const footerIsotypeUrl =
     typeof workspace?.logo_mark_url === "string" &&
@@ -36,9 +134,7 @@ export function Footer() {
       ? workspace.country.trim()
       : null;
   const showLegalColumn = Boolean(supportEmail || phone || country);
-  const showOperacionColumn = Boolean(me && isAdmin);
-  const navColCount =
-    1 + (showOperacionColumn ? 1 : 0) + (showLegalColumn ? 1 : 0);
+  const navColCount = 1 + (showLegalColumn ? 1 : 0);
   const navGridClass =
     navColCount <= 1
       ? "grid flex-1 grid-cols-1 gap-8 sm:gap-10"
@@ -83,45 +179,14 @@ export function Footer() {
             <div>
               <h3 className={sectionTitle}>Explorar</h3>
               <ul className="mt-4 flex flex-col gap-3">
-                <li>
-                  <Link href="/" className={linkClass}>
-                    Catálogo
-                  </Link>
-                </li>
-                {showMarketplaceCart ? (
-                  <>
-                    <li>
-                      <Link href="/cart" className={linkClass}>
-                        Carrito
-                      </Link>
-                    </li>
-                    <li>
-                      <Link href="/checkout" className={linkClass}>
-                        Checkout
-                      </Link>
-                    </li>
-                  </>
-                ) : null}
+                <FooterExploreList
+                  me={me}
+                  authReady={authReady}
+                  isClient={isClient}
+                  isAdmin={isAdmin}
+                />
               </ul>
             </div>
-            {showOperacionColumn ? (
-              <div>
-                <h3 className={sectionTitle}>Operación</h3>
-                <ul className="mt-4 flex flex-col gap-3">
-                  <li>
-                    <Link href="/dashboard" className={linkClass}>
-                      Panel
-                    </Link>
-                  </li>
-                  <li>
-                    <span className="text-sm text-zinc-600">Inventario</span>
-                  </li>
-                  <li>
-                    <span className="text-sm text-zinc-600">Pedidos</span>
-                  </li>
-                </ul>
-              </div>
-            ) : null}
             {showLegalColumn ? (
               <div>
                 <h3 className={sectionTitle}>Datos de contacto</h3>
