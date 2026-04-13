@@ -100,8 +100,7 @@ export default function MisFavoritosView() {
       ) : results.length === 0 ? (
         <div className="mt-10 rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 px-4 py-10 text-center">
           <p className="text-sm text-zinc-600">
-            Aún no tienes favoritos. En el detalle de una toma del catálogo pulsa el icono de corazón en la
-            imagen (esquina superior derecha).
+            Aún no tienes favoritos. En el catálogo o en el detalle de una toma pulsa el corazón en la imagen.
           </p>
           <Link
             href="/"

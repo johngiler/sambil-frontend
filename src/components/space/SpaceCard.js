@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { SpaceDetailFavoriteButton } from "@/components/catalog/SpaceDetailFavoriteButton";
 import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvailabilityBar";
 import { spaceStatusLabel, spaceStatusPillClassName } from "@/components/admin/adminConstants";
 import { IconCart } from "@/components/layout/navIcons";
@@ -18,7 +19,7 @@ function formatUsdMonthly(n) {
 
 /**
  * Tarjeta de toma en catálogo (título a ancho completo; fila estado / precio; badge centro + ciudad).
- * @param {{ space: Record<string, unknown>, availabilityLabel?: "free" | "occupied", showFooterLink?: boolean, inCart?: boolean, priority?: boolean, secondaryAvailability?: { year: number, monthsOccupied: unknown } | null, cardFooter?: import("react").ReactNode }} props
+ * @param {{ space: Record<string, unknown>, availabilityLabel?: "free" | "occupied", showFooterLink?: boolean, inCart?: boolean, priority?: boolean, secondaryAvailability?: { year: number, monthsOccupied: unknown } | null, cardFooter?: import("react").ReactNode, showFavoriteButton?: boolean }} props
  */
 export function SpaceCard({
   space,
@@ -28,6 +29,7 @@ export function SpaceCard({
   priority = false,
   secondaryAvailability = null,
   cardFooter = null,
+  showFavoriteButton = false,
 }) {
   const cover = spaceCoverUrlForUi(space);
   const centerName =
@@ -54,62 +56,75 @@ export function SpaceCard({
             ? space.type
             : "";
 
+  const detailHref = `/catalog/${space.id}`;
+
   return (
     <article className="group overflow-hidden rounded-2xl bg-white shadow-[0_1px_2px_rgba(0,0,0,0.05)] ring-1 ring-zinc-200/80 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-8px_rgba(0,0,0,0.15)] hover:ring-zinc-300">
-      <Link
-        href={`/catalog/${space.id}`}
-        className="mp-ring-brand block rounded-2xl focus-visible:outline-none"
-      >
-        <div className="relative aspect-[4/3] bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-900">
-          {cover ? (
-            <Image
-              src={cover}
-              alt={typeof space.title === "string" ? space.title : "Espacio publicitario"}
-              fill
-              className="object-cover"
-              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-              priority={priority}
-            />
-          ) : (
-            <>
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(217,142,50,0.2),transparent_55%)]" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-            </>
-          )}
-          {hasLocationBadge ? (
-            <div
-              className="absolute bottom-3 right-3 max-w-[min(calc(100%-1.5rem),12.5rem)] rounded-lg bg-black/65 px-2.5 py-1.5 text-right shadow-sm ring-1 ring-white/[0.12] backdrop-blur-md"
-              aria-label={
-                centerName
-                  ? showCitySubline
-                    ? `${centerName}, ${cityLine}`
-                    : centerName
-                  : cityLine
-              }
-            >
-              {centerName ? (
-                <span className="block w-full truncate text-end text-[11px] font-semibold leading-snug tracking-tight text-white">
-                  {centerName}
-                </span>
-              ) : (
-                <span className="block w-full truncate text-end text-[11px] font-semibold uppercase tracking-wide text-white">
-                  {cityLine}
-                </span>
-              )}
-              {showCitySubline ? (
-                <span className="mt-0.5 block w-full truncate text-end text-[9px] font-medium uppercase tracking-[0.14em] text-white/72">
-                  {cityLine}
-                </span>
-              ) : null}
-            </div>
-          ) : null}
-          {inCart ? (
-            <span className="absolute right-2.5 top-2.5 inline-flex max-w-[min(100%-4rem,9.5rem)] items-center gap-1 rounded-full bg-[var(--mp-secondary)] px-2.5 py-1 text-[10px] font-semibold leading-tight text-white shadow-[0_2px_10px_rgba(234,88,12,0.45)] ring-1 ring-white/35">
-              <IconCart className="h-3 w-3 shrink-0 text-white" aria-hidden />
-              <span className="truncate">En carrito</span>
-            </span>
-          ) : null}
-        </div>
+      <div className="relative">
+        <Link
+          href={detailHref}
+          className="mp-ring-brand block overflow-hidden rounded-t-2xl focus-visible:outline-none"
+        >
+          <div className="relative aspect-[4/3] bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-900">
+            {cover ? (
+              <Image
+                src={cover}
+                alt={typeof space.title === "string" ? space.title : "Espacio publicitario"}
+                fill
+                className="object-cover"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+                priority={priority}
+              />
+            ) : (
+              <>
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_30%_20%,rgba(217,142,50,0.2),transparent_55%)]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              </>
+            )}
+            {hasLocationBadge ? (
+              <div
+                className="absolute bottom-3 right-3 max-w-[min(calc(100%-1.5rem),12.5rem)] rounded-lg bg-black/65 px-2.5 py-1.5 text-right shadow-sm ring-1 ring-white/[0.12] backdrop-blur-md"
+                aria-label={
+                  centerName
+                    ? showCitySubline
+                      ? `${centerName}, ${cityLine}`
+                      : centerName
+                    : cityLine
+                }
+              >
+                {centerName ? (
+                  <span className="block w-full truncate text-end text-[11px] font-semibold leading-snug tracking-tight text-white">
+                    {centerName}
+                  </span>
+                ) : (
+                  <span className="block w-full truncate text-end text-[11px] font-semibold uppercase tracking-wide text-white">
+                    {cityLine}
+                  </span>
+                )}
+                {showCitySubline ? (
+                  <span className="mt-0.5 block w-full truncate text-end text-[9px] font-medium uppercase tracking-[0.14em] text-white/72">
+                    {cityLine}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+            {inCart ? (
+              <span className="absolute right-2.5 top-2.5 inline-flex max-w-[min(100%-4rem,9.5rem)] items-center gap-1 rounded-full bg-[var(--mp-secondary)] px-2.5 py-1 text-[10px] font-semibold leading-tight text-white shadow-[0_2px_10px_rgba(234,88,12,0.45)] ring-1 ring-white/35">
+                <IconCart className="h-3 w-3 shrink-0 text-white" aria-hidden />
+                <span className="truncate">En carrito</span>
+              </span>
+            ) : null}
+          </div>
+        </Link>
+        {showFavoriteButton && space.id != null ? (
+          <SpaceDetailFavoriteButton
+            spaceId={space.id}
+            variant="overlay"
+            overlayAlign={inCart ? "left" : "right"}
+          />
+        ) : null}
+      </div>
+      <Link href={detailHref} className="mp-ring-brand block rounded-b-2xl focus-visible:outline-none">
         <div className="p-4">
           <h2 className="w-full text-balance break-words text-[15px] font-semibold leading-snug tracking-tight text-zinc-900">
             {space.title}

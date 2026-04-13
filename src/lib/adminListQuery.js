@@ -8,6 +8,15 @@ export function ordersListPath(page, search, status) {
   return `/api/orders/?${p.toString()}`;
 }
 
+/** Mismos filtros de búsqueda y estado que el listado; sin paginación (todos los resultados). */
+export function ordersExportReportPath(search, status) {
+  const p = new URLSearchParams();
+  if (search.trim()) p.set("search", search.trim());
+  if (status && status !== "all") p.set("status", status);
+  const q = p.toString();
+  return q ? `/api/orders/export-report/?${q}` : "/api/orders/export-report/";
+}
+
 export function clientsListPath(page, search, status) {
   const p = new URLSearchParams();
   p.set("page", String(page));

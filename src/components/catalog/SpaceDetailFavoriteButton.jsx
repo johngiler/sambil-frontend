@@ -11,9 +11,9 @@ import { deleteFavorite, MY_FAVORITES_PATH, postFavorite } from "@/services/clie
 
 /**
  * Solo cliente marketplace autenticado. SWR comparte clave con `/cuenta/favoritos`.
- * @param {{ spaceId: number|string; variant?: "overlay" }} props
+ * @param {{ spaceId: number|string; variant?: "overlay"; overlayAlign?: "left" | "right" }} props
  */
-export function SpaceDetailFavoriteButton({ spaceId, variant }) {
+export function SpaceDetailFavoriteButton({ spaceId, variant, overlayAlign = "right" }) {
   const { authReady, isClient, accessToken } = useAuth();
   const [busy, setBusy] = useState(false);
   const [localErr, setLocalErr] = useState("");
@@ -56,8 +56,9 @@ export function SpaceDetailFavoriteButton({ spaceId, variant }) {
       ? "Quitar de favoritos"
       : "Guardar en favoritos";
 
+  const alignEnd = overlayAlign !== "left";
   const inner = (
-    <div className="flex flex-col items-end gap-1">
+    <div className={`flex flex-col gap-1 ${alignEnd ? "items-end" : "items-start"}`}>
       <button
         type="button"
         disabled={busy || isLoading}
@@ -80,7 +81,10 @@ export function SpaceDetailFavoriteButton({ spaceId, variant }) {
         />
       </button>
       {localErr ? (
-        <p className="max-w-[min(100%,14rem)] text-right text-xs text-red-200 drop-shadow" role="alert">
+        <p
+          className={`max-w-[min(100%,14rem)] text-xs text-red-200 drop-shadow ${alignEnd ? "text-right" : "text-left"}`}
+          role="alert"
+        >
           {localErr}
         </p>
       ) : null}
@@ -88,8 +92,9 @@ export function SpaceDetailFavoriteButton({ spaceId, variant }) {
   );
 
   if (variant === "overlay") {
+    const pos = overlayAlign === "left" ? "left-3 top-3" : "right-3 top-3";
     return (
-      <div className="pointer-events-auto absolute right-3 top-3 z-10">
+      <div className={`pointer-events-auto absolute z-10 ${pos}`}>
         {inner}
       </div>
     );

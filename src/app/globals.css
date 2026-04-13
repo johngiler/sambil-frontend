@@ -58,8 +58,18 @@
   /**
    * Portada (`/`): retícula de rombos (±45°) + halos radiales + base.
    * Las dos familias de líneas finas se cruzan y forman diamantes; marca del tenant en baja opacidad.
+   * Capa superior: velo hacia #fafafa abajo para que la retícula se difumine antes del listado.
    */
   --mp-home-hero-gradient:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent 36%,
+      color-mix(in srgb, #fafafa 18%, transparent) 52%,
+      color-mix(in srgb, #fafafa 48%, transparent) 68%,
+      color-mix(in srgb, #fafafa 82%, transparent) 84%,
+      #fafafa 100%
+    ),
     linear-gradient(
       to bottom,
       color-mix(in srgb, #ffffff 52%, transparent) 0%,

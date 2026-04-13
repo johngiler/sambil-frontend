@@ -313,6 +313,7 @@ export function HomeSpacesCatalogClient() {
                   availabilityLabel="occupied"
                   showFooterLink={false}
                   priority={index < 4}
+                  showFavoriteButton
                 />
               </li>
             ))}

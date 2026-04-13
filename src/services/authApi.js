@@ -243,6 +243,40 @@ export async function authFetch(path, { method = "GET", body, token } = {}) {
   return parsed.data;
 }
 
+/**
+ * GET binario (p. ej. Excel). Reintenta con refresh del access en 401.
+ * @param {string} path Ruta relativa al API.
+ */
+export async function authFetchBlob(path, { token, _retry401 = false } = {}) {
+  const t = token ?? getAccessToken();
+  const res = await fetch(apiUrl(path), {
+    method: "GET",
+    headers: {
+      ...workspaceSlugRequestHeaders(),
+      ...(t ? { Authorization: `Bearer ${t}` } : {}),
+    },
+    cache: "no-store",
+  });
+  if (res.status === 401 && !_retry401 && getRefreshToken()) {
+    const newAccess = await refreshAccessToken();
+    if (newAccess) {
+      return authFetchBlob(path, { token: newAccess, _retry401: true });
+    }
+  }
+  if (!res.ok) {
+    const text = await res.text();
+    let msg = `Error ${res.status}`;
+    try {
+      const j = JSON.parse(text);
+      if (j && typeof j === "object" && j.detail != null) msg = String(j.detail);
+    } catch {
+      if (text && text.length) msg = text.slice(0, 240);
+    }
+    throw new Error(msg);
+  }
+  return res.blob();
+}
+
 /** GET paginado: concatena todas las páginas (listados admin). */
 export async function authFetchAllPages(path, { token } = {}) {
   const all = [];

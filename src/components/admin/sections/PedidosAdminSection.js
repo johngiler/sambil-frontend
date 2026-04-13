@@ -32,7 +32,7 @@ import {
   ORDER_STATUS,
   ORDER_STATUS_FILTER_OPTIONS,
 } from "@/components/admin/adminConstants";
-import { IconAdminClipboard, IconAdminRefresh } from "@/components/admin/adminIcons";
+import { IconAdminArrowDownTray, IconAdminClipboard } from "@/components/admin/adminIcons";
 import { PedidosSectionSkeleton } from "@/components/admin/skeletons/PedidosSectionSkeleton";
 import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
@@ -44,7 +44,7 @@ import {
   dashboardCentrosSearchHref,
   dashboardClientesSearchHref,
 } from "@/lib/adminDashboardLinks";
-import { ordersListPath } from "@/lib/adminListQuery";
+import { ordersExportReportPath, ordersListPath } from "@/lib/adminListQuery";
 import { authJsonFetcher } from "@/lib/swr/fetchers";
 import { subtitleCityAfterCenterName } from "@/lib/shoppingCenterDisplay";
 import { adminOrderLineCoverLightboxItems } from "@/lib/imageLightboxItems";
@@ -177,6 +177,7 @@ export function PedidosAdminSection() {
   });
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
+  const [reportLoading, setReportLoading] = useState(false);
   const [filterQ, setFilterQ] = useState("");
   const [filterOrderStatus, setFilterOrderStatus] = useState("all");
   const debouncedFilterQ = useDebouncedValue(filterQ, 400);
@@ -205,6 +206,30 @@ export function PedidosAdminSection() {
   }, [swrError]);
 
   const reloadOrders = useCallback(() => mutateOrders(), [mutateOrders]);
+
+  const downloadOrdersReport = useCallback(async () => {
+    setErr("");
+    setMsg("");
+    setReportLoading(true);
+    try {
+      const path = ordersExportReportPath(debouncedFilterQ, filterOrderStatus);
+      const blob = await authFetchBlob(path, { token: accessToken });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "reporte_pedidos.xlsx";
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setMsg("Reporte descargado.");
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "No se pudo generar el reporte.");
+    } finally {
+      setReportLoading(false);
+    }
+  }, [accessToken, debouncedFilterQ, filterOrderStatus]);
 
   const ready =
     !(authReady && accessToken) ||
@@ -288,10 +313,11 @@ export function PedidosAdminSection() {
         <button
           type="button"
           className={`${adminPrimaryBtn} inline-flex items-center justify-center gap-2`}
-          onClick={() => reloadOrders()}
+          disabled={reportLoading}
+          onClick={() => downloadOrdersReport()}
         >
-          <IconAdminRefresh className="!h-[1.125rem] !w-[1.125rem]" />
-          Actualizar
+          <IconAdminArrowDownTray className="!h-[1.125rem] !w-[1.125rem]" />
+          {reportLoading ? "Generando…" : "Generar reporte"}
         </button>
       </div>
 
@@ -306,7 +332,7 @@ export function PedidosAdminSection() {
         <EmptyState
           icon={<EmptyStateIconClipboard />}
           title="No hay pedidos"
-          description="Cuando lleguen solicitudes de reserva desde el sitio, aparecerán aquí. Puedes pulsar «Actualizar» cuando quieras ver los últimos datos."
+          description="Cuando lleguen solicitudes de reserva desde el sitio, aparecerán aquí. Puedes generar un reporte Excel con «Generar reporte»."
         />
       ) : (
         <>
