@@ -57,7 +57,7 @@ import {
 } from "@/lib/squareImagePreview";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
-import { authFetch, mediaAbsoluteUrl } from "@/services/authApi";
+import { authFetch, authFetchBlob, mediaAbsoluteUrl } from "@/services/authApi";
 
 function formatPedidoAlta(iso) {
   if (!iso) return "—";
