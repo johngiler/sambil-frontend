@@ -79,7 +79,7 @@ export default function MisFavoritosView() {
   const results = Array.isArray(data?.results) ? data.results : [];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
       <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
         Mis favoritos
       </h1>

@@ -432,14 +432,14 @@ export default function MisPedidosView() {
 
   if (!authReady || !me || isAdmin || !isClient) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-12 text-center text-zinc-500">
+      <div className="mx-auto max-w-4xl px-4 py-12 text-center text-zinc-500">
         Cargando…
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
       <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">Mis pedidos</h1>
       <p className="mt-2 max-w-xl text-sm text-zinc-600">
         Los importes por toma y el subtotal del pedido son{" "}

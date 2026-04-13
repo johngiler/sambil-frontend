@@ -59,7 +59,7 @@ export default function CartView() {
 
   if (authReady && me && isAdmin) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
         <h1 className="text-balance text-2xl font-bold text-zinc-900 sm:text-3xl">Carrito</h1>
         <p className="mt-4 text-zinc-600">
           Este proceso no está disponible para tu cuenta. Usa el acceso que te corresponde o vuelve al inicio.
@@ -84,7 +84,7 @@ export default function CartView() {
 
   if (authReady && me && !isClient) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
         <h1 className="text-balance text-2xl font-bold text-zinc-900 sm:text-3xl">Carrito</h1>
         <p className="mt-4 text-zinc-600">
           El carrito del marketplace es para clientes o para quien envía una solicitud sin iniciar sesión. Si necesitas
@@ -101,7 +101,7 @@ export default function CartView() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
       <h1 className="text-balance text-2xl font-bold text-zinc-900 sm:text-3xl">
         Carrito{items.length > 0 ? ` (${items.length})` : ""}
       </h1>
