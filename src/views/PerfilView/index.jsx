@@ -211,8 +211,7 @@ export default function PerfilView() {
           ) : null}
         </div>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-600">
-          Correo, nombre y foto opcional. El <span className="font-medium text-zinc-800">usuario</span> lo asigna
-          el equipo; para cambiarlo, contacta a soporte.
+          Correo, nombre y foto de tu cuenta.
         </p>
       </div>
 

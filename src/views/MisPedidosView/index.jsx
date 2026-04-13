@@ -13,7 +13,7 @@ import {
   AdminFiltersRow,
 } from "@/components/admin/AdminListFilters";
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
-import { ORDER_STATUS_FILTER_OPTIONS, orderStatusPillClassName } from "@/components/admin/adminConstants";
+import { ORDER_STATUS, orderStatusPillClassName } from "@/components/admin/adminConstants";
 import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
 import { MisPedidosSkeleton } from "@/components/orders/MisPedidosSkeleton";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
@@ -383,10 +383,13 @@ export default function MisPedidosView() {
 
   const summary = data?.summary;
   const orderCounts = summary?.order_counts;
-  const committedNum =
-    summary?.committed_total_subtotal != null ? Number(summary.committed_total_subtotal) : NaN;
-  const draftTotalNum =
-    summary?.draft_total_subtotal != null ? Number(summary.draft_total_subtotal) : NaN;
+  const closedNoActivate =
+    (orderCounts?.cancelled ?? 0) + (orderCounts?.rejected ?? 0);
+
+  const misPedidosStatusOptions = useMemo(
+    () => [{ v: "all", l: "Todos los estados" }, ...ORDER_STATUS.filter((x) => x.v !== "draft")],
+    [],
+  );
 
   const filtersActive = filterStatus !== "all" || filterSearch.trim() !== "";
 
@@ -444,52 +447,25 @@ export default function MisPedidosView() {
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-10">
       <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">Mis pedidos</h1>
       <p className="mt-2 max-w-xl text-sm text-zinc-600">
-        Los importes por toma y el subtotal del pedido son{" "}
-        <span className="font-medium text-zinc-800">sin IVA</span>. El total final incluye IVA (
-        {IVA_PERCENT_LABEL}). Abre un pedido para ver periodo de reserva por línea e historial de
-        estados. Las tomas ya en operación están en{" "}
-        <Link
-          href="/cuenta/contratos"
-          className="font-medium text-[color:var(--mp-primary)] underline-offset-2 hover:underline"
-        >
-          Mis contratos
-        </Link>
-        .
+        Solicitudes de reserva que ya enviaste y el estado de cada pedido.
       </p>
 
       {!err && ordersLoading && data == null ? (
-        <div className="mt-8 grid gap-3 sm:grid-cols-3" aria-busy="true" aria-label="Cargando resumen">
-          <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-gradient-to-br from-white to-zinc-50/80 p-4 shadow-sm`}>
-            <Skeleton className="h-3 w-40" />
-            <Skeleton className="mt-2 h-7 w-28" />
-          </div>
+        <div className="mt-8 grid gap-3 sm:grid-cols-2" aria-busy="true" aria-label="Cargando resumen">
           <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 shadow-sm`}>
             <Skeleton className="h-3 w-36" />
             <Skeleton className="mt-2 h-7 w-12" />
             <Skeleton className="mt-2 h-3 w-full max-w-[14rem]" />
           </div>
-          <div className={`${ROUNDED_CONTROL} border border-sky-200/80 bg-sky-50/40 p-4 shadow-sm`}>
-            <Skeleton className="h-3 w-28" />
+          <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-zinc-50/70 p-4 shadow-sm`}>
+            <Skeleton className="h-3 w-36" />
             <Skeleton className="mt-2 h-7 w-10" />
-            <Skeleton className="mt-2 h-3 w-32" />
+            <Skeleton className="mt-2 h-3 w-40" />
           </div>
         </div>
       ) : null}
       {!err && data && summary ? (
-        <div className="mt-8 grid gap-3 sm:grid-cols-3">
-          <div
-            className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-gradient-to-br from-white to-zinc-50/80 p-4 shadow-sm`}
-          >
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Total en pedidos (sin IVA)
-            </p>
-            <p className="mt-1 text-xl font-bold tabular-nums text-zinc-900">
-              {Number.isFinite(committedNum) ? formatUsdMoney(committedNum) : "—"}
-            </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              Suma de totales excl. borrador, cancelada y rechazada.
-            </p>
-          </div>
+        <div className="mt-8 grid gap-3 sm:grid-cols-2">
           <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 shadow-sm`}>
             <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Pedidos</p>
             <p className="mt-1 text-xl font-bold tabular-nums text-zinc-900">
@@ -500,24 +476,13 @@ export default function MisPedidosView() {
               {orderCounts?.pipeline ?? 0}
             </p>
           </div>
-          <div className={`${ROUNDED_CONTROL} border border-sky-200/80 bg-sky-50/40 p-4 shadow-sm`}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-sky-900/80">Borradores</p>
-            <p className="mt-1 text-xl font-bold tabular-nums text-zinc-900">
-              {orderCounts?.draft ?? 0}
+          <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-zinc-50/70 p-4 shadow-sm`}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              Cancelados o rechazados
             </p>
-            <p className="mt-1 text-xs text-zinc-600">
-              Total sin IVA:{" "}
-              {Number.isFinite(draftTotalNum) ? formatUsdMoney(draftTotalNum) : "—"}
-            </p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-zinc-900">{closedNoActivate}</p>
             <p className="mt-1 text-xs text-zinc-500">
-              Envía el pedido para iniciar el trámite; puedes revisarlo en el{" "}
-              <Link
-                href="/cart"
-                className="font-medium text-[color:var(--mp-primary)] underline-offset-2 hover:underline"
-              >
-                carrito
-              </Link>
-              .
+              Cancelados: {orderCounts?.cancelled ?? 0} · Rechazados: {orderCounts?.rejected ?? 0}
             </p>
           </div>
         </div>
@@ -535,7 +500,7 @@ export default function MisPedidosView() {
           label="Estado"
           value={filterStatus}
           onChange={setFilterStatus}
-          options={ORDER_STATUS_FILTER_OPTIONS}
+          options={misPedidosStatusOptions}
         />
         <AdminFilterClearButton onClick={clearFilters} show={filtersActive} />
       </AdminFiltersRow>

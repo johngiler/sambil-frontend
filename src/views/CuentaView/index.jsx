@@ -193,10 +193,6 @@ export default function CuentaView() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
-      <p className="mt-6 text-xs text-zinc-500">
-        En perfil puedes cambiar usuario, nombre y foto de perfil. Aquí también puedes subir logo o foto de tu empresa.
-      </p>
-
       <div className="relative mt-8 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white px-5 py-6 shadow-[0_2px_12px_rgba(15,23,42,0.06)] sm:px-6 sm:py-7">
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] mp-admin-filters-top-accent" aria-hidden />
         <div className="flex flex-wrap items-center gap-3">
@@ -210,8 +206,7 @@ export default function CuentaView() {
           ) : null}
         </div>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-600">
-          Datos de tu <span className="font-medium text-zinc-800">cliente</span> para reservas en el marketplace.
-          Son necesarios antes de enviar una solicitud desde el checkout.
+          Datos de contacto y facturación de tu cliente en el marketplace.
         </p>
       </div>
 

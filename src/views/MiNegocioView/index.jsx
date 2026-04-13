@@ -365,8 +365,7 @@ export default function MiNegocioView() {
           ) : null}
         </div>
         <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-600">
-          Datos públicos del marketplace (marca, contacto y archivos). El identificador del sitio no se puede cambiar
-          desde aquí.
+          Marca, contacto y archivos visibles en el catálogo.
         </p>
       </div>
 

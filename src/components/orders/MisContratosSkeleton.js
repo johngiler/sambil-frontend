@@ -9,17 +9,25 @@ export function MisContratosSkeleton() {
   return (
     <div className="space-y-6" aria-busy="true" aria-label="Cargando contratos">
       <div className="grid gap-3 sm:grid-cols-3">
-        <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-zinc-50/80 p-4`}>
+        <div
+          className={`${ROUNDED_CONTROL} border border-emerald-200/70 bg-gradient-to-br from-emerald-50/55 via-white to-teal-50/35 p-4 shadow-sm`}
+        >
           <Bar />
-          <div className="mt-3 h-8 w-28 animate-pulse rounded bg-zinc-200/70" />
+          <div className="mt-3 h-8 w-28 animate-pulse rounded bg-emerald-100/80" />
         </div>
-        <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-zinc-50/80 p-4`}>
+        <div
+          className={`${ROUNDED_CONTROL} border border-sky-200/75 bg-gradient-to-br from-sky-50/50 via-white to-cyan-50/25 p-4 shadow-sm`}
+        >
           <Bar />
-          <div className="mt-3 h-8 w-20 animate-pulse rounded bg-zinc-200/70" />
+          <div className="mt-3 h-8 w-20 animate-pulse rounded bg-sky-100/80" />
+          <div className="mt-2 h-3 w-full max-w-[14rem] animate-pulse rounded bg-sky-100/60" />
         </div>
-        <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-zinc-50/80 p-4`}>
+        <div
+          className={`${ROUNDED_CONTROL} border border-amber-300/70 bg-gradient-to-br from-amber-50/70 via-amber-50/40 to-orange-50/30 p-4 shadow-sm`}
+        >
           <Bar />
-          <div className="mt-3 h-8 w-16 animate-pulse rounded bg-zinc-200/70" />
+          <div className="mt-3 h-8 w-16 animate-pulse rounded bg-amber-100/90" />
+          <div className="mt-2 h-3 w-40 animate-pulse rounded bg-amber-100/65" />
         </div>
       </div>
       <div

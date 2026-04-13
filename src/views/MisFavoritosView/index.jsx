@@ -83,9 +83,8 @@ export default function MisFavoritosView() {
       <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
         Mis favoritos
       </h1>
-      <p className="mt-2 max-w-2xl text-sm text-zinc-600">
-        Tomas que marcaste en el catálogo. La disponibilidad muestra meses ocupados o bloqueados (naranja) y
-        libres (gris) para este año y el siguiente.
+      <p className="mt-2 max-w-xl text-sm text-zinc-600">
+        Tomas que guardaste desde el catálogo.
       </p>
 
       {err ? (

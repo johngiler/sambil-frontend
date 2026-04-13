@@ -137,14 +137,8 @@ export default function MisContratosView() {
       <h1 className="text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
         Mis contratos
       </h1>
-      <p className="mt-2 max-w-2xl text-sm text-zinc-600">
-        Tomas en pedidos <span className="font-medium text-zinc-800">activos o vencidos</span> (ya en operación
-        en el marketplace). Los importes son{" "}
-        <span className="font-medium text-zinc-800">sin IVA</span>. Para el flujo del pedido usa{" "}
-        <Link href="/cuenta/pedidos" className="font-medium text-[color:var(--mp-primary)] underline-offset-2 hover:underline">
-          Mis pedidos
-        </Link>
-        .
+      <p className="mt-2 max-w-xl text-sm text-zinc-600">
+        Tomas en operación ligadas a pedidos activos o vencidos.
       </p>
 
       {loading ? (
@@ -159,35 +153,39 @@ export default function MisContratosView() {
         <>
           <div className="mt-8 grid gap-3 sm:grid-cols-3">
             <div
-              className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-gradient-to-br from-white to-zinc-50/80 p-4 shadow-sm`}
+              className={`${ROUNDED_CONTROL} border border-emerald-200/70 bg-gradient-to-br from-emerald-50/55 via-white to-teal-50/35 p-4 shadow-sm`}
             >
-              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              <p className="text-xs font-semibold uppercase tracking-wide text-emerald-900/75">
                 Total invertido (sin IVA)
               </p>
               <p className="mt-1 text-xl font-bold tabular-nums text-zinc-900">
                 {Number.isFinite(totalNum) ? formatUsdMoney(totalNum) : "—"}
               </p>
             </div>
-            <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 shadow-sm`}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            <div
+              className={`${ROUNDED_CONTROL} border border-sky-200/75 bg-gradient-to-br from-sky-50/50 via-white to-cyan-50/25 p-4 shadow-sm`}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-sky-900/80">
                 Líneas de contrato
               </p>
               <p className="mt-1 text-xl font-bold tabular-nums text-zinc-900">
                 {summary?.line_counts?.total ?? "—"}
               </p>
-              <p className="mt-1 text-xs text-zinc-500">
+              <p className="mt-1 text-xs text-sky-900/65">
                 En curso: {summary?.line_counts?.running ?? 0} · Próx.: {summary?.line_counts?.upcoming ?? 0} ·
                 Fin.: {summary?.line_counts?.ended ?? 0}
               </p>
             </div>
-            <div className={`${ROUNDED_CONTROL} border border-amber-200/80 bg-amber-50/50 p-4 shadow-sm`}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-amber-900/80">
+            <div
+              className={`${ROUNDED_CONTROL} border border-amber-300/70 bg-gradient-to-br from-amber-50/70 via-amber-50/40 to-orange-50/30 p-4 shadow-sm`}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-amber-950/85">
                 Vencen en 30 días
               </p>
               <p className="mt-1 text-xl font-bold tabular-nums text-amber-950">
                 {summary?.ending_within_30_days ?? 0}
               </p>
-              <p className="mt-1 text-xs text-amber-900/70">Contratos activos con fin próximo</p>
+              <p className="mt-1 text-xs text-amber-950/75">Contratos activos con fin próximo</p>
             </div>
           </div>
 
