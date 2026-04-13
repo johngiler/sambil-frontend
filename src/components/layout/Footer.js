@@ -30,9 +30,13 @@ const exploreLinkRowClass =
 const sectionTitle =
   "text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500";
 
-/** Dos columnas al ancho del contenido (sin repartir 50/50) y poco espacio entre ellas para no recortar texto. */
+/**
+ * Móvil: una columna (primera lista arriba, segunda abajo).
+ * ≥420px: dos columnas lado a lado, ancho según texto (max-content), gap pequeño entre ellas.
+ * No usar grid-cols-none: en Tailwind anula las columnas y todo queda en una sola columna.
+ */
 const exploreTwoColGrid =
-  "mt-4 grid grid-cols-1 gap-8 min-[420px]:inline-grid min-[420px]:grid-cols-none min-[420px]:[grid-template-columns:max-content_max-content] min-[420px]:gap-x-5 min-[420px]:gap-y-3 lg:gap-x-6";
+  "mt-4 grid grid-cols-1 gap-y-8 min-[420px]:grid-cols-[max-content_max-content] min-[420px]:gap-x-4 min-[420px]:gap-y-3 lg:gap-x-5";
 
 const exploreListClass = "flex flex-col gap-3";
 
@@ -198,8 +202,8 @@ export function Footer() {
         aria-hidden
       />
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
-        <div className="flex flex-col gap-12 sm:gap-14 lg:flex-row lg:items-start lg:justify-between lg:gap-16 xl:gap-20">
-          <div className="flex max-w-lg flex-col items-start gap-4 min-[480px]:flex-row min-[480px]:items-center sm:gap-6 lg:max-w-md lg:shrink-0 xl:max-w-lg">
+        <div className="flex flex-col gap-12 sm:gap-14 lg:flex-row lg:items-stretch lg:justify-between lg:gap-0">
+          <div className="flex max-w-lg flex-col items-start gap-4 min-[480px]:flex-row min-[480px]:items-center sm:gap-6 max-lg:border-b max-lg:border-white/[0.06] max-lg:pb-10 lg:max-w-md lg:shrink-0 lg:border-r lg:border-white/[0.06] lg:pr-8 xl:max-w-lg xl:pr-10">
             {footerIsotypeUrl ? (
               <div className="flex h-[100px] w-[100px] shrink-0 items-center justify-center">
                 <img
@@ -224,8 +228,14 @@ export function Footer() {
             </div>
           </div>
 
-          <div className={`${navGridClass} min-w-0 flex-1`}>
-            <div className="min-w-0 max-w-full overflow-x-auto [-webkit-overflow-scrolling:touch]">
+          <div className={`${navGridClass} min-w-0 flex-1 lg:pl-8 xl:pl-10`}>
+            <div
+              className={`min-w-0 max-w-full overflow-x-auto [-webkit-overflow-scrolling:touch] ${
+                showLegalColumn
+                  ? "min-[480px]:border-r min-[480px]:border-white/[0.06] max-[479px]:border-b max-[479px]:border-white/[0.06] max-[479px]:pb-10"
+                  : ""
+              }`}
+            >
               <h3 className={`${sectionTitle} max-w-full`}>Explorar</h3>
               <FooterExploreList
                 me={me}
