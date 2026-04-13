@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import useSWR from "swr";
 
 import { HomeSpacesCatalogSkeleton } from "@/components/home/HomeSpacesCatalogSkeleton";
 import { SpaceCardWithCart } from "@/components/space/SpaceCardWithCart";
@@ -13,7 +14,12 @@ import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { FilterClearAction } from "@/components/admin/AdminListFilters";
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
 import { useWorkspace } from "@/context/WorkspaceContext";
-import { getSpacesCatalogPage, getSpacesLocationFacets } from "@/services/api";
+import {
+  buildHomeCatalogFacetsKey,
+  buildHomeCatalogPageKey,
+  homeCatalogFacetsFetcher,
+  homeCatalogPageFetcher,
+} from "@/lib/swr/homeCatalogSwr";
 
 function heroAvailabilityLine(totalSpaces, locationCount, omitLocations) {
   const esp =
@@ -49,64 +55,56 @@ export function HomeSpacesCatalogClient() {
   const searchParams = useSearchParams();
   const centerSlug = useMemo(() => (searchParams.get("center") || "").trim(), [searchParams]);
 
-  const [spaces, setSpaces] = useState([]);
-  const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true);
-  const [dataReady, setDataReady] = useState(false);
-  const [loadError, setLoadError] = useState(null);
-  const [facetsError, setFacetsError] = useState(null);
   const [query, setQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
-  const [facets, setFacets] = useState({ total: 0, items: [] });
   const debouncedQuery = useDebouncedValue(query, 400);
+
+  const pageKey = useMemo(
+    () => buildHomeCatalogPageKey({ search: debouncedQuery, city: selectedCity, center: centerSlug, page }),
+    [debouncedQuery, selectedCity, centerSlug, page],
+  );
+  const facetsKey = useMemo(
+    () => buildHomeCatalogFacetsKey({ search: debouncedQuery, center: centerSlug }),
+    [debouncedQuery, centerSlug],
+  );
+
+  const {
+    data: pageData,
+    error: loadError,
+    isLoading: pageLoading,
+  } = useSWR(pageKey, homeCatalogPageFetcher, {
+    keepPreviousData: true,
+    dedupingInterval: 3000,
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+  });
+
+  const { data: facetsData, error: facetsError } = useSWR(facetsKey, homeCatalogFacetsFetcher, {
+    dedupingInterval: 3000,
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+  });
+
+  const spaces = useMemo(
+    () => (Array.isArray(pageData?.results) ? pageData.results : []),
+    [pageData],
+  );
+  const totalCount = typeof pageData?.count === "number" ? pageData.count : 0;
+  const facets = useMemo(() => {
+    if (!facetsData || typeof facetsData !== "object") return { total: 0, items: [] };
+    const total = typeof facetsData.total === "number" ? facetsData.total : 0;
+    const items = Array.isArray(facetsData.items) ? facetsData.items : [];
+    return { total, items };
+  }, [facetsData]);
 
   const filtersActive = useMemo(
     () => selectedCity.trim() !== "" || query.trim() !== "" || centerSlug !== "",
     [selectedCity, query, centerSlug],
   );
 
-  const loadFacets = useCallback(async () => {
-    setFacetsError(null);
-    try {
-      const data = await getSpacesLocationFacets({ search: debouncedQuery, center: centerSlug });
-      const total = typeof data.total === "number" ? data.total : 0;
-      const items = Array.isArray(data.items) ? data.items : [];
-      setFacets({ total, items });
-    } catch (e) {
-      setFacetsError(e instanceof Error ? e : new Error(String(e)));
-    }
-  }, [debouncedQuery, centerSlug]);
-
-  const loadPage = useCallback(async () => {
-    setLoading(true);
-    setLoadError(null);
-    try {
-      const { results, count } = await getSpacesCatalogPage({
-        search: debouncedQuery,
-        city: selectedCity,
-        center: centerSlug,
-        page,
-      });
-      setSpaces(Array.isArray(results) ? results : []);
-      setTotalCount(count);
-    } catch (e) {
-      setSpaces([]);
-      setTotalCount(0);
-      setLoadError(e instanceof Error ? e : new Error(String(e)));
-    } finally {
-      setLoading(false);
-      setDataReady(true);
-    }
-  }, [debouncedQuery, selectedCity, centerSlug, page]);
-
-  useEffect(() => {
-    loadFacets();
-  }, [loadFacets]);
-
-  useEffect(() => {
-    loadPage();
-  }, [loadPage]);
+  const dataReady = pageData !== undefined || loadError != null;
+  const showPageSkeleton = pageLoading && !pageData && loadError == null;
 
   useEffect(() => {
     setPage(1);
@@ -144,9 +142,9 @@ export function HomeSpacesCatalogClient() {
     [totalForPills, locationCount, heroOmitLocations],
   );
 
-  const showFacetsWarning = facetsError && !loadError;
+  const showFacetsWarning = facetsError != null && loadError == null;
 
-  if (!dataReady && loading && !loadError) {
+  if (showPageSkeleton) {
     return <HomeSpacesCatalogSkeleton />;
   }
 

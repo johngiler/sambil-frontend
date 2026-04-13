@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import useSWR from "swr";
+import useSWR, { useSWRConfig } from "swr";
 
 import {
   AdminAccordionDetailHeader,
@@ -54,6 +54,7 @@ import {
   squareListImagePreviewButtonRingClass,
 } from "@/lib/squareImagePreview";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
+import { revalidateHomeCatalog } from "@/lib/swr/homeCatalogSwr";
 import { parsePaginatedResponse } from "@/services/api";
 import { authFetch, authFetchForm, mediaAbsoluteUrl } from "@/services/authApi";
 import {
@@ -146,6 +147,7 @@ function spaceTypeLabel(v) {
 
 export function TomasAdminSection() {
   const { authReady, accessToken } = useAuth();
+  const { mutate: swrGlobalMutate } = useSWRConfig();
   const [expandedId, setExpandedId] = useState(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -214,7 +216,10 @@ export function TomasAdminSection() {
     [spacesData],
   );
 
-  const reloadSpaces = useCallback(() => mutateSpaces(), [mutateSpaces]);
+  const reloadSpaces = useCallback(async () => {
+    await mutateSpaces();
+    await revalidateHomeCatalog(swrGlobalMutate);
+  }, [mutateSpaces, swrGlobalMutate]);
 
   const ready =
     !(authReady && accessToken) ||

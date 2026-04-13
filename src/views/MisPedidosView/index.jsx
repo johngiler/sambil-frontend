@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
@@ -19,7 +20,12 @@ import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { useAuth } from "@/context/AuthContext";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
-import { formatUsdInteger, formatUsdMoney, IVA_RATE, totalWithIva } from "@/lib/marketplacePricing";
+import {
+  formatUsdInteger,
+  formatUsdMoney,
+  IVA_RATE,
+  totalWithIva,
+} from "@/lib/marketplacePricing";
 import { orderListReference } from "@/lib/orderDisplay";
 import {
   squareAdminTablePortadaFrameClass,
@@ -375,6 +381,11 @@ export default function MisPedidosView() {
     return { rows: p.results, totalCount: p.count };
   }, [data]);
 
+  const summary = data?.summary;
+  const orderCounts = summary?.order_counts;
+  const committedNum =
+    summary?.committed_total_subtotal != null ? Number(summary.committed_total_subtotal) : NaN;
+
   const filtersActive = filterStatus !== "all" || filterSearch.trim() !== "";
 
   function clearFilters() {
@@ -434,10 +445,74 @@ export default function MisPedidosView() {
         Los importes por toma y el subtotal del pedido son{" "}
         <span className="font-medium text-zinc-800">sin IVA</span>. El total final incluye IVA (
         {IVA_PERCENT_LABEL}). Abre un pedido para ver periodo de reserva por línea e historial de
-        estados.
+        estados. Las tomas ya en operación están en{" "}
+        <Link
+          href="/cuenta/contratos"
+          className="font-medium text-[color:var(--mp-primary)] underline-offset-2 hover:underline"
+        >
+          Mis contratos
+        </Link>
+        .
       </p>
 
-      <AdminFiltersRow className="!mb-2">
+      {!err && ordersLoading && data == null ? (
+        <div className="mt-8 grid gap-3 sm:grid-cols-3" aria-busy="true" aria-label="Cargando resumen">
+          <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-gradient-to-br from-white to-zinc-50/80 p-4 shadow-sm`}>
+            <Skeleton className="h-3 w-40" />
+            <Skeleton className="mt-2 h-7 w-28" />
+          </div>
+          <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 shadow-sm`}>
+            <Skeleton className="h-3 w-36" />
+            <Skeleton className="mt-2 h-7 w-12" />
+            <Skeleton className="mt-2 h-3 w-full max-w-[14rem]" />
+          </div>
+          <div className={`${ROUNDED_CONTROL} border border-amber-200/80 bg-amber-50/50 p-4 shadow-sm`}>
+            <Skeleton className="h-3 w-32" />
+            <Skeleton className="mt-2 h-7 w-8" />
+            <Skeleton className="mt-2 h-3 w-44" />
+          </div>
+        </div>
+      ) : null}
+      {!err && data && summary ? (
+        <div className="mt-8 grid gap-3 sm:grid-cols-3">
+          <div
+            className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-gradient-to-br from-white to-zinc-50/80 p-4 shadow-sm`}
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+              Total en pedidos (sin IVA)
+            </p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-zinc-900">
+              {Number.isFinite(committedNum) ? formatUsdMoney(committedNum) : "—"}
+            </p>
+            <p className="mt-1 text-xs text-zinc-500">
+              Suma de totales excl. borrador, cancelada y rechazada.
+            </p>
+          </div>
+          <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-white p-4 shadow-sm`}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Pedidos</p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-zinc-900">
+              {orderCounts?.total ?? "—"}
+            </p>
+            <p className="mt-1 text-xs text-zinc-500">
+              Activos: {orderCounts?.active ?? 0} · Vencidos: {orderCounts?.expired ?? 0} · En trámite:{" "}
+              {orderCounts?.pipeline ?? 0} · Borradores: {orderCounts?.draft ?? 0}
+            </p>
+          </div>
+          <div className={`${ROUNDED_CONTROL} border border-amber-200/80 bg-amber-50/50 p-4 shadow-sm`}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-900/80">
+              Vencen en 30 días
+            </p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-amber-950">
+              {summary.orders_ending_within_30_days ?? 0}
+            </p>
+            <p className="mt-1 text-xs text-amber-900/70">
+              Pedidos activos con al menos una línea que termina en los próximos 30 días.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      <AdminFiltersRow className="!mb-2 mt-8">
         <AdminFilterSearchInput
           id="mis-pedidos-search"
           value={filterSearch}
