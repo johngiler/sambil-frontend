@@ -1,7 +1,7 @@
 import { Skeleton } from "@/components/ui/Skeleton";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 
-/** Misma estructura que `ResumenTab`: KPI + precio medio por toma + métricas + gráficos + actividad. */
+/** Misma estructura que `ResumenTab`: KPI + precio medio + pedidos 30 días + métricas + gráficos + actividad. */
 export function ResumenTabSkeleton() {
   return (
     <div className="space-y-6">
@@ -37,6 +37,14 @@ export function ResumenTabSkeleton() {
           </div>
           <Skeleton className="h-[168px] w-full rounded-xl" />
         </div>
+      </div>
+
+      <div
+        className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-gradient-to-br from-violet-50/40 via-white to-amber-50/30 p-4 sm:p-6`}
+      >
+        <Skeleton className="h-4 w-64" />
+        <Skeleton className="mt-2 h-3 w-full max-w-2xl" />
+        <Skeleton className="mt-6 h-[220px] w-full rounded-xl sm:h-[260px]" />
       </div>
 
       {/* Métricas operativas (misma posición que `AdminDashboardMetrics` en ResumenTab) */}
@@ -102,14 +110,6 @@ export function ResumenTabSkeleton() {
       </div>
 
       <div className="space-y-5">
-        <div
-          className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-gradient-to-br from-zinc-50 to-zinc-100/80 p-4 sm:p-6`}
-        >
-          <Skeleton className="h-4 w-56" />
-          <Skeleton className="mt-2 h-3 w-72 max-w-full" />
-          <Skeleton className="mt-6 h-[220px] w-full rounded-xl sm:h-[260px]" />
-        </div>
-
         <div className="grid gap-5 lg:grid-cols-2">
           {[0, 1].map((j) => (
             <div key={j} className={`${ROUNDED_CONTROL} border border-zinc-200 bg-white p-4 shadow-sm sm:p-5`}>

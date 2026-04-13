@@ -12,6 +12,7 @@ import { UsuariosAdminSection } from "@/components/admin/sections/UsuariosAdminS
 import { AdminDashboardCharts } from "@/components/admin/AdminDashboardCharts";
 import { AdminDashboardKpiCards } from "@/components/admin/AdminDashboardKpiCards";
 import { AdminDashboardMetrics } from "@/components/admin/AdminDashboardMetrics";
+import { AdminDashboardOrdersCreatedCard } from "@/components/admin/AdminDashboardOrdersCreatedCard";
 import { AdminDashboardSpaceMonthlyPriceCard } from "@/components/admin/AdminDashboardSpaceMonthlyPriceCard";
 import { AdminRecentActivityCard } from "@/components/admin/AdminRecentActivityCard";
 import { DashboardChromeSkeleton } from "@/components/admin/skeletons/DashboardChromeSkeleton";
@@ -36,6 +37,7 @@ const DASHBOARD_ACTIVITY_PATH = "/api/admin/dashboard/activity/?limit=40";
 
 function ResumenTab() {
   const priceGradId = `dash-econ-${useId().replace(/:/g, "")}`;
+  const ordersAreaGradId = `dash-area-${useId().replace(/:/g, "")}`;
   const { authReady, accessToken } = useAuth();
   const fetchStats = authReady && !!accessToken;
 
@@ -114,6 +116,9 @@ function ResumenTab() {
         nOrders={nOrders}
       />
       <AdminDashboardSpaceMonthlyPriceCard economics={chartStats?.economics} gradId={priceGradId} />
+      {chartStats ? (
+        <AdminDashboardOrdersCreatedCard ordersByDay={chartStats.orders_by_day} gradId={ordersAreaGradId} />
+      ) : null}
       {chartStats?.metrics ? <AdminDashboardMetrics metrics={chartStats.metrics} /> : null}
       {chartStats ? <AdminDashboardCharts stats={chartStats} /> : null}
       <AdminRecentActivityCard
