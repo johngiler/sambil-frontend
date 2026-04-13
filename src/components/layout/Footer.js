@@ -2,7 +2,16 @@
 
 import Link from "next/link";
 
-import { ADMIN_NAV_PATHS } from "@/components/admin/adminNavPaths";
+import { ADMIN_NAV } from "@/components/admin/adminNavConfig";
+import {
+  IconBuilding,
+  IconCart,
+  IconCentros,
+  IconHeart,
+  IconLock,
+  IconPay,
+  IconUser,
+} from "@/components/layout/navIcons";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { normalizeMediaUrlForUi } from "@/services/api";
@@ -10,28 +19,58 @@ import { normalizeMediaUrlForUi } from "@/services/api";
 const linkClass =
   "mp-ring-brand-dark text-sm text-zinc-400 transition-colors duration-200 ease-out hover:text-white focus-visible:outline-none";
 
+const exploreIconClass = "shrink-0 text-zinc-500 transition-colors group-hover:text-white";
+
+const exploreLinkRowClass =
+  "group mp-ring-brand-dark inline-flex items-center gap-2.5 rounded-sm text-sm text-zinc-400 transition-colors duration-200 ease-out hover:text-white focus-visible:outline-none";
+
 const sectionTitle =
   "text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500";
 
+const exploreTwoColGrid =
+  "mt-4 grid grid-cols-1 gap-8 min-[420px]:grid-cols-2 min-[420px]:gap-x-10 sm:gap-x-12";
+
+const exploreListClass = "flex flex-col gap-3";
+
+function FooterExploreLink({ href, icon: Icon, children }) {
+  return (
+    <li>
+      <Link href={href} className={exploreLinkRowClass}>
+        {Icon ? <Icon className={exploreIconClass} /> : null}
+        <span className="leading-snug">{children}</span>
+      </Link>
+    </li>
+  );
+}
+
+function ExploreTwoColumns({ left, right }) {
+  return (
+    <div className={exploreTwoColGrid}>
+      <ul className={exploreListClass}>{left}</ul>
+      <ul className={exploreListClass}>{right}</ul>
+    </div>
+  );
+}
+
 function GuestMarketplaceExploreLinks() {
   return (
-    <>
-      <li>
-        <Link href="/" className={linkClass}>
-          Catálogo
-        </Link>
-      </li>
-      <li>
-        <Link href="/cart" className={linkClass}>
-          Carrito
-        </Link>
-      </li>
-      <li>
-        <Link href="/checkout" className={linkClass}>
+    <ExploreTwoColumns
+      left={
+        <>
+          <FooterExploreLink href="/" icon={IconCentros}>
+            Catálogo
+          </FooterExploreLink>
+          <FooterExploreLink href="/cart" icon={IconCart}>
+            Carrito
+          </FooterExploreLink>
+        </>
+      }
+      right={
+        <FooterExploreLink href="/checkout" icon={IconPay}>
           Checkout
-        </Link>
-      </li>
-    </>
+        </FooterExploreLink>
+      }
+    />
   );
 }
 
@@ -40,72 +79,74 @@ function FooterExploreList({ me, authReady, isClient, isAdmin }) {
     return <GuestMarketplaceExploreLinks />;
   }
   if (isAdmin) {
+    const dash = ADMIN_NAV;
+    const leftNav = dash.slice(0, 4);
+    const rightNav = dash.slice(4);
     return (
-      <>
-        {ADMIN_NAV_PATHS.map((item) => (
-          <li key={item.segment}>
-            <Link href={item.href} className={linkClass}>
-              {item.label}
-            </Link>
-          </li>
-        ))}
-        <li>
-          <Link href="/cuenta/negocio" className={linkClass}>
-            Mi negocio
-          </Link>
-        </li>
-        <li>
-          <Link href="/cuenta/perfil" className={linkClass}>
-            Mi perfil
-          </Link>
-        </li>
-      </>
+      <ExploreTwoColumns
+        left={
+          <>
+            {leftNav.map((item) => (
+              <FooterExploreLink key={item.segment} href={item.href} icon={item.Icon}>
+                {item.label}
+              </FooterExploreLink>
+            ))}
+          </>
+        }
+        right={
+          <>
+            {rightNav.map((item) => (
+              <FooterExploreLink key={item.segment} href={item.href} icon={item.Icon}>
+                {item.label}
+              </FooterExploreLink>
+            ))}
+            <FooterExploreLink href="/cuenta/negocio" icon={IconBuilding}>
+              Mi negocio
+            </FooterExploreLink>
+            <FooterExploreLink href="/cuenta/perfil" icon={IconUser}>
+              Mi perfil
+            </FooterExploreLink>
+          </>
+        }
+      />
     );
   }
   if (isClient) {
     return (
-      <>
-        <li>
-          <Link href="/" className={linkClass}>
-            Catálogo
-          </Link>
-        </li>
-        <li>
-          <Link href="/cart" className={linkClass}>
-            Carrito
-          </Link>
-        </li>
-        <li>
-          <Link href="/checkout" className={linkClass}>
-            Checkout
-          </Link>
-        </li>
-        <li>
-          <Link href="/cuenta/pedidos" className={linkClass}>
-            Mis pedidos
-          </Link>
-        </li>
-        <li>
-          <Link href="/cuenta/contratos" className={linkClass}>
-            Mis contratos
-          </Link>
-        </li>
-        <li>
-          <Link href="/cuenta/favoritos" className={linkClass}>
-            Mis favoritos
-          </Link>
-        </li>
-        <li>
-          <Link href="/cuenta" className={linkClass}>
-            Mi empresa
-          </Link>
-        </li>
-        <li>
-          <Link href="/cuenta/perfil" className={linkClass}>
-            Mi perfil
-          </Link>
-        </li>
-      </>
+      <ExploreTwoColumns
+        left={
+          <>
+            <FooterExploreLink href="/" icon={IconCentros}>
+              Catálogo
+            </FooterExploreLink>
+            <FooterExploreLink href="/cart" icon={IconCart}>
+              Carrito
+            </FooterExploreLink>
+            <FooterExploreLink href="/checkout" icon={IconPay}>
+              Checkout
+            </FooterExploreLink>
+            <FooterExploreLink href="/cuenta/pedidos" icon={IconPay}>
+              Mis pedidos
+            </FooterExploreLink>
+          </>
+        }
+        right={
+          <>
+            <FooterExploreLink href="/cuenta/contratos" icon={IconLock}>
+              Mis contratos
+            </FooterExploreLink>
+            <FooterExploreLink href="/cuenta/favoritos" icon={IconHeart}>
+              Mis favoritos
+            </FooterExploreLink>
+            <FooterExploreLink href="/cuenta" icon={IconBuilding}>
+              Mi empresa
+            </FooterExploreLink>
+            <FooterExploreLink href="/cuenta/perfil" icon={IconUser}>
+              Mi perfil
+            </FooterExploreLink>
+          </>
+        }
+      />
     );
   }
   return <GuestMarketplaceExploreLinks />;
@@ -176,16 +217,14 @@ export function Footer() {
           </div>
 
           <div className={navGridClass}>
-            <div>
+            <div className="min-w-0">
               <h3 className={sectionTitle}>Explorar</h3>
-              <ul className="mt-4 flex flex-col gap-3">
-                <FooterExploreList
-                  me={me}
-                  authReady={authReady}
-                  isClient={isClient}
-                  isAdmin={isAdmin}
-                />
-              </ul>
+              <FooterExploreList
+                me={me}
+                authReady={authReady}
+                isClient={isClient}
+                isAdmin={isAdmin}
+              />
             </div>
             {showLegalColumn ? (
               <div>
