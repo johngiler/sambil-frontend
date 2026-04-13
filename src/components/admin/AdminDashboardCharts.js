@@ -44,7 +44,16 @@ function statusLabel(map, code) {
   return o ? o.l : code ? String(code) : "—";
 }
 
-function StatusDonut({ title, subtitle, rows, mapChoices, cardClass, gradientPrefix, afterChart = null }) {
+function StatusDonut({
+  title,
+  subtitle,
+  rows,
+  mapChoices,
+  cardClass,
+  gradientPrefix,
+  afterChart = null,
+  chartHeight = 220,
+}) {
   const data = useMemo(() => {
     return rows.map((r) => ({
       name: statusLabel(mapChoices, r.status),
@@ -75,8 +84,8 @@ function StatusDonut({ title, subtitle, rows, mapChoices, cardClass, gradientPre
         <p className={TITLE}>{title}</p>
         <p className={SUB}>{subtitle}</p>
       </div>
-      <ResponsiveContainer width="100%" height={220}>
-        <PieChart>
+      <ResponsiveContainer width="100%" height={chartHeight}>
+        <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
           <defs>
             {data.map((_, i) => {
               const [c0, c1] = SLICE_GRADIENT_STOPS[i % SLICE_GRADIENT_STOPS.length];
@@ -115,12 +124,16 @@ function StatusDonut({ title, subtitle, rows, mapChoices, cardClass, gradientPre
           />
           <Legend
             verticalAlign="bottom"
-            height={36}
+            wrapperStyle={{ width: "100%", paddingTop: 4 }}
             formatter={(value) => <span className="text-xs text-zinc-600">{value}</span>}
           />
         </PieChart>
       </ResponsiveContainer>
-      {afterChart ? <div className="relative mt-3 px-1 text-center sm:text-left">{afterChart}</div> : null}
+      {afterChart ? (
+        <div className="relative mt-5 w-full border-t border-zinc-200/70 pt-4 text-center sm:text-left">
+          {afterChart}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -203,10 +216,11 @@ export function AdminDashboardCharts({ stats }) {
           mapChoices={ORDER_STATUS}
           cardClass={CARD_ORDERS}
           gradientPrefix={gDonutOrders}
+          chartHeight={340}
           afterChart={
             <Link
               href="/dashboard/pedidos"
-              className="inline-flex text-sm font-semibold text-violet-900 underline-offset-4 hover:text-violet-950 hover:underline"
+              className="block text-sm font-semibold text-violet-900 underline-offset-4 hover:text-violet-950 hover:underline"
             >
               Ir al listado de pedidos →
             </Link>

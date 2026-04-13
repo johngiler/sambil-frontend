@@ -112,7 +112,7 @@ export default function MisFavoritosView() {
           </Link>
         </div>
       ) : (
-        <ul className="mt-8 grid list-none gap-[10px] p-0 sm:grid-cols-2 lg:grid-cols-4">
+        <ul className="mt-8 grid list-none gap-[10px] p-0 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
           {results.map((row, index) => {
             const sp = row?.ad_space;
             if (!sp || typeof sp !== "object") return null;
@@ -129,7 +129,7 @@ export default function MisFavoritosView() {
                   space={sp}
                   availabilityLabel="occupied"
                   showFooterLink={false}
-                  priority={index < 4}
+                  priority={index < 6}
                   secondaryAvailability={secondary}
                   cardFooter={
                     <button

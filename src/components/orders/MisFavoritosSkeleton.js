@@ -3,8 +3,8 @@ import { Skeleton } from "@/components/ui/Skeleton";
 /** Misma rejilla y envoltura de tarjeta que el catálogo inicio (`HomeSpacesCatalogSkeleton`). */
 export function MisFavoritosSkeleton() {
   return (
-    <ul className="grid list-none gap-[10px] p-0 sm:grid-cols-2 lg:grid-cols-4" aria-busy="true">
-      {Array.from({ length: 8 }).map((_, i) => (
+    <ul className="grid list-none gap-[10px] p-0 grid-cols-1 sm:grid-cols-2 md:grid-cols-3" aria-busy="true">
+      {Array.from({ length: 9 }).map((_, i) => (
         <li key={i}>
           <div className="overflow-hidden rounded-2xl bg-white shadow-[0_1px_2px_rgba(0,0,0,0.05)] ring-1 ring-zinc-200/80">
             <Skeleton className="aspect-[4/3] w-full rounded-none" />

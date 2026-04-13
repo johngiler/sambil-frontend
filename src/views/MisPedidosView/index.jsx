@@ -385,6 +385,8 @@ export default function MisPedidosView() {
   const orderCounts = summary?.order_counts;
   const committedNum =
     summary?.committed_total_subtotal != null ? Number(summary.committed_total_subtotal) : NaN;
+  const draftTotalNum =
+    summary?.draft_total_subtotal != null ? Number(summary.draft_total_subtotal) : NaN;
 
   const filtersActive = filterStatus !== "all" || filterSearch.trim() !== "";
 
@@ -466,10 +468,10 @@ export default function MisPedidosView() {
             <Skeleton className="mt-2 h-7 w-12" />
             <Skeleton className="mt-2 h-3 w-full max-w-[14rem]" />
           </div>
-          <div className={`${ROUNDED_CONTROL} border border-amber-200/80 bg-amber-50/50 p-4 shadow-sm`}>
-            <Skeleton className="h-3 w-32" />
-            <Skeleton className="mt-2 h-7 w-8" />
-            <Skeleton className="mt-2 h-3 w-44" />
+          <div className={`${ROUNDED_CONTROL} border border-sky-200/80 bg-sky-50/40 p-4 shadow-sm`}>
+            <Skeleton className="h-3 w-28" />
+            <Skeleton className="mt-2 h-7 w-10" />
+            <Skeleton className="mt-2 h-3 w-32" />
           </div>
         </div>
       ) : null}
@@ -495,18 +497,27 @@ export default function MisPedidosView() {
             </p>
             <p className="mt-1 text-xs text-zinc-500">
               Activos: {orderCounts?.active ?? 0} · Vencidos: {orderCounts?.expired ?? 0} · En trámite:{" "}
-              {orderCounts?.pipeline ?? 0} · Borradores: {orderCounts?.draft ?? 0}
+              {orderCounts?.pipeline ?? 0}
             </p>
           </div>
-          <div className={`${ROUNDED_CONTROL} border border-amber-200/80 bg-amber-50/50 p-4 shadow-sm`}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-amber-900/80">
-              Vencen en 30 días
+          <div className={`${ROUNDED_CONTROL} border border-sky-200/80 bg-sky-50/40 p-4 shadow-sm`}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-sky-900/80">Borradores</p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-zinc-900">
+              {orderCounts?.draft ?? 0}
             </p>
-            <p className="mt-1 text-xl font-bold tabular-nums text-amber-950">
-              {summary.orders_ending_within_30_days ?? 0}
+            <p className="mt-1 text-xs text-zinc-600">
+              Total sin IVA:{" "}
+              {Number.isFinite(draftTotalNum) ? formatUsdMoney(draftTotalNum) : "—"}
             </p>
-            <p className="mt-1 text-xs text-amber-900/70">
-              Pedidos activos con al menos una línea que termina en los próximos 30 días.
+            <p className="mt-1 text-xs text-zinc-500">
+              Envía el pedido para iniciar el trámite; puedes revisarlo en el{" "}
+              <Link
+                href="/cart"
+                className="font-medium text-[color:var(--mp-primary)] underline-offset-2 hover:underline"
+              >
+                carrito
+              </Link>
+              .
             </p>
           </div>
         </div>
