@@ -6,7 +6,7 @@ export const adminField =
 export const adminLabel = "text-xs font-semibold uppercase tracking-wide text-zinc-500";
 
 export const adminPrimaryBtn =
-  "mp-admin-primary-btn inline-flex cursor-pointer items-center justify-center gap-2 rounded-[15px] px-6 py-2.5 text-sm font-semibold text-white transition hover:brightness-105 active:scale-[0.98] focus-visible:outline-none disabled:cursor-not-allowed";
+  "mp-admin-primary-btn inline-flex cursor-pointer items-center justify-center gap-2 rounded-[15px] px-6 py-2.5 text-sm font-semibold text-white transition hover:brightness-105 active:scale-[0.98] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-55";
 
 /** Texto del botón crear (alineado con el icono + en `AdminCreatePlusIcon`). */
 export const adminCreateBtnLabel = "leading-none";

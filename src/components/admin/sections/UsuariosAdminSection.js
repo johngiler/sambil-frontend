@@ -38,6 +38,7 @@ import { IconAdminUserPlus } from "@/components/admin/adminIcons";
 import { ClientesUsuariosSectionSkeleton } from "@/components/admin/skeletons/ClientesUsuariosSectionSkeleton";
 import { CoverImageField } from "@/components/admin/CoverImageField";
 import { useAuth } from "@/context/AuthContext";
+import { useWorkspaceCapabilities } from "@/hooks/useWorkspaceCapabilities";
 import { EmptyState, EmptyStateIconUsers } from "@/components/ui/EmptyState";
 import { usersAdminListPath } from "@/lib/adminListQuery";
 import {
@@ -121,6 +122,8 @@ function roleLabel(role) {
 
 export function UsuariosAdminSection() {
   const { authReady, accessToken, me, refreshUser } = useAuth();
+  const { caps } = useWorkspaceCapabilities();
+  const canCreateAdminUsers = caps.can_create_marketplace_admin_users;
   const [expandedId, setExpandedId] = useState(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -195,6 +198,20 @@ export function UsuariosAdminSection() {
       }),
     );
   }, [clientRows]);
+
+  const roleOptionsForModal = useMemo(
+    () =>
+      ROLE_OPTIONS.map((o) =>
+        o.v === "admin" && !canCreateAdminUsers ? { ...o, disabled: true } : o,
+      ),
+    [canCreateAdminUsers],
+  );
+
+  useEffect(() => {
+    if (!canCreateAdminUsers && role === "admin" && modal === "create") {
+      setRole("client");
+    }
+  }, [canCreateAdminUsers, role, modal]);
 
   useEffect(() => {
     const u = usersSwrError
@@ -891,7 +908,7 @@ export function UsuariosAdminSection() {
               </label>
               <AdminSelect
                 id="u-role"
-                options={ROLE_OPTIONS}
+                options={roleOptionsForModal}
                 value={role}
                 onChange={(v) => {
                   const r = v || "client";
@@ -902,9 +919,19 @@ export function UsuariosAdminSection() {
                 aria-label="Rol de usuario"
               />
               <p className="mt-1 text-xs text-zinc-500">
-                Los administradores pueden gestionar el panel y crear usuarios.
-                Si cambias el rol, la persona puede necesitar cerrar sesión e
-                iniciar de nuevo para que se apliquen los permisos.
+                {canCreateAdminUsers ? (
+                  <>
+                    Los administradores pueden gestionar el panel y crear usuarios. Si cambias el
+                    rol, la persona puede necesitar cerrar sesión e iniciar de nuevo para que se
+                    apliquen los permisos.
+                  </>
+                ) : (
+                  <>
+                    En este workspace no está permitido crear ni promover usuarios con rol
+                    administrador. Los demás roles siguen disponibles. Si necesitas cambiar este
+                    permiso, contacta a la plataforma.
+                  </>
+                )}
               </p>
             </div>
             {role === "client" ? (

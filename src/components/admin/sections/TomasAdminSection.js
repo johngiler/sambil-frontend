@@ -39,6 +39,7 @@ import { IconAdminGrid } from "@/components/admin/adminIcons";
 import { TomasAdminSectionSkeleton } from "@/components/admin/skeletons/TomasAdminSectionSkeleton";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { useAuth } from "@/context/AuthContext";
+import { useWorkspaceCapabilities } from "@/hooks/useWorkspaceCapabilities";
 import { EmptyState, EmptyStateIconGrid } from "@/components/ui/EmptyState";
 import { spacesAdminListPath } from "@/lib/adminListQuery";
 import {
@@ -147,6 +148,8 @@ function spaceTypeLabel(v) {
 
 export function TomasAdminSection() {
   const { authReady, accessToken } = useAuth();
+  const { caps } = useWorkspaceCapabilities();
+  const canCreateSpaces = caps.can_create_ad_spaces;
   const { mutate: swrGlobalMutate } = useSWRConfig();
   const [expandedId, setExpandedId] = useState(null);
   const [msg, setMsg] = useState("");
@@ -417,10 +420,12 @@ export function TomasAdminSection() {
             </p>
           </div>
         </div>
-        <button type="button" className={adminPrimaryBtn} onClick={openCreate}>
-          <AdminCreatePlusIcon />
-          <span className={adminCreateBtnLabel}>Nueva toma</span>
-        </button>
+        {canCreateSpaces ? (
+          <button type="button" className={adminPrimaryBtn} onClick={openCreate}>
+            <AdminCreatePlusIcon />
+            <span className={adminCreateBtnLabel}>Nueva toma</span>
+          </button>
+        ) : null}
       </div>
 
       {msg ? (
@@ -435,7 +440,11 @@ export function TomasAdminSection() {
           <EmptyState
             icon={<EmptyStateIconGrid />}
             title="No hay tomas en el catálogo"
-            description="Aún no hay espacios publicitarios cargados. Puedes crear el primero con «Nueva toma»."
+            description={
+              canCreateSpaces
+                ? "Aún no hay espacios publicitarios cargados. Puedes crear el primero con «Nueva toma»."
+                : "Aún no hay espacios publicitarios cargados. La creación de tomas no está habilitada para este workspace; si necesitas cambiarlo, contacta a la plataforma."
+            }
           />
         </div>
       ) : (

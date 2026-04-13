@@ -23,7 +23,11 @@ export function AdminSelect({
   isClearable = false,
   isSearchable: isSearchableProp,
 }) {
-  const mapped = options.map((o) => ({ value: o.v, label: o.l }));
+  const mapped = options.map((o) => ({
+    value: o.v,
+    label: o.l,
+    isDisabled: Boolean(o.disabled),
+  }));
   const emptyOption = mapped.find((x) => String(x.value) === "");
   const selected =
     value === "" || value === null || value === undefined
@@ -73,7 +77,8 @@ export function AdminSelect({
           ? optionFocusedBg
           : "#fff",
       color: state.isSelected ? "#fff" : "#18181b",
-      cursor: "pointer",
+      cursor: state.isDisabled ? "not-allowed" : "pointer",
+      opacity: state.isDisabled ? 0.55 : 1,
     }),
     singleValue: (b) => ({ ...b, color: "#18181b" }),
     placeholder: (b) => ({ ...b, color: "#71717a" }),
@@ -96,6 +101,7 @@ export function AdminSelect({
         options={mapped}
         value={selected}
         onChange={(opt) => onChange(opt != null ? opt.value : "")}
+        isOptionDisabled={(opt) => Boolean(opt?.isDisabled)}
         isDisabled={isDisabled}
         placeholder={placeholder}
         isClearable={isClearable}

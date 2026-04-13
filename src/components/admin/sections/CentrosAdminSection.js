@@ -23,6 +23,7 @@ import { CoverImageField } from "@/components/admin/CoverImageField";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { IconBuildingSection } from "@/components/admin/rowActionIcons";
 import { useAuth } from "@/context/AuthContext";
+import { useWorkspaceCapabilities } from "@/hooks/useWorkspaceCapabilities";
 import { EmptyState, EmptyStateIconBuilding } from "@/components/ui/EmptyState";
 import { centersAdminListPath } from "@/lib/adminListQuery";
 import { ADMIN_CENTERS_ALL_SWR_KEY, authJsonFetcher } from "@/lib/swr/fetchers";
@@ -75,6 +76,8 @@ function centerCatalogEnabled(c) {
 
 export function CentrosAdminSection() {
   const { authReady, accessToken } = useAuth();
+  const { caps } = useWorkspaceCapabilities();
+  const canCreateCenters = caps.can_create_shopping_centers;
   const [expandedId, setExpandedId] = useState(null);
   const [msg, setMsg] = useState("");
   const [err, setErr] = useState("");
@@ -360,10 +363,12 @@ export function CentrosAdminSection() {
             </p>
           </div>
         </div>
-        <button type="button" className={adminPrimaryBtn} onClick={openCreate}>
-          <AdminCreatePlusIcon />
-          <span className={adminCreateBtnLabel}>Nuevo centro</span>
-        </button>
+        {canCreateCenters ? (
+          <button type="button" className={adminPrimaryBtn} onClick={openCreate}>
+            <AdminCreatePlusIcon />
+            <span className={adminCreateBtnLabel}>Nuevo centro</span>
+          </button>
+        ) : null}
       </div>
 
       {msg ? (
@@ -386,7 +391,11 @@ export function CentrosAdminSection() {
           <EmptyState
             icon={<EmptyStateIconBuilding />}
             title="No hay centros comerciales registrados"
-            description="Aún no hay ningún centro registrado. Puedes crear el primero con el botón «Nuevo centro»."
+            description={
+              canCreateCenters
+                ? "Aún no hay ningún centro registrado. Puedes crear el primero con el botón «Nuevo centro»."
+                : "Aún no hay ningún centro registrado. La creación de centros no está habilitada para este workspace; si necesitas cambiarlo, contacta a la plataforma."
+            }
           />
         </div>
       ) : (
