@@ -9,7 +9,10 @@ import {
   IconCentros,
   IconHeart,
   IconLock,
+  IconMail,
+  IconMapPin,
   IconPay,
+  IconPhone,
   IconUser,
 } from "@/components/layout/navIcons";
 import { useAuth } from "@/context/AuthContext";
@@ -22,22 +25,27 @@ const linkClass =
 const exploreIconClass = "shrink-0 text-zinc-500 transition-colors group-hover:text-white";
 
 const exploreLinkRowClass =
-  "group mp-ring-brand-dark inline-flex items-center gap-2.5 rounded-sm text-sm text-zinc-400 transition-colors duration-200 ease-out hover:text-white focus-visible:outline-none";
+  "group mp-ring-brand-dark inline-flex max-w-max items-center gap-2.5 whitespace-nowrap rounded-sm text-sm text-zinc-400 transition-colors duration-200 ease-out hover:text-white focus-visible:outline-none";
 
 const sectionTitle =
   "text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500";
 
+/** Dos columnas al ancho del contenido (sin repartir 50/50) y poco espacio entre ellas para no recortar texto. */
 const exploreTwoColGrid =
-  "mt-4 grid grid-cols-1 gap-8 min-[420px]:grid-cols-2 min-[420px]:gap-x-10 sm:gap-x-12";
+  "mt-4 grid grid-cols-1 gap-8 min-[420px]:inline-grid min-[420px]:grid-cols-none min-[420px]:[grid-template-columns:max-content_max-content] min-[420px]:gap-x-5 min-[420px]:gap-y-3 lg:gap-x-6";
 
 const exploreListClass = "flex flex-col gap-3";
+
+const contactValueIconClass = "shrink-0 text-zinc-500";
+
+const contactValueRowClass = "inline-flex items-center gap-2.5";
 
 function FooterExploreLink({ href, icon: Icon, children }) {
   return (
     <li>
       <Link href={href} className={exploreLinkRowClass}>
         {Icon ? <Icon className={exploreIconClass} /> : null}
-        <span className="leading-snug">{children}</span>
+        <span className="leading-none">{children}</span>
       </Link>
     </li>
   );
@@ -178,10 +186,10 @@ export function Footer() {
   const navColCount = 1 + (showLegalColumn ? 1 : 0);
   const navGridClass =
     navColCount <= 1
-      ? "grid flex-1 grid-cols-1 gap-8 sm:gap-10"
+      ? "grid min-w-0 flex-1 grid-cols-1 gap-12"
       : navColCount === 2
-        ? "grid flex-1 grid-cols-1 gap-8 min-[380px]:grid-cols-2 sm:gap-10 lg:gap-12"
-        : "grid flex-1 grid-cols-1 gap-8 min-[380px]:grid-cols-2 sm:gap-10 lg:grid-cols-3 lg:gap-10 xl:gap-12";
+        ? "grid min-w-0 flex-1 grid-cols-1 gap-12 min-[480px]:grid-cols-2 min-[480px]:gap-x-16 min-[480px]:gap-y-12 lg:gap-x-20 xl:gap-x-24"
+        : "grid min-w-0 flex-1 grid-cols-1 gap-12 min-[480px]:grid-cols-2 lg:grid-cols-3 lg:gap-16";
 
   return (
     <footer className="relative mt-auto bg-zinc-950 text-zinc-400">
@@ -190,8 +198,8 @@ export function Footer() {
         aria-hidden
       />
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8 lg:py-16">
-        <div className="flex flex-col gap-10 sm:gap-12 lg:flex-row lg:items-start lg:justify-between lg:gap-16">
-          <div className="flex max-w-lg flex-col items-start gap-4 min-[480px]:flex-row min-[480px]:items-center sm:gap-6">
+        <div className="flex flex-col gap-12 sm:gap-14 lg:flex-row lg:items-start lg:justify-between lg:gap-16 xl:gap-20">
+          <div className="flex max-w-lg flex-col items-start gap-4 min-[480px]:flex-row min-[480px]:items-center sm:gap-6 lg:max-w-md lg:shrink-0 xl:max-w-lg">
             {footerIsotypeUrl ? (
               <div className="flex h-[100px] w-[100px] shrink-0 items-center justify-center">
                 <img
@@ -216,9 +224,9 @@ export function Footer() {
             </div>
           </div>
 
-          <div className={navGridClass}>
-            <div className="min-w-0">
-              <h3 className={sectionTitle}>Explorar</h3>
+          <div className={`${navGridClass} min-w-0 flex-1`}>
+            <div className="min-w-0 max-w-full overflow-x-auto [-webkit-overflow-scrolling:touch]">
+              <h3 className={`${sectionTitle} max-w-full`}>Explorar</h3>
               <FooterExploreList
                 me={me}
                 authReady={authReady}
@@ -227,48 +235,45 @@ export function Footer() {
               />
             </div>
             {showLegalColumn ? (
-              <div>
+              <div className="min-w-0">
                 <h3 className={sectionTitle}>Datos de contacto</h3>
-                <dl className="mt-4 space-y-3 text-sm">
+                <ul className="mt-4 list-none space-y-4 p-0 text-sm">
                   {supportEmail ? (
-                    <div>
-                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                        Correo
-                      </dt>
-                      <dd className="mt-1">
-                        <a
-                          href={`mailto:${supportEmail}`}
-                          className={linkClass}
-                        >
-                          {supportEmail}
-                        </a>
-                      </dd>
-                    </div>
+                    <li>
+                      <a
+                        href={`mailto:${supportEmail}`}
+                        className={`${linkClass} ${contactValueRowClass}`}
+                      >
+                        <IconMail className={contactValueIconClass} />
+                        <span className="break-all">{supportEmail}</span>
+                      </a>
+                    </li>
                   ) : null}
                   {phone ? (
-                    <div>
-                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                        Teléfono
-                      </dt>
-                      <dd className="mt-1">
-                        <a
-                          href={`tel:${phone.replace(/\s/g, "")}`}
-                          className={linkClass}
-                        >
-                          {phone}
-                        </a>
-                      </dd>
-                    </div>
+                    <li>
+                      <a
+                        href={`tel:${phone.replace(/\s/g, "")}`}
+                        className={`${linkClass} ${contactValueRowClass} whitespace-nowrap`}
+                      >
+                        <IconPhone className={contactValueIconClass} />
+                        {phone}
+                      </a>
+                    </li>
                   ) : null}
                   {country ? (
-                    <div>
-                      <dt className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
-                        País
-                      </dt>
-                      <dd className="mt-1 leading-relaxed text-zinc-300">{country}</dd>
-                    </div>
+                    <li>
+                      <p
+                        className={`m-0 leading-relaxed text-zinc-300 ${contactValueRowClass}`}
+                        aria-label={`País: ${country}`}
+                      >
+                        <IconMapPin className={contactValueIconClass} />
+                        <span className="whitespace-nowrap" aria-hidden="true">
+                          {country}
+                        </span>
+                      </p>
+                    </li>
                   ) : null}
-                </dl>
+                </ul>
               </div>
             ) : null}
           </div>
