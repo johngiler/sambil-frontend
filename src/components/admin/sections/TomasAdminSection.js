@@ -48,6 +48,7 @@ import {
   authJsonFetcher,
 } from "@/lib/swr/fetchers";
 import { adminTomaRowLightboxItems } from "@/lib/imageLightboxItems";
+import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import {
   squareAdminTablePortadaFrameClass,
@@ -565,8 +566,14 @@ export function TomasAdminSection() {
                                 });
                               }}
                             >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={thumbSrc} alt="" className={squareAdminTablePortadaImgClass} />
+                              <img
+                                src={thumbSrc}
+                                alt=""
+                                width={60}
+                                height={60}
+                                className={squareAdminTablePortadaImgClass}
+                                {...catalogRasterImgAttrs}
+                              />
                             </button>
                           );
                         })()}

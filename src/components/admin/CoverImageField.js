@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 
 import { adminLabel } from "@/components/admin/adminFormStyles";
+import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { IconRowTrash } from "@/components/admin/rowActionIcons";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { mediaAbsoluteUrl } from "@/services/authApi";
@@ -125,8 +126,13 @@ export function CoverImageField({
         <p className={adminLabel}>{resolvedLabel}</p>
         {showUrl ? (
           <div className={`mt-2 ${v.wrapClass}`}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={showUrl} alt="" className={v.imgClass} />
+            <img
+              src={showUrl}
+              alt=""
+              className={v.imgClass}
+              {...(variant === "avatar" ? { width: 144, height: 144 } : {})}
+              {...catalogRasterImgAttrs}
+            />
           </div>
         ) : (
           <p className="mt-2 rounded-[10px] border border-dashed border-zinc-200 bg-zinc-50/80 py-8 text-center text-xs text-zinc-500">
@@ -143,8 +149,13 @@ export function CoverImageField({
         <p className={adminLabel}>{resolvedLabel}</p>
         {showUrl ? (
           <div className={`mt-2 ${v.wrapClass}`}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={showUrl} alt="" className={v.imgClass} />
+            <img
+              src={showUrl}
+              alt=""
+              className={v.imgClass}
+              {...(variant === "avatar" ? { width: 144, height: 144 } : {})}
+              {...catalogRasterImgAttrs}
+            />
           </div>
         ) : (
           <p className="mt-2 rounded-[10px] border border-dashed border-zinc-200 bg-zinc-50/80 py-8 text-center text-xs text-zinc-500">
@@ -199,8 +210,13 @@ export function CoverImageField({
       {hasImage ? (
         <div className="mt-3">
           <div className={v.wrapClass}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={showUrl} alt="" className={v.imgClass} />
+            <img
+              src={showUrl}
+              alt=""
+              className={v.imgClass}
+              {...(variant === "avatar" ? { width: 144, height: 144 } : {})}
+              {...catalogRasterImgAttrs}
+            />
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {existingUrl && !filePreviewUrl ? (

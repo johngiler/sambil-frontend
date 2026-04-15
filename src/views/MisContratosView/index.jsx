@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -241,8 +242,14 @@ export default function MisContratosView() {
                         className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-zinc-100 sm:w-36"
                       >
                         {cover ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={cover} alt="" className="h-full w-full object-cover" />
+                          <Image
+                            src={cover}
+                            alt=""
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 640px) 100vw, 144px"
+                            decoding="async"
+                          />
                         ) : (
                           <div className="flex h-full min-h-[6rem] items-center justify-center text-xs text-zinc-400">
                             Sin imagen

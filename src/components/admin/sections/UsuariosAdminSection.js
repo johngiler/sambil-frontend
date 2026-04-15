@@ -46,6 +46,7 @@ import {
   adminClientsAllPagesFetcher,
   authJsonFetcher,
 } from "@/lib/swr/fetchers";
+import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
@@ -574,11 +575,13 @@ export function UsuariosAdminSection() {
                             <td className="px-2 py-2">
                               <div className="flex h-11 w-11 overflow-hidden rounded-full border border-zinc-100 bg-zinc-100">
                                 {u.cover_image ? (
-                                  /* eslint-disable-next-line @next/next/no-img-element */
                                   <img
                                     src={mediaAbsoluteUrl(u.cover_image)}
                                     alt=""
+                                    width={44}
+                                    height={44}
                                     className="h-full w-full object-cover"
+                                    {...catalogRasterImgAttrs}
                                   />
                                 ) : null}
                               </div>

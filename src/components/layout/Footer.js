@@ -213,6 +213,7 @@ export function Footer() {
                   height={100}
                   className="h-[100px] w-[100px] object-contain"
                   decoding="async"
+                  loading="lazy"
                 />
               </div>
             ) : null}

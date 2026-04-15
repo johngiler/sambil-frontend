@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+// En el build de producción, define NEXT_PUBLIC_API_URL (p. ej. https://api.publivalla.com) para que
+// `images.remotePatterns` incluya ese host y el optimizador `/_next/image` pueda obtener `/media/...`.
 function mediaPatternFromApiUrl() {
   const raw = process.env.NEXT_PUBLIC_API_URL;
   if (!raw) return null;

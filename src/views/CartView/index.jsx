@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
@@ -150,11 +151,13 @@ export default function CartView() {
                             : "Ver imágenes de la toma"
                         }
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <Image
                           src={thumbSrc}
                           alt=""
+                          width={60}
+                          height={60}
                           className={`${squareAdminTablePortadaImgClass} transition duration-200 group-hover:scale-105`}
+                          decoding="async"
                         />
                       </button>
                     ) : (

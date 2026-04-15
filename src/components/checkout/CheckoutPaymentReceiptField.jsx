@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
+import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { squareListImagePreviewFrameClass } from "@/lib/squareImagePreview";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 
@@ -210,11 +211,13 @@ export function CheckoutPaymentReceiptField({
           <div className="flex flex-col gap-4">
             {previewUrl && fileIsImage(value) ? (
               <div className={`${squareListImagePreviewFrameClass} bg-zinc-100/80 shadow-inner`}>
-                {/* eslint-disable-next-line @next/next/no-img-element -- blob URL local del archivo elegido */}
                 <img
                   src={previewUrl}
                   alt={`Vista previa del comprobante: ${value.name}`}
+                  width={100}
+                  height={100}
                   className="h-full w-full object-contain p-1"
+                  {...catalogRasterImgAttrs}
                 />
               </div>
             ) : null}

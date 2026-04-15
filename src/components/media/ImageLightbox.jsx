@@ -2,6 +2,31 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
+import { rasterUrlTryWebpVariant } from "@/lib/rasterImageWebpFallback";
+
+/** `<img>` con un reintento a `.webp` si la URL raster del API falla (migración de medios). */
+function RasterImageWithWebpFallback({ initialSrc, onGiveUp, ...imgProps }) {
+  const [src, setSrc] = useState(initialSrc);
+  useEffect(() => {
+    setSrc(initialSrc);
+  }, [initialSrc]);
+  return (
+    <img
+      key={src}
+      {...imgProps}
+      src={src}
+      onError={() => {
+        const w = rasterUrlTryWebpVariant(src);
+        if (w && w !== src) {
+          setSrc(w);
+          return;
+        }
+        onGiveUp();
+      }}
+    />
+  );
+}
+
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 4;
 const ZOOM_STEP = 0.25;
@@ -379,13 +404,14 @@ export function ImageLightbox({
                 transition: panning ? "none" : "transform 0.1s ease-out",
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element -- URLs dinámicas de API / media */}
-              <img
-                src={current.src}
+              <RasterImageWithWebpFallback
+                initialSrc={current.src}
+                onGiveUp={() => markUrlFailed(current.src)}
                 alt={current.alt || `Imagen ${displayIndex + 1} de ${count}`}
                 className="max-h-[min(70vh,640px)] max-w-full select-none object-contain"
                 draggable={false}
-                onError={() => markUrlFailed(current.src)}
+                decoding="async"
+                fetchPriority="high"
               />
             </div>
           </div>
@@ -480,13 +506,16 @@ export function ImageLightbox({
                   }`}
                 >
                   <span className="block h-full w-full overflow-hidden rounded-[10px]">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={lightboxThumbUrl(it)}
+                    <RasterImageWithWebpFallback
+                      initialSrc={lightboxThumbUrl(it)}
+                      onGiveUp={() => markUrlFailed(lightboxThumbUrl(it))}
                       alt=""
+                      width={100}
+                      height={100}
                       className="h-full w-full object-cover"
                       draggable={false}
-                      onError={() => markUrlFailed(lightboxThumbUrl(it))}
+                      loading="lazy"
+                      decoding="async"
                     />
                   </span>
                 </button>

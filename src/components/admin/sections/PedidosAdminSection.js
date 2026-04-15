@@ -46,6 +46,7 @@ import {
 } from "@/lib/adminDashboardLinks";
 import { ordersExportReportPath, ordersListPath } from "@/lib/adminListQuery";
 import { authJsonFetcher } from "@/lib/swr/fetchers";
+import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { subtitleCityAfterCenterName } from "@/lib/shoppingCenterDisplay";
 import { adminOrderLineCoverLightboxItems } from "@/lib/imageLightboxItems";
 import { isPdfReceiptUrl } from "@/lib/orderPaymentMethods";
@@ -135,11 +136,11 @@ function PedidoDatosPagoPortal({ order, panelId }) {
                       </span>
                     </div>
                   ) : (
-                    /* eslint-disable-next-line @next/next/no-img-element -- URL de media del pedido */
                     <img
                       src={receiptUrl}
                       alt="Miniatura del comprobante de pago"
                       className="absolute inset-0 h-full w-full object-cover"
+                      {...catalogRasterImgAttrs}
                     />
                   )}
                 </div>
@@ -572,7 +573,10 @@ export function PedidosAdminSection() {
                                                   ? `Portada toma ${it.ad_space_code}`
                                                   : "Portada de la toma"
                                             }
+                                            width={120}
+                                            height={120}
                                             className={squareOrderLinePreviewImgClass}
+                                            {...catalogRasterImgAttrs}
                                           />
                                         </button>
                                       ) : (

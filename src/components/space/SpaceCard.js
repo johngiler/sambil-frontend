@@ -1,9 +1,12 @@
-import Image from "next/image";
 import Link from "next/link";
 
 import { SpaceDetailFavoriteButton } from "@/components/catalog/SpaceDetailFavoriteButton";
+import { CatalogRasterImage } from "@/components/media/CatalogRasterImage";
 import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvailabilityBar";
-import { spaceStatusLabel, spaceStatusPillClassName } from "@/components/admin/adminConstants";
+import {
+  spaceStatusLabel,
+  spaceStatusPillClassName,
+} from "@/components/admin/adminConstants";
 import { IconCart } from "@/components/layout/navIcons";
 import { spaceCoverUrlForUi } from "@/lib/spaceCover";
 
@@ -33,18 +36,25 @@ export function SpaceCard({
 }) {
   const cover = spaceCoverUrlForUi(space);
   const centerName =
-    typeof space.shopping_center_name === "string" ? space.shopping_center_name.trim() : "";
+    typeof space.shopping_center_name === "string"
+      ? space.shopping_center_name.trim()
+      : "";
   const cityLine =
-    typeof space.shopping_center_city === "string" ? space.shopping_center_city.trim() : "";
+    typeof space.shopping_center_city === "string"
+      ? space.shopping_center_city.trim()
+      : "";
   /** Ciudad bajo el nombre del CC cuando aporta contexto y no duplica el nombre. */
   const showCitySubline =
     cityLine !== "" &&
     centerName !== "" &&
-    cityLine.localeCompare(centerName, undefined, { sensitivity: "accent" }) !== 0;
+    cityLine.localeCompare(centerName, undefined, { sensitivity: "accent" }) !==
+      0;
   const hasLocationBadge = centerName !== "" || cityLine !== "";
   const statusText = spaceStatusLabel(space.status, space.status_label);
   const code =
-    typeof space.code === "string" && space.code.trim() !== "" ? space.code.trim() : "";
+    typeof space.code === "string" && space.code.trim() !== ""
+      ? space.code.trim()
+      : "";
   const desc =
     typeof space.description === "string" && space.description.trim() !== ""
       ? space.description.trim()
@@ -67,13 +77,19 @@ export function SpaceCard({
         >
           <div className="relative aspect-[4/3] bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-900">
             {cover ? (
-              <Image
+              <CatalogRasterImage
                 src={cover}
-                alt={typeof space.title === "string" ? space.title : "Espacio publicitario"}
+                alt={
+                  typeof space.title === "string"
+                    ? space.title
+                    : "Espacio publicitario"
+                }
                 fill
                 className="object-cover"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                 priority={priority}
+                fetchPriority={priority ? "high" : "low"}
+                decoding="async"
               />
             ) : (
               <>
@@ -124,7 +140,10 @@ export function SpaceCard({
           />
         ) : null}
       </div>
-      <Link href={detailHref} className="mp-ring-brand block rounded-b-2xl focus-visible:outline-none">
+      <Link
+        href={detailHref}
+        className="mp-ring-brand block rounded-b-2xl focus-visible:outline-none"
+      >
         <div className="p-4">
           <h2 className="w-full text-balance break-words text-[15px] font-semibold leading-snug tracking-tight text-zinc-900">
             {space.title}
@@ -145,7 +164,9 @@ export function SpaceCard({
             </p>
           </div>
           {desc ? (
-            <p className="mt-1.5 line-clamp-2 break-words text-sm text-zinc-500">{desc}</p>
+            <p className="mt-1.5 line-clamp-2 break-words text-sm text-zinc-500">
+              {desc}
+            </p>
           ) : null}
           <div className="mt-4">
             <SpaceMonthAvailabilityBar

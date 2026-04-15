@@ -17,6 +17,7 @@ import { ORDER_STATUS, orderStatusPillClassName } from "@/components/admin/admin
 import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
 import { MisPedidosSkeleton } from "@/components/orders/MisPedidosSkeleton";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
+import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { useAuth } from "@/context/AuthContext";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
@@ -592,11 +593,13 @@ export default function MisPedidosView() {
                               aria-hidden={!singleThumb}
                             >
                               {singleThumb ? (
-                                /* eslint-disable-next-line @next/next/no-img-element -- miniatura de catálogo */
                                 <img
                                   src={singleThumb}
                                   alt=""
+                                  width={40}
+                                  height={40}
                                   className="h-full w-full object-cover"
+                                  {...catalogRasterImgAttrs}
                                 />
                               ) : (
                                 <span className="flex h-full w-full items-center justify-center text-[10px] font-medium text-zinc-400">
@@ -652,11 +655,13 @@ export default function MisPedidosView() {
                                       aria-hidden={!thumb}
                                     >
                                       {thumb ? (
-                                        /* eslint-disable-next-line @next/next/no-img-element -- miniatura de catálogo */
                                         <img
                                           src={thumb}
                                           alt=""
+                                          width={40}
+                                          height={40}
                                           className="h-full w-full object-cover"
+                                          {...catalogRasterImgAttrs}
                                         />
                                       ) : (
                                         <span className="flex h-full w-full items-center justify-center text-[10px] font-medium text-zinc-400">
@@ -782,11 +787,13 @@ export default function MisPedidosView() {
                                           : "Abrir imagen ampliada"
                                       }
                                     >
-                                      {/* eslint-disable-next-line @next/next/no-img-element */}
                                       <img
                                         src={lineCover}
                                         alt=""
+                                        width={60}
+                                        height={60}
                                         className={`${squareAdminTablePortadaImgClass} transition duration-200 group-hover:scale-105`}
+                                        {...catalogRasterImgAttrs}
                                       />
                                     </button>
                                   ) : null}

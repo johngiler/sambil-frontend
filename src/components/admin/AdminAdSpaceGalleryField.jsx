@@ -11,6 +11,7 @@ import {
 
 import { adminLabel } from "@/components/admin/adminFormStyles";
 import { IconRowTrash } from "@/components/admin/rowActionIcons";
+import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { squareListImagePreviewFrameClass, squareListImagePreviewImgClass } from "@/lib/squareImagePreview";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { mediaAbsoluteUrl } from "@/services/authApi";
@@ -208,8 +209,15 @@ export const AdminAdSpaceGalleryField = forwardRef(function AdminAdSpaceGalleryF
                       dragKey === it.key ? "ring-2 ring-[color-mix(in_srgb,var(--mp-primary)_45%,transparent)]" : ""
                     }`}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={it.src} alt="" className={squareListImagePreviewImgClass} draggable={false} />
+                    <img
+                      src={it.src}
+                      alt=""
+                      width={100}
+                      height={100}
+                      className={squareListImagePreviewImgClass}
+                      draggable={false}
+                      {...catalogRasterImgAttrs}
+                    />
                     {!readOnly ? (
                       <button
                         type="button"

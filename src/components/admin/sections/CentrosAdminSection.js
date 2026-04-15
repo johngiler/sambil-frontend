@@ -28,6 +28,7 @@ import { EmptyState, EmptyStateIconBuilding } from "@/components/ui/EmptyState";
 import { centersAdminListPath } from "@/lib/adminListQuery";
 import { ADMIN_CENTERS_ALL_SWR_KEY, authJsonFetcher } from "@/lib/swr/fetchers";
 import { adminCenterCoverLightboxItems } from "@/lib/imageLightboxItems";
+import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import {
   squareAdminTablePortadaFrameClass,
@@ -497,11 +498,13 @@ export function CentrosAdminSection() {
                                   setPortadaLightbox({ open: true, items, initialIndex: 0 });
                               }}
                             >
-                              {/* eslint-disable-next-line @next/next/no-img-element */}
                               <img
                                 src={mediaAbsoluteUrl(c.cover_image)}
                                 alt=""
+                                width={60}
+                                height={60}
                                 className={squareAdminTablePortadaImgClass}
+                                {...catalogRasterImgAttrs}
                               />
                             </button>
                           ) : (

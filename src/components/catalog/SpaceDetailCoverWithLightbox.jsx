@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 
 import { SpaceDetailFavoriteButton } from "@/components/catalog/SpaceDetailFavoriteButton";
+import { CatalogRasterImage } from "@/components/media/CatalogRasterImage";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
 
 /**
@@ -67,7 +67,10 @@ export function SpaceDetailCoverWithLightbox({
 }) {
   const [open, setOpen] = useState(false);
   const urls = useMemo(
-    () => (Array.isArray(galleryUrls) ? galleryUrls.filter((u) => u && String(u).trim()) : []),
+    () =>
+      Array.isArray(galleryUrls)
+        ? galleryUrls.filter((u) => u && String(u).trim())
+        : [],
     [galleryUrls],
   );
   const validUrls = useGalleryUrlsThatLoad(urls);
@@ -85,7 +88,8 @@ export function SpaceDetailCoverWithLightbox({
   const extraCount = n > 1 ? n - 1 : 0;
   const showExtraBadge = validUrls !== null && extraCount > 0;
 
-  const openLabel = n > 1 ? "Abrir galería de imágenes" : "Abrir imagen ampliada";
+  const openLabel =
+    n > 1 ? "Abrir galería de imágenes" : "Abrir imagen ampliada";
 
   return (
     <>
@@ -98,13 +102,15 @@ export function SpaceDetailCoverWithLightbox({
             aria-label={openLabel}
           />
           <div className="pointer-events-none relative aspect-square w-full">
-            <Image
+            <CatalogRasterImage
               src={hero}
               alt={coverAlt}
               fill
               className="object-cover transition duration-300 group-hover:scale-[1.02]"
               sizes={imageSizes}
               priority
+              fetchPriority="high"
+              decoding="async"
             />
           </div>
           {spaceId != null && spaceId !== "" ? (

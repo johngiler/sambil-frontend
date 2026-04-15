@@ -48,6 +48,7 @@ export function MarketplaceBrand({ className = "" }) {
           height={HEADER_LOGO_H}
           className="max-h-[30px] max-w-[150px] object-contain object-left"
           decoding="async"
+          fetchPriority="high"
         />
       </span>
     );

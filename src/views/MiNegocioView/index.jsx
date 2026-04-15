@@ -93,7 +93,7 @@ function FileBlock({
       {imgSrc ? (
         <div className={previewBoxClass} style={previewStyle}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={imgSrc} alt="" className={imgClass} />
+          <img src={imgSrc} alt="" className={imgClass} decoding="async" />
         </div>
       ) : (
         <p className={emptyClass} style={previewStyle}>
