@@ -75,8 +75,7 @@ export function SpaceDetailCoverWithLightbox({
   );
   const validUrls = useGalleryUrlsThatLoad(urls);
   const displayUrls = validUrls ?? urls;
-  const hero = displayUrls[0];
-  if (!hero) return null;
+  if (displayUrls.length === 0) return null;
 
   const n = displayUrls.length;
   const lightboxItems = displayUrls.map((src, i) => ({
@@ -103,7 +102,7 @@ export function SpaceDetailCoverWithLightbox({
           />
           <div className="pointer-events-none relative aspect-square w-full">
             <CatalogRasterImage
-              src={hero}
+              candidates={displayUrls}
               alt={coverAlt}
               fill
               className="object-cover transition duration-300 group-hover:scale-[1.02]"

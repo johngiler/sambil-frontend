@@ -9,8 +9,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
-import { normalizeMediaUrlForUi } from "@/services/api";
-import { fetchMyWorkspace, mediaAbsoluteUrl, patchMyWorkspace } from "@/services/authApi";
+import { normalizeMediaUrlForUi } from "@/lib/mediaUrls";
+import { fetchMyWorkspace, patchMyWorkspace } from "@/services/authApi";
 
 const fieldClass = `mp-form-field-accent mt-1.5 min-h-11 w-full ${ROUNDED_CONTROL} border border-zinc-200 bg-white px-3.5 py-2.5 text-base text-zinc-900 shadow-sm transition-[border-color,box-shadow] duration-200 ease-out placeholder:text-zinc-400 focus:outline-none sm:min-h-0 sm:py-2 sm:text-sm`;
 
@@ -71,7 +71,7 @@ function FileBlock({
 }) {
   const imgSrc =
     previewObjectUrl ||
-    (existingUrl ? normalizeMediaUrlForUi(mediaAbsoluteUrl(existingUrl)) : "");
+    (existingUrl ? normalizeMediaUrlForUi(existingUrl) : "");
 
   const isLogoWide = previewVariant === "logoWide";
   const previewBoxClass = isLogoWide
@@ -93,7 +93,7 @@ function FileBlock({
       {imgSrc ? (
         <div className={previewBoxClass} style={previewStyle}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={imgSrc} alt="" className={imgClass} decoding="async" />
+          <img src={imgSrc} alt="" className={imgClass} decoding="async" loading="lazy" />
         </div>
       ) : (
         <p className={emptyClass} style={previewStyle}>

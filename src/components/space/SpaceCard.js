@@ -8,7 +8,7 @@ import {
   spaceStatusPillClassName,
 } from "@/components/admin/adminConstants";
 import { IconCart } from "@/components/layout/navIcons";
-import { spaceCoverUrlForUi } from "@/lib/spaceCover";
+import { spaceCoverCandidatesForUi } from "@/lib/mediaUrls";
 
 function formatUsdMonthly(n) {
   const x = Number(n);
@@ -34,7 +34,7 @@ export function SpaceCard({
   cardFooter = null,
   showFavoriteButton = false,
 }) {
-  const cover = spaceCoverUrlForUi(space);
+  const coverCandidates = spaceCoverCandidatesForUi(space);
   const centerName =
     typeof space.shopping_center_name === "string"
       ? space.shopping_center_name.trim()
@@ -76,9 +76,9 @@ export function SpaceCard({
           className="mp-ring-brand block overflow-hidden rounded-t-2xl focus-visible:outline-none"
         >
           <div className="relative aspect-[4/3] bg-gradient-to-br from-zinc-800 via-zinc-700 to-zinc-900">
-            {cover ? (
+            {coverCandidates.length > 0 ? (
               <CatalogRasterImage
-                src={cover}
+                candidates={coverCandidates}
                 alt={
                   typeof space.title === "string"
                     ? space.title

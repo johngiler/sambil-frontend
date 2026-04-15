@@ -12,8 +12,12 @@ import {
 
 import { sanitizeCartItems } from "@/lib/demoCatalog";
 import { defaultRentalPeriod } from "@/lib/rentalDates";
-import { spaceCoverUrlForUi } from "@/lib/spaceCover";
-import { getSpace, normalizeMediaUrlForUi } from "@/services/api";
+import {
+  adSpaceGalleryUrlsForUi,
+  normalizeMediaUrlForUi,
+  spaceCoverUrlForUi,
+} from "@/lib/mediaUrls";
+import { getSpace } from "@/services/api";
 import { storageKeySuffix } from "@/lib/tenant";
 
 function cartLineHasUsableMedia(item) {
@@ -28,21 +32,11 @@ function cartLineHasUsableMedia(item) {
   return false;
 }
 
-/** Portada + lista de galería para persistir en la línea del carrito. */
+/** Portada + galería para persistir en la línea del carrito (mismas reglas WebP que el catálogo). */
 function coverAndGalleryFromSpace(space) {
-  const galleryUrls = Array.isArray(space?.gallery_images)
-    ? space.gallery_images.filter((u) => typeof u === "string" && u.trim() !== "")
-    : [];
-  const galleryNormalized = galleryUrls
-    .map((u) => normalizeMediaUrlForUi(u.trim()) || u.trim())
-    .filter(Boolean);
-  let coverUrl = spaceCoverUrlForUi(space);
-  if (!coverUrl && galleryNormalized.length > 0) {
-    coverUrl = galleryNormalized[0];
-  } else if (coverUrl) {
-    coverUrl = normalizeMediaUrlForUi(coverUrl) || coverUrl;
-  }
-  return { coverUrl: coverUrl || "", galleryNormalized };
+  const galleryNormalized = adSpaceGalleryUrlsForUi(space);
+  const coverUrl = spaceCoverUrlForUi(space) || galleryNormalized[0] || "";
+  return { coverUrl, galleryNormalized };
 }
 
 const LEGACY_CART = "sambil-marketplace-cart";

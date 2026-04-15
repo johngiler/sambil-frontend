@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -14,16 +13,16 @@ import {
 } from "@/components/admin/AdminListFilters";
 import { orderStatusPillClassName } from "@/components/admin/adminConstants";
 import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
+import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
 import { MisContratosSkeleton } from "@/components/orders/MisContratosSkeleton";
 import { useAuth } from "@/context/AuthContext";
 import { formatUsdMoney } from "@/lib/marketplacePricing";
+import { primaryAdSpaceMediaRawFromOrderLike } from "@/lib/mediaUrls";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
 import { contractsPath } from "@/services/clientAccountApi";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { authJsonFetcher } from "@/lib/swr/fetchers";
-import { mediaAbsoluteUrl } from "@/services/authApi";
-
 /** Mismo contrato que `AdminSelect` / resto del admin: `{ v, l }`, no `value`/`label`. */
 const PHASE_OPTIONS = [
   { v: "all", l: "Todos" },
@@ -54,11 +53,6 @@ function kindPillClass(kind) {
   if (kind === "upcoming") return "border-sky-200/90 bg-sky-50 text-sky-900";
   if (kind === "ended") return "border-zinc-200/90 bg-zinc-100 text-zinc-700";
   return "border-zinc-200/90 bg-zinc-50 text-zinc-800";
-}
-
-function lineCoverUrl(it) {
-  if (!it?.ad_space_cover_image) return "";
-  return mediaAbsoluteUrl(it.ad_space_cover_image) || "";
 }
 
 /** Enlace a Mis pedidos con el mismo `search` que usa el listado (`/api/orders/?search=`). */
@@ -229,7 +223,7 @@ export default function MisContratosView() {
           ) : (
             <ul className="mt-6 list-none space-y-4 p-0">
               {filteredItems.map((it) => {
-                const cover = lineCoverUrl(it);
+                const coverRaw = primaryAdSpaceMediaRawFromOrderLike(it);
                 const href = `/catalog/${it.ad_space_id}`;
                 return (
                   <li
@@ -241,9 +235,9 @@ export default function MisContratosView() {
                         href={href}
                         className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-zinc-100 sm:w-36"
                       >
-                        {cover ? (
-                          <Image
-                            src={cover}
+                        {coverRaw ? (
+                          <RasterFromApiUrl
+                            url={coverRaw}
                             alt=""
                             fill
                             className="object-cover"

@@ -38,6 +38,7 @@ import { AdminAdSpaceGalleryField } from "@/components/admin/AdminAdSpaceGallery
 import { IconAdminGrid } from "@/components/admin/adminIcons";
 import { TomasAdminSectionSkeleton } from "@/components/admin/skeletons/TomasAdminSectionSkeleton";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
+import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspaceCapabilities } from "@/hooks/useWorkspaceCapabilities";
 import { EmptyState, EmptyStateIconGrid } from "@/components/ui/EmptyState";
@@ -48,6 +49,7 @@ import {
   authJsonFetcher,
 } from "@/lib/swr/fetchers";
 import { adminTomaRowLightboxItems } from "@/lib/imageLightboxItems";
+import { mediaUrlForUiWithWebp, rawMediaUrlFromApiField } from "@/lib/mediaUrls";
 import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import {
@@ -58,7 +60,7 @@ import {
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { revalidateHomeCatalog } from "@/lib/swr/homeCatalogSwr";
 import { parsePaginatedResponse } from "@/services/api";
-import { authFetch, authFetchForm, mediaAbsoluteUrl } from "@/services/authApi";
+import { authFetch, authFetchForm } from "@/services/authApi";
 import {
   AdminFilterClearButton,
   AdminFiltersRow,
@@ -535,11 +537,11 @@ export function TomasAdminSection() {
                         {(() => {
                           const first =
                             Array.isArray(s.gallery_images) && s.gallery_images.length > 0
-                              ? s.gallery_images[0]?.image
+                              ? s.gallery_images[0]
                               : s.cover_image;
-                          const thumbSrc = first ? mediaAbsoluteUrl(first) : "";
+                          const thumbRaw = rawMediaUrlFromApiField(first);
                           const lbItems = adminTomaRowLightboxItems(s, s.title);
-                          if (!thumbSrc) {
+                          if (!thumbRaw) {
                             return <div className={squareAdminTablePortadaFrameClass} aria-hidden />;
                           }
                           return (
@@ -552,11 +554,12 @@ export function TomasAdminSection() {
                                   : "Ver imágenes de la toma"
                               }
                               onClick={() => {
+                                const fallback = mediaUrlForUiWithWebp(thumbRaw);
                                 const items =
                                   lbItems.length > 0
                                     ? lbItems
-                                    : thumbSrc
-                                      ? [{ src: thumbSrc, alt: s.title || "Portada" }]
+                                    : fallback
+                                      ? [{ src: fallback, alt: s.title || "Portada" }]
                                       : [];
                                 if (!items.length) return;
                                 setGalleryLightbox({
@@ -566,8 +569,8 @@ export function TomasAdminSection() {
                                 });
                               }}
                             >
-                              <img
-                                src={thumbSrc}
+                              <RasterFromApiUrl
+                                url={thumbRaw}
                                 alt=""
                                 width={60}
                                 height={60}

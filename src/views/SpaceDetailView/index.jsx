@@ -6,7 +6,7 @@ import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvaila
 import { SpaceDetailReservationActions } from "@/components/catalog/SpaceDetailReservationActions";
 import { SPACE_TYPES, spaceStatusLabel, spaceStatusPillClassName } from "@/components/admin/adminConstants";
 import { subtitleCityAfterCenterName } from "@/lib/shoppingCenterDisplay";
-import { spaceCoverUrlForUi } from "@/lib/spaceCover";
+import { mediaUrlForUiWithWebp, spaceCoverUrlForUi } from "@/lib/mediaUrls";
 import { getSpace } from "@/services/api";
 
 function labelFromChoices(choices, value) {
@@ -84,6 +84,9 @@ export default async function SpaceDetailView({ spaceId }) {
   const galleryUrls =
     Array.isArray(space.gallery_images) && space.gallery_images.length > 0
       ? space.gallery_images
+          .filter((u) => typeof u === "string" && u.trim() !== "")
+          .map((u) => mediaUrlForUiWithWebp(u))
+          .filter(Boolean)
       : coverUrl
         ? [coverUrl]
         : [];

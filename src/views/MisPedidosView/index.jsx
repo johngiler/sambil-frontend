@@ -17,6 +17,7 @@ import { ORDER_STATUS, orderStatusPillClassName } from "@/components/admin/admin
 import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
 import { MisPedidosSkeleton } from "@/components/orders/MisPedidosSkeleton";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
+import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
 import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { useAuth } from "@/context/AuthContext";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
@@ -36,6 +37,7 @@ import {
 import { ordersListPath } from "@/lib/adminListQuery";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { authJsonFetcher } from "@/lib/swr/fetchers";
+import { mediaUrlForUiWithWebp, primaryAdSpaceMediaRawFromOrderLike } from "@/lib/mediaUrls";
 import { parsePaginatedResponse } from "@/services/api";
 import { mediaAbsoluteUrl } from "@/services/authApi";
 
@@ -151,24 +153,6 @@ function OrderStatusBadge({ label, status }) {
   );
 }
 
-/** URL de portada o primera imagen de galería para miniatura de línea. */
-function orderLineCoverUrl(it) {
-  if (!it) return "";
-  if (it.ad_space_cover_image) {
-    const u = mediaAbsoluteUrl(it.ad_space_cover_image);
-    if (u) return u;
-  }
-  if (Array.isArray(it.ad_space_gallery_images)) {
-    for (const raw of it.ad_space_gallery_images) {
-      if (typeof raw === "string" && raw.trim()) {
-        const u = mediaAbsoluteUrl(raw.trim());
-        if (u) return u;
-      }
-    }
-  }
-  return "";
-}
-
 /** Número de fotos distintas de una línea (URLs únicas tras resolver media). */
 function orderLineItemImageCount(it) {
   if (Array.isArray(it?.ad_space_gallery_images) && it.ad_space_gallery_images.length > 0) {
@@ -206,7 +190,7 @@ function orderLineGalleryEntries(o) {
       let idx = 0;
       for (const u of it.ad_space_gallery_images) {
         if (typeof u !== "string" || !u.trim()) continue;
-        const src = mediaAbsoluteUrl(u.trim());
+        const src = mediaUrlForUiWithWebp(u.trim());
         if (!src || seenSrc.has(src)) continue;
         seenSrc.add(src);
         idx += 1;
@@ -221,7 +205,7 @@ function orderLineGalleryEntries(o) {
     }
 
     if (!it?.ad_space_cover_image) continue;
-    const src = mediaAbsoluteUrl(it.ad_space_cover_image);
+    const src = mediaUrlForUiWithWebp(it.ad_space_cover_image);
     if (!src) continue;
     out.push({
       src,
@@ -553,7 +537,7 @@ export default function MisPedidosView() {
                   : first.ad_space != null && first.ad_space !== ""
                     ? `#${first.ad_space}`
                     : "Toma";
-            const singleThumb = first ? orderLineCoverUrl(first) : "";
+            const singleCoverRaw = first ? primaryAdSpaceMediaRawFromOrderLike(first) : "";
             const singleCodeLabel = singleCode.replace(/^#/, "") || "toma";
             const lineDisplay = Number.isFinite(lineSub) ? lineSub : Number(o.total_amount);
             const totalIva = totalWithIva(Number(o.total_amount));
@@ -590,11 +574,11 @@ export default function MisPedidosView() {
                           <div className="flex items-center gap-2.5">
                             <div
                               className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-zinc-200/90 bg-zinc-100"
-                              aria-hidden={!singleThumb}
+                              aria-hidden={!singleCoverRaw}
                             >
-                              {singleThumb ? (
-                                <img
-                                  src={singleThumb}
+                              {singleCoverRaw ? (
+                                <RasterFromApiUrl
+                                  url={singleCoverRaw}
                                   alt=""
                                   width={40}
                                   height={40}
@@ -636,7 +620,7 @@ export default function MisPedidosView() {
                             </p>
                             <ul className="mt-2 space-y-2.5">
                               {items.map((it) => {
-                                const thumb = orderLineCoverUrl(it);
+                                const thumbRaw = primaryAdSpaceMediaRawFromOrderLike(it);
                                 const code =
                                   typeof it.ad_space_code === "string" && it.ad_space_code.trim()
                                     ? it.ad_space_code.trim()
@@ -652,11 +636,11 @@ export default function MisPedidosView() {
                                   >
                                     <div
                                       className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-zinc-200/90 bg-zinc-100"
-                                      aria-hidden={!thumb}
+                                      aria-hidden={!thumbRaw}
                                     >
-                                      {thumb ? (
-                                        <img
-                                          src={thumb}
+                                      {thumbRaw ? (
+                                        <RasterFromApiUrl
+                                          url={thumbRaw}
                                           alt=""
                                           width={40}
                                           height={40}
@@ -768,7 +752,7 @@ export default function MisPedidosView() {
                           aria-labelledby={`${panelId}-lineas`}
                         >
                           {(o.items || []).map((it) => {
-                            const lineCover = orderLineCoverUrl(it);
+                            const lineCoverRaw = primaryAdSpaceMediaRawFromOrderLike(it);
                             const lineImgCount = orderLineItemImageCount(it);
                             return (
                               <li
@@ -776,7 +760,7 @@ export default function MisPedidosView() {
                                 className="flex flex-col gap-3 border-b border-zinc-100 pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between"
                               >
                                 <div className="flex min-w-0 flex-1 items-start gap-3">
-                                  {lineCover ? (
+                                  {lineCoverRaw ? (
                                     <button
                                       type="button"
                                       onClick={() => openOrderLineGallery(o, it.id)}
@@ -787,8 +771,8 @@ export default function MisPedidosView() {
                                           : "Abrir imagen ampliada"
                                       }
                                     >
-                                      <img
-                                        src={lineCover}
+                                      <RasterFromApiUrl
+                                        url={lineCoverRaw}
                                         alt=""
                                         width={60}
                                         height={60}

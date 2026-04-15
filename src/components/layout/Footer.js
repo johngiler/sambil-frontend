@@ -17,7 +17,7 @@ import {
 } from "@/components/layout/navIcons";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
-import { normalizeMediaUrlForUi } from "@/services/api";
+import { normalizeMediaUrlForUi } from "@/lib/mediaUrls";
 
 const linkClass =
   "mp-ring-brand-dark text-sm text-zinc-400 transition-colors duration-200 ease-out hover:text-white focus-visible:outline-none";

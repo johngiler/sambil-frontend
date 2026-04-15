@@ -36,6 +36,7 @@ import { IconAdminArrowDownTray, IconAdminClipboard } from "@/components/admin/a
 import { PedidosSectionSkeleton } from "@/components/admin/skeletons/PedidosSectionSkeleton";
 import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
+import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
 import { PaymentReceiptLightbox } from "@/components/orders/PaymentReceiptLightbox";
 import { useAuth } from "@/context/AuthContext";
 import { EmptyState, EmptyStateIconClipboard } from "@/components/ui/EmptyState";
@@ -527,9 +528,10 @@ export function PedidosAdminSection() {
                             ) : (
                               <ul className="space-y-3">
                                 {o.items.map((it) => {
-                                  const coverSrc = it.ad_space_cover_image
-                                    ? mediaAbsoluteUrl(it.ad_space_cover_image)
-                                    : "";
+                                  const coverRaw =
+                                    it.ad_space_cover_image && String(it.ad_space_cover_image).trim()
+                                      ? String(it.ad_space_cover_image).trim()
+                                      : "";
                                   const centerName = (it.shopping_center_name || "").trim();
                                   const centerSlug = (it.shopping_center_slug || "").trim();
                                   const centerCityRaw = (it.shopping_center_city || "").trim();
@@ -543,7 +545,7 @@ export function PedidosAdminSection() {
                                       key={it.id}
                                       className={`${ROUNDED_CONTROL} flex items-start gap-3 border border-zinc-200 bg-white p-3 sm:gap-4`}
                                     >
-                                      {coverSrc ? (
+                                      {coverRaw ? (
                                         <button
                                           type="button"
                                           className={`${squareOrderLinePreviewFrameClass} ${squareListImagePreviewButtonRingClass} p-0`}
@@ -564,8 +566,8 @@ export function PedidosAdminSection() {
                                               });
                                           }}
                                         >
-                                          <img
-                                            src={coverSrc}
+                                          <RasterFromApiUrl
+                                            url={coverRaw}
                                             alt={
                                               it.ad_space_title
                                                 ? `Portada: ${it.ad_space_title}`

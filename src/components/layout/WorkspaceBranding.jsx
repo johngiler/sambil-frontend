@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 
 import { useWorkspace } from "@/context/WorkspaceContext";
-import { normalizeMediaUrlForUi } from "@/services/api";
+import { normalizeMediaUrlForUi } from "@/lib/mediaUrls";
 
 const DEFAULT_PRIMARY = "#0c9dcf";
 const DEFAULT_SECONDARY = "#ea580c";

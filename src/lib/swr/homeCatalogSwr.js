@@ -9,6 +9,23 @@ export const HOME_CATALOG_PAGE_SWR_TAG = "home-catalog-page";
 export const HOME_CATALOG_FACETS_SWR_TAG = "home-catalog-facets";
 
 /**
+ * Opciones del listado público del home.
+ *
+ * **No uses `revalidateOnMount: false` con SWR 2.x:** si está definido y es `false`, la primera
+ * revalidación al montar **no se ejecuta** (`shouldDoInitialRevalidation` queda en false) y no hay
+ * fetch hasta otro disparador (p. ej. foco de ventana). Eso dejaba el catálogo vacío hasta hacer focus.
+ *
+ * Para reducir refetch al volver a `/` con la misma clave (sin romper la primera carga), usa
+ * `revalidateIfStale: false` en su lugar, no `revalidateOnMount: false`.
+ */
+export const homeCatalogSwrOptions = {
+  keepPreviousData: true,
+  dedupingInterval: 60_000,
+  revalidateOnFocus: true,
+  revalidateOnReconnect: true,
+};
+
+/**
  * @param {{ search?: string, city?: string, center?: string, page?: number }} p
  * @returns {readonly [string, string, string, string, number]}
  */

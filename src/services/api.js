@@ -1,83 +1,8 @@
 import { workspaceSlugRequestHeaders } from "@/lib/tenant";
+import { apiBase } from "@/lib/apiBase";
 
-/**
- * Base del API. En producción: NEXT_PUBLIC_API_URL obligatorio.
- * En desarrollo en el navegador, fallback a :8000 si falta la var.
- */
-export function apiBase() {
-  const env = (process.env.NEXT_PUBLIC_API_URL || "").trim().replace(/\/$/, "");
-  if (env) return env;
-  if (process.env.NODE_ENV === "development") {
-    return "http://127.0.0.1:8000";
-  }
-  return "";
-}
-
-/**
- * Si el API público es HTTPS pero el backend devolvió `http://mismo-host/...` (p. ej. tras proxy),
- * el navegador marca la página como «No es seguro» (contenido mixto). Fuerza https solo para ese host.
- */
-function upgradeMediaUrlToHttpsIfNeeded(absoluteUrl) {
-  const base = apiBase().replace(/\/$/, "");
-  if (!absoluteUrl || !base.startsWith("https://") || !absoluteUrl.startsWith("http://")) {
-    return absoluteUrl;
-  }
-  try {
-    const bu = new URL(base);
-    const u = new URL(absoluteUrl);
-    if (u.hostname === bu.hostname && String(u.port || "") === String(bu.port || "")) {
-      u.protocol = "https:";
-      return u.toString();
-    }
-  } catch {
-    /* ignore */
-  }
-  return absoluteUrl;
-}
-
-/** URL absoluta para medios del API (p. ej. `/media/...` → host del backend). */
-export function mediaAbsoluteUrl(maybeRelative) {
-  if (maybeRelative == null || maybeRelative === "") return "";
-  const s = String(maybeRelative);
-  if (s.startsWith("http://") || s.startsWith("https://")) {
-    return upgradeMediaUrlToHttpsIfNeeded(s);
-  }
-  const b = apiBase().replace(/\/$/, "");
-  const p = s.startsWith("/") ? s : `/${s}`;
-  const out = b ? `${b}${p}` : p;
-  return upgradeMediaUrlToHttpsIfNeeded(out);
-}
-
-/**
- * Normaliza URL de imagen para el navegador (evita `localhost` vs `127.0.0.1` en dev y mezcla de hosts).
- * En desarrollo, si el API devolvió una URL absoluta con otro host (p. ej. `sambil.localhost:8000` tras el admin)
- * pero `NEXT_PUBLIC_API_URL` apunta a `127.0.0.1`, `next/image` rechaza el host y la imagen se rompe.
- * Para rutas bajo `/media/` se fuerza el origen de `apiBase()`.
- * @param {string | null | undefined} url
- */
-export function normalizeMediaUrlForUi(url) {
-  const abs = mediaAbsoluteUrl(url);
-  if (!abs) return "";
-  if (process.env.NODE_ENV !== "development") return abs;
-  try {
-    const u = new URL(abs);
-    const isMediaPath =
-      u.pathname === "/media" || u.pathname.startsWith("/media/");
-    if (isMediaPath) {
-      const baseStr = apiBase().replace(/\/$/, "");
-      if (baseStr) {
-        const b = new URL(baseStr.match(/^https?:\/\//i) ? baseStr : `http://${baseStr}`);
-        u.protocol = b.protocol;
-        u.hostname = b.hostname;
-        u.port = b.port;
-        return u.toString();
-      }
-    }
-  } catch {
-    /* ignore */
-  }
-  return abs.replace(/^http:\/\/localhost(?::8000)?(?=\/|$)/i, "http://127.0.0.1:8000");
-}
+export { apiBase };
+export { mediaAbsoluteUrl, normalizeMediaUrlForUi } from "@/lib/mediaUrls";
 
 export function apiUrl(path) {
   const p = path.startsWith("/") ? path : `/${path}`;
@@ -224,14 +149,20 @@ export async function getSpace(id) {
  * @param {{ start_date: string, end_date: string }} range ISO date (YYYY-MM-DD)
  * @returns {Promise<{ ok: boolean, detail?: string }>}
  */
-export async function postSpaceRentalRangeCheck(spaceId, { start_date, end_date }) {
+export async function postSpaceRentalRangeCheck(
+  spaceId,
+  { start_date, end_date },
+) {
   const body = JSON.stringify({ start_date, end_date });
   const headers = {
     "Content-Type": "application/json",
     ...workspaceSlugRequestHeaders(),
   };
   const sid = encodeURIComponent(String(spaceId));
-  const paths = [`/api/spaces/${sid}/check-rental-range/`, `/api/catalog/spaces/${sid}/check-rental-range/`];
+  const paths = [
+    `/api/spaces/${sid}/check-rental-range/`,
+    `/api/catalog/spaces/${sid}/check-rental-range/`,
+  ];
   let last = null;
   for (const path of paths) {
     try {
@@ -297,7 +228,10 @@ export async function getSpacesCatalogPage({
  * @param {{ search?: string, center?: string }} params
  * @returns {Promise<{ total: number, items: Array<{ city: string, count: number, label?: string }> }>}
  */
-export async function getSpacesLocationFacets({ search = "", center = "" } = {}) {
+export async function getSpacesLocationFacets({
+  search = "",
+  center = "",
+} = {}) {
   const params = new URLSearchParams();
   if (search.trim()) params.set("search", search.trim());
   if (center.trim()) params.set("center", center.trim());
@@ -361,7 +295,8 @@ export function errorMessageFromParsed({ data, text, status }) {
     const jwtMsg = humanizeJwtAuthDetail(d, status);
     if (jwtMsg) return jwtMsg;
     if (typeof d === "string" && d.trim()) return d.trim();
-    if (Array.isArray(d) && d.length) return d.map(String).filter(Boolean).join(" ");
+    if (Array.isArray(d) && d.length)
+      return d.map(String).filter(Boolean).join(" ");
     return JSON.stringify(data);
   }
   if (typeof data === "string" && data.trim()) {
@@ -427,7 +362,9 @@ export async function postGuestCheckoutClientEmailCheck(email) {
   });
   const parsed = await parseFetchResponse(res);
   if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
-  return /** @type {{ client_exists: boolean, has_marketplace_account: boolean }} */ (parsed.data);
+  return /** @type {{ client_exists: boolean, has_marketplace_account: boolean }} */ (
+    parsed.data
+  );
 }
 
 /**
@@ -464,7 +401,9 @@ export async function postGuestCheckoutEmailAvailable(email) {
   });
   const parsed = await parseFetchResponse(res);
   if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
-  return /** @type {{ available: boolean, detail?: string, code?: string }} */ (parsed.data);
+  return /** @type {{ available: boolean, detail?: string, code?: string }} */ (
+    parsed.data
+  );
 }
 
 /**
@@ -529,7 +468,11 @@ export async function getPasswordSetupIntent(token) {
 }
 
 /** Primera contraseña para usuario creado sin clave (token firmado). */
-export async function postSetInitialPassword({ token, password, password_confirm }) {
+export async function postSetInitialPassword({
+  token,
+  password,
+  password_confirm,
+}) {
   const res = await fetch(apiUrl("/api/auth/set-initial-password/"), {
     method: "POST",
     headers: {

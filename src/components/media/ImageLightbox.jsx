@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { rasterUrlTryWebpVariant } from "@/lib/rasterImageWebpFallback";
+import { rasterUrlTryWebpVariant } from "@/lib/mediaUrls";
 
 /** `<img>` con un reintento a `.webp` si la URL raster del API falla (migración de medios). */
 function RasterImageWithWebpFallback({ initialSrc, onGiveUp, ...imgProps }) {

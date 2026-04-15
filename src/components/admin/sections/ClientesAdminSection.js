@@ -36,6 +36,8 @@ import { AdminSelect } from "@/components/admin/AdminSelect";
 import { IconAdminBriefcase, IconAdminUserPlus } from "@/components/admin/adminIcons";
 import { ClientesUsuariosSectionSkeleton } from "@/components/admin/skeletons/ClientesUsuariosSectionSkeleton";
 import { CoverImageField } from "@/components/admin/CoverImageField";
+import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
+import { rawMediaUrlFromApiField } from "@/lib/mediaUrls";
 import { useAuth } from "@/context/AuthContext";
 import { EmptyState, EmptyStateIconBriefcase } from "@/components/ui/EmptyState";
 import { clientsListPath } from "@/lib/adminListQuery";
@@ -44,7 +46,7 @@ import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
-import { authFetch, authFetchForm, mediaAbsoluteUrl } from "@/services/authApi";
+import { authFetch, authFetchForm } from "@/services/authApi";
 import {
   AdminFilterClearButton,
   AdminFiltersRow,
@@ -466,6 +468,7 @@ export function ClientesAdminSection() {
                 const open = expandedId === c.id;
                 const panelId = `cliente-extra-${c.id}`;
                 const linkedUsersText = formatLinkedUsersDisplay(c);
+                const clientAvatarUrl = rawMediaUrlFromApiField(c.cover_image);
                 return (
                   <Fragment key={c.id}>
                     <tr className="border-b border-zinc-100 transition-colors hover:bg-zinc-50/70">
@@ -479,9 +482,9 @@ export function ClientesAdminSection() {
                       </td>
                       <td className="px-2 py-2">
                         <div className="flex h-11 w-11 overflow-hidden rounded-full border border-zinc-100 bg-zinc-100">
-                          {c.cover_image ? (
-                            <img
-                              src={mediaAbsoluteUrl(c.cover_image)}
+                          {clientAvatarUrl ? (
+                            <RasterFromApiUrl
+                              url={clientAvatarUrl}
                               alt=""
                               width={44}
                               height={44}

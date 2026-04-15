@@ -11,6 +11,7 @@ import {
 
 import { adminLabel } from "@/components/admin/adminFormStyles";
 import { IconRowTrash } from "@/components/admin/rowActionIcons";
+import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
 import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { squareListImagePreviewFrameClass, squareListImagePreviewImgClass } from "@/lib/squareImagePreview";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
@@ -67,6 +68,7 @@ export const AdminAdSpaceGalleryField = forwardRef(function AdminAdSpaceGalleryF
         kind: "server",
         key: `s-${row.id}`,
         id: row.id,
+        rawImage: row.image,
         src: mediaAbsoluteUrl(row.image),
       })),
     );
@@ -209,15 +211,27 @@ export const AdminAdSpaceGalleryField = forwardRef(function AdminAdSpaceGalleryF
                       dragKey === it.key ? "ring-2 ring-[color-mix(in_srgb,var(--mp-primary)_45%,transparent)]" : ""
                     }`}
                   >
-                    <img
-                      src={it.src}
-                      alt=""
-                      width={100}
-                      height={100}
-                      className={squareListImagePreviewImgClass}
-                      draggable={false}
-                      {...catalogRasterImgAttrs}
-                    />
+                    {it.kind === "server" && it.rawImage ? (
+                      <RasterFromApiUrl
+                        url={it.rawImage}
+                        alt=""
+                        width={100}
+                        height={100}
+                        className={squareListImagePreviewImgClass}
+                        draggable={false}
+                        {...catalogRasterImgAttrs}
+                      />
+                    ) : (
+                      <img
+                        src={it.src}
+                        alt=""
+                        width={100}
+                        height={100}
+                        className={squareListImagePreviewImgClass}
+                        draggable={false}
+                        {...catalogRasterImgAttrs}
+                      />
+                    )}
                     {!readOnly ? (
                       <button
                         type="button"

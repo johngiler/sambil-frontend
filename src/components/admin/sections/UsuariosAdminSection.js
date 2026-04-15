@@ -37,6 +37,8 @@ import { AdminSelect } from "@/components/admin/AdminSelect";
 import { IconAdminUserPlus } from "@/components/admin/adminIcons";
 import { ClientesUsuariosSectionSkeleton } from "@/components/admin/skeletons/ClientesUsuariosSectionSkeleton";
 import { CoverImageField } from "@/components/admin/CoverImageField";
+import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
+import { rawMediaUrlFromApiField } from "@/lib/mediaUrls";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspaceCapabilities } from "@/hooks/useWorkspaceCapabilities";
 import { EmptyState, EmptyStateIconUsers } from "@/components/ui/EmptyState";
@@ -50,7 +52,7 @@ import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
-import { authFetch, authFetchForm, mediaAbsoluteUrl } from "@/services/authApi";
+import { authFetch, authFetchForm } from "@/services/authApi";
 import {
   AdminFilterClearButton,
   AdminFiltersRow,
@@ -559,6 +561,7 @@ export function UsuariosAdminSection() {
                       const isSelf = u.id === me?.id;
                       const open = expandedId === u.id;
                       const panelId = `usuario-extra-${u.id}`;
+                      const avatarUrl = rawMediaUrlFromApiField(u.cover_image);
                       return (
                         <Fragment key={u.id}>
                           <tr className="border-b border-zinc-100 transition-colors hover:bg-zinc-50/70">
@@ -574,9 +577,9 @@ export function UsuariosAdminSection() {
                             </td>
                             <td className="px-2 py-2">
                               <div className="flex h-11 w-11 overflow-hidden rounded-full border border-zinc-100 bg-zinc-100">
-                                {u.cover_image ? (
-                                  <img
-                                    src={mediaAbsoluteUrl(u.cover_image)}
+                                {avatarUrl ? (
+                                  <RasterFromApiUrl
+                                    url={avatarUrl}
                                     alt=""
                                     width={44}
                                     height={44}

@@ -19,6 +19,7 @@ import {
   buildHomeCatalogPageKey,
   homeCatalogFacetsFetcher,
   homeCatalogPageFetcher,
+  homeCatalogSwrOptions,
 } from "@/lib/swr/homeCatalogSwr";
 
 function heroAvailabilityLine(totalSpaces, locationCount, omitLocations) {
@@ -73,18 +74,13 @@ export function HomeSpacesCatalogClient() {
     data: pageData,
     error: loadError,
     isLoading: pageLoading,
-  } = useSWR(pageKey, homeCatalogPageFetcher, {
-    keepPreviousData: true,
-    dedupingInterval: 3000,
-    revalidateOnFocus: true,
-    revalidateOnReconnect: true,
-  });
+  } = useSWR(pageKey, homeCatalogPageFetcher, homeCatalogSwrOptions);
 
-  const { data: facetsData, error: facetsError } = useSWR(facetsKey, homeCatalogFacetsFetcher, {
-    dedupingInterval: 3000,
-    revalidateOnFocus: true,
-    revalidateOnReconnect: true,
-  });
+  const { data: facetsData, error: facetsError } = useSWR(
+    facetsKey,
+    homeCatalogFacetsFetcher,
+    homeCatalogSwrOptions,
+  );
 
   const spaces = useMemo(
     () => (Array.isArray(pageData?.results) ? pageData.results : []),

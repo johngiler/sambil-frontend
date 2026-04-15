@@ -1,16 +1,18 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 
 import { IconRowEdit, IconRowTrash } from "@/components/admin/rowActionIcons";
 import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
+import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
 import { EmptyState, EmptyStateIconCart } from "@/components/ui/EmptyState";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartProvider";
-import { cartLineThumbSrc, marketplaceItemsFromCartLine } from "@/lib/imageLightboxItems";
+import { marketplaceItemsFromCartLine } from "@/lib/imageLightboxItems";
+import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
+import { primaryAdSpaceMediaRawFromOrderLike } from "@/lib/mediaUrls";
 import {
   formatUsdInteger,
   formatUsdMoney,
@@ -135,12 +137,12 @@ export default function CartView() {
               typeof item.shopping_center_name === "string" ? item.shopping_center_name : "";
             const detail =
               typeof item.detail_line === "string" ? item.detail_line : "";
-            const thumbSrc = cartLineThumbSrc(item);
+            const thumbRaw = primaryAdSpaceMediaRawFromOrderLike(item);
             return (
               <li key={item.id} className={cardShell}>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex min-w-0 flex-1 gap-3 sm:gap-4">
-                    {thumbSrc ? (
+                    {thumbRaw ? (
                       <button
                         type="button"
                         onClick={() => openCartLineLightbox(item)}
@@ -151,13 +153,13 @@ export default function CartView() {
                             : "Ver imágenes de la toma"
                         }
                       >
-                        <Image
-                          src={thumbSrc}
+                        <RasterFromApiUrl
+                          url={thumbRaw}
                           alt=""
                           width={60}
                           height={60}
                           className={`${squareAdminTablePortadaImgClass} transition duration-200 group-hover:scale-105`}
-                          decoding="async"
+                          {...catalogRasterImgAttrs}
                         />
                       </button>
                     ) : (

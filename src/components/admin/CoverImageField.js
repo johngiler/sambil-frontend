@@ -3,6 +3,7 @@
 import { useCallback, useRef, useState } from "react";
 
 import { adminLabel } from "@/components/admin/adminFormStyles";
+import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
 import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { IconRowTrash } from "@/components/admin/rowActionIcons";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
@@ -76,6 +77,7 @@ export function CoverImageField({
   const v = VARIANT_DEFAULTS[variant] ?? VARIANT_DEFAULTS.cover;
   const resolvedLabel = label ?? v.label;
   const showUrl = filePreviewUrl || (existingUrl ? mediaAbsoluteUrl(existingUrl) : "");
+  const avatarDims = variant === "avatar" ? { width: 144, height: 144 } : {};
   const [zoneDrag, setZoneDrag] = useState(false);
   const [err, setErr] = useState("");
   const fallbackInputRef = useRef(null);
@@ -126,13 +128,23 @@ export function CoverImageField({
         <p className={adminLabel}>{resolvedLabel}</p>
         {showUrl ? (
           <div className={`mt-2 ${v.wrapClass}`}>
-            <img
-              src={showUrl}
-              alt=""
-              className={v.imgClass}
-              {...(variant === "avatar" ? { width: 144, height: 144 } : {})}
-              {...catalogRasterImgAttrs}
-            />
+            {filePreviewUrl ? (
+              <img
+                src={filePreviewUrl}
+                alt=""
+                className={v.imgClass}
+                {...avatarDims}
+                {...catalogRasterImgAttrs}
+              />
+            ) : existingUrl ? (
+              <RasterFromApiUrl
+                url={existingUrl}
+                alt=""
+                className={v.imgClass}
+                {...avatarDims}
+                {...catalogRasterImgAttrs}
+              />
+            ) : null}
           </div>
         ) : (
           <p className="mt-2 rounded-[10px] border border-dashed border-zinc-200 bg-zinc-50/80 py-8 text-center text-xs text-zinc-500">
@@ -149,13 +161,23 @@ export function CoverImageField({
         <p className={adminLabel}>{resolvedLabel}</p>
         {showUrl ? (
           <div className={`mt-2 ${v.wrapClass}`}>
-            <img
-              src={showUrl}
-              alt=""
-              className={v.imgClass}
-              {...(variant === "avatar" ? { width: 144, height: 144 } : {})}
-              {...catalogRasterImgAttrs}
-            />
+            {filePreviewUrl ? (
+              <img
+                src={filePreviewUrl}
+                alt=""
+                className={v.imgClass}
+                {...avatarDims}
+                {...catalogRasterImgAttrs}
+              />
+            ) : existingUrl ? (
+              <RasterFromApiUrl
+                url={existingUrl}
+                alt=""
+                className={v.imgClass}
+                {...avatarDims}
+                {...catalogRasterImgAttrs}
+              />
+            ) : null}
           </div>
         ) : (
           <p className="mt-2 rounded-[10px] border border-dashed border-zinc-200 bg-zinc-50/80 py-8 text-center text-xs text-zinc-500">
@@ -210,13 +232,23 @@ export function CoverImageField({
       {hasImage ? (
         <div className="mt-3">
           <div className={v.wrapClass}>
-            <img
-              src={showUrl}
-              alt=""
-              className={v.imgClass}
-              {...(variant === "avatar" ? { width: 144, height: 144 } : {})}
-              {...catalogRasterImgAttrs}
-            />
+            {filePreviewUrl ? (
+              <img
+                src={filePreviewUrl}
+                alt=""
+                className={v.imgClass}
+                {...avatarDims}
+                {...catalogRasterImgAttrs}
+              />
+            ) : existingUrl ? (
+              <RasterFromApiUrl
+                url={existingUrl}
+                alt=""
+                className={v.imgClass}
+                {...avatarDims}
+                {...catalogRasterImgAttrs}
+              />
+            ) : null}
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {existingUrl && !filePreviewUrl ? (

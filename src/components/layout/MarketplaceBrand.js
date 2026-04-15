@@ -1,7 +1,7 @@
 "use client";
 
 import { useWorkspace } from "@/context/WorkspaceContext";
-import { normalizeMediaUrlForUi } from "@/services/api";
+import { normalizeMediaUrlForUi } from "@/lib/mediaUrls";
 
 /** Área fija del logotipo completo en cabecera (ancho × alto). */
 const HEADER_LOGO_W = 150;

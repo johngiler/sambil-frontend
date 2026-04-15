@@ -313,7 +313,7 @@ export async function authFetchForm(path, { method = "POST", formData, token, _r
   return parsed.data;
 }
 
-export { mediaAbsoluteUrl } from "@/services/api";
+export { mediaAbsoluteUrl } from "@/lib/mediaUrls";
 
 export function roleFromToken(access) {
   const p = decodeJwtPayload(access);

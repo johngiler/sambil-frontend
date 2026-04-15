@@ -21,6 +21,8 @@ import {
 import { CentrosAdminSectionSkeleton } from "@/components/admin/skeletons/CentrosAdminSectionSkeleton";
 import { CoverImageField } from "@/components/admin/CoverImageField";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
+import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
+import { rawMediaUrlFromApiField } from "@/lib/mediaUrls";
 import { IconBuildingSection } from "@/components/admin/rowActionIcons";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspaceCapabilities } from "@/hooks/useWorkspaceCapabilities";
@@ -46,7 +48,7 @@ import {
   AdminDetailSection,
   adminDetailEmpty,
 } from "@/components/admin/AdminAccordionDetail";
-import { authFetch, authFetchForm, mediaAbsoluteUrl } from "@/services/authApi";
+import { authFetch, authFetchForm } from "@/services/authApi";
 import {
   AdminFilterClearButton,
   AdminFiltersRow,
@@ -471,6 +473,7 @@ export function CentrosAdminSection() {
                 {rows.map((c) => {
                   const open = expandedId === c.id;
                   const panelId = `centro-extra-${c.id}`;
+                  const coverUrl = rawMediaUrlFromApiField(c.cover_image);
                   return (
                     <Fragment key={c.id}>
                       <tr className="border-b border-zinc-100 transition-colors hover:bg-zinc-50/70">
@@ -483,7 +486,7 @@ export function CentrosAdminSection() {
                           />
                         </td>
                         <td className="px-2 py-2">
-                          {c.cover_image ? (
+                          {coverUrl ? (
                             <button
                               type="button"
                               className={`${squareAdminTablePortadaFrameClass} ${squareListImagePreviewButtonRingClass} p-0`}
@@ -498,8 +501,8 @@ export function CentrosAdminSection() {
                                   setPortadaLightbox({ open: true, items, initialIndex: 0 });
                               }}
                             >
-                              <img
-                                src={mediaAbsoluteUrl(c.cover_image)}
+                              <RasterFromApiUrl
+                                url={coverUrl}
                                 alt=""
                                 width={60}
                                 height={60}
