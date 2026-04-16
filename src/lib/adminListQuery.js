@@ -48,3 +48,31 @@ export function spacesAdminListPath(page, search, status) {
   if (status && status !== "all") p.set("status", status);
   return `/api/admin/spaces/?${p.toString()}`;
 }
+
+/**
+ * Contratos marketplace (líneas de pedido activo/vencido).
+ * @param {string} ordering `-end_date` | `end_date` | `-start_date` | `start_date` | `client`
+ */
+export function contractsListPath(
+  page,
+  search,
+  orderStatus,
+  phase,
+  endingWithin,
+  ordering,
+  clientId,
+  adSpaceId,
+) {
+  const p = new URLSearchParams();
+  p.set("page", String(page));
+  if (search.trim()) p.set("search", search.trim());
+  if (orderStatus && orderStatus !== "all") p.set("order_status", orderStatus);
+  if (phase && phase !== "all") p.set("phase", phase);
+  if (endingWithin && endingWithin !== "all") p.set("ending_within", endingWithin);
+  if (ordering && ordering !== "-end_date") p.set("ordering", ordering);
+  const cid = clientId != null ? String(clientId).trim() : "";
+  if (cid) p.set("client_id", cid);
+  const aid = adSpaceId != null ? String(adSpaceId).trim() : "";
+  if (aid) p.set("ad_space_id", aid);
+  return `/api/admin/contracts/?${p.toString()}`;
+}

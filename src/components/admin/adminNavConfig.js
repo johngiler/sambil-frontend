@@ -3,6 +3,7 @@ import {
   IconAdminBuilding,
   IconAdminChart,
   IconAdminClipboard,
+  IconAdminContract,
   IconAdminGrid,
   IconAdminUserPlus,
 } from "@/components/admin/adminIcons";
@@ -15,6 +16,7 @@ const ICON_BY_SEGMENT = {
   tomas: IconAdminGrid,
   usuarios: IconAdminUserPlus,
   clientes: IconAdminBriefcase,
+  contratos: IconAdminContract,
   pedidos: IconAdminClipboard,
 };
 

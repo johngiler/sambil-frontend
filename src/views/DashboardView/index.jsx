@@ -6,6 +6,7 @@ import useSWR from "swr";
 
 import { CentrosAdminSection } from "@/components/admin/sections/CentrosAdminSection";
 import { ClientesAdminSection } from "@/components/admin/sections/ClientesAdminSection";
+import { ContratosAdminSection } from "@/components/admin/sections/ContratosAdminSection";
 import { PedidosAdminSection } from "@/components/admin/sections/PedidosAdminSection";
 import { TomasAdminSection } from "@/components/admin/sections/TomasAdminSection";
 import { UsuariosAdminSection } from "@/components/admin/sections/UsuariosAdminSection";
@@ -165,6 +166,7 @@ export default function DashboardView({ section = "resumen" }) {
         {section === "tomas" ? <TomasAdminSection /> : null}
         {section === "usuarios" ? <UsuariosAdminSection /> : null}
         {section === "clientes" ? <ClientesAdminSection /> : null}
+        {section === "contratos" ? <ContratosAdminSection /> : null}
         {section === "pedidos" ? <PedidosAdminSection /> : null}
       </div>
 

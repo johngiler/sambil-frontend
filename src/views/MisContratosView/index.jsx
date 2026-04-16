@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
 import {
@@ -13,11 +13,12 @@ import {
 } from "@/components/admin/AdminListFilters";
 import { orderStatusPillClassName } from "@/components/admin/adminConstants";
 import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
+import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
 import { MisContratosSkeleton } from "@/components/orders/MisContratosSkeleton";
 import { useAuth } from "@/context/AuthContext";
 import { formatUsdMoney } from "@/lib/marketplacePricing";
-import { primaryAdSpaceMediaRawFromOrderLike } from "@/lib/mediaUrls";
+import { mediaUrlForUiWithWebp, primaryAdSpaceMediaRawFromOrderLike } from "@/lib/mediaUrls";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
 import { contractsPath } from "@/services/clientAccountApi";
@@ -67,12 +68,64 @@ function pedidosHrefForOrder(orderCode, orderId) {
   return `/cuenta/pedidos?search=${encodeURIComponent(c)}`;
 }
 
+/** Entradas del lightbox para una línea de contrato (misma lógica que pedidos: galería, luego portada). */
+function contractLineLightboxItems(it) {
+  const label =
+    typeof it?.ad_space_title === "string" && it.ad_space_title.trim()
+      ? it.ad_space_title.trim()
+      : it?.ad_space_code
+        ? String(it.ad_space_code)
+        : "Toma";
+  const out = [];
+  if (Array.isArray(it?.ad_space_gallery_images) && it.ad_space_gallery_images.length > 0) {
+    const seenSrc = new Set();
+    let idx = 0;
+    for (const u of it.ad_space_gallery_images) {
+      if (typeof u !== "string" || !u.trim()) continue;
+      const src = mediaUrlForUiWithWebp(u.trim());
+      if (!src || seenSrc.has(src)) continue;
+      seenSrc.add(src);
+      idx += 1;
+      out.push({
+        src,
+        alt: idx > 1 ? `Imagen ${idx} · ${label}` : `Portada · ${label}`,
+        thumbnailSrc: src,
+      });
+    }
+    if (out.length > 0) return out;
+  }
+  if (!it?.ad_space_cover_image) return out;
+  const src = mediaUrlForUiWithWebp(it.ad_space_cover_image);
+  if (!src) return out;
+  out.push({
+    src,
+    alt: `Portada · ${label}`,
+    thumbnailSrc: src,
+  });
+  return out;
+}
+
+function contractLineImageCount(it) {
+  return contractLineLightboxItems(it).length;
+}
+
 export default function MisContratosView() {
   const router = useRouter();
   const { authReady, me, isAdmin, isClient, accessToken } = useAuth();
   const [phase, setPhase] = useState("all");
   const [filterSearch, setFilterSearch] = useState("");
   const debouncedSearch = useDebouncedValue(filterSearch, 400);
+  const [contractGallery, setContractGallery] = useState({
+    open: false,
+    items: /** @type {Array<{ src: string; alt?: string; thumbnailSrc?: string }>} */ ([]),
+    initialIndex: 0,
+  });
+
+  const openContractLineGallery = useCallback((it) => {
+    const items = contractLineLightboxItems(it);
+    if (!items.length) return;
+    setContractGallery({ open: true, items, initialIndex: 0 });
+  }, []);
 
   const canFetch = authReady && isClient && !!accessToken;
   const swrKey = canFetch ? contractsPath(phase) : null;
@@ -224,32 +277,43 @@ export default function MisContratosView() {
             <ul className="mt-6 list-none space-y-4 p-0">
               {filteredItems.map((it) => {
                 const coverRaw = primaryAdSpaceMediaRawFromOrderLike(it);
-                const href = `/catalog/${it.ad_space_id}`;
+                const galleryCount = contractLineImageCount(it);
+                const canOpenGallery = galleryCount > 0;
                 return (
                   <li
                     key={`${it.order_id}-${it.id}`}
                     className={`${ROUNDED_CONTROL} overflow-hidden border border-zinc-200/90 bg-white shadow-sm`}
                   >
                     <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-stretch">
-                      <Link
-                        href={href}
-                        className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-zinc-100 sm:w-36"
-                      >
-                        {coverRaw ? (
-                          <RasterFromApiUrl
-                            url={coverRaw}
-                            alt=""
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 640px) 100vw, 144px"
-                            decoding="async"
-                          />
-                        ) : (
+                      {canOpenGallery ? (
+                        <button
+                          type="button"
+                          onClick={() => openContractLineGallery(it)}
+                          className="group relative aspect-[4/3] w-full shrink-0 cursor-zoom-in overflow-hidden rounded-xl bg-zinc-100 text-left ring-zinc-300/80 transition hover:ring-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_45%,transparent)] sm:w-36"
+                          aria-label={
+                            galleryCount > 1
+                              ? `Abrir galería de esta toma (${galleryCount} imágenes)`
+                              : "Abrir imagen ampliada"
+                          }
+                        >
+                          {coverRaw ? (
+                            <RasterFromApiUrl
+                              url={coverRaw}
+                              alt=""
+                              fill
+                              className="object-cover transition duration-200 group-hover:scale-[1.02]"
+                              sizes="(max-width: 640px) 100vw, 144px"
+                              decoding="async"
+                            />
+                          ) : null}
+                        </button>
+                      ) : (
+                        <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-zinc-100 sm:w-36">
                           <div className="flex h-full min-h-[6rem] items-center justify-center text-xs text-zinc-400">
                             Sin imagen
                           </div>
-                        )}
-                      </Link>
+                        </div>
+                      )}
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-start justify-between gap-2">
                           <div>
@@ -318,6 +382,16 @@ export default function MisContratosView() {
           )}
         </>
       )}
+
+      <ImageLightbox
+        open={contractGallery.open}
+        onClose={() => setContractGallery((s) => ({ ...s, open: false }))}
+        items={contractGallery.items}
+        initialIndex={contractGallery.initialIndex}
+        showDownload={false}
+        showThumbnails={contractGallery.items.length > 1}
+        ariaLabel="Imágenes de la toma en contrato"
+      />
     </div>
   );
 }

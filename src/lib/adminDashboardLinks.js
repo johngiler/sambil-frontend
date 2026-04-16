@@ -28,6 +28,12 @@ export function dashboardPedidosSearchHref(query) {
   return `/dashboard/pedidos?q=${encodeURIComponent(q)}`;
 }
 
+export function dashboardContratosSearchHref(query) {
+  const q = String(query ?? "").trim();
+  if (!q) return "/dashboard/contratos";
+  return `/dashboard/contratos?q=${encodeURIComponent(q)}`;
+}
+
 /** Enlace interno al listado admin con filtro `q` (evita propagación en filas de tabla). */
 export function AdminDashboardFilterLink({ href, children, className = "", ...rest }) {
   return (

@@ -104,6 +104,28 @@ export function IconAdminRefresh({ className = "" }) {
   );
 }
 
+/** Contratos / periodos (documento + marca de tiempo). */
+export function IconAdminContract({ className = "" }) {
+  return (
+    <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M9 12h6M9 16h6M9 8h2M6.75 3.75h6.75a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0113.5 20.25H6.75A2.25 2.25 0 014.5 18V6a2.25 2.25 0 012.25-2.25zM18.75 9v6.75"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M18.75 9a3 3 0 11-3-3"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function IconAdminClipboard({ className = "" }) {
   return (
     <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>

@@ -127,6 +127,7 @@ export default function MisFavoritosView() {
                   space={sp}
                   availabilityLabel="occupied"
                   showFooterLink={false}
+                  showFavoriteButton
                   priority={index < 6}
                   secondaryAvailability={secondary}
                   cardFooter={
