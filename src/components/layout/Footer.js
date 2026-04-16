@@ -192,7 +192,7 @@ export function Footer() {
     navColCount <= 1
       ? "grid min-w-0 flex-1 grid-cols-1 gap-12"
       : navColCount === 2
-        ? "grid min-w-0 flex-1 grid-cols-1 gap-12 min-[480px]:grid-cols-2 min-[480px]:gap-x-16 min-[480px]:gap-y-12 lg:gap-x-20 xl:gap-x-24"
+        ? "grid min-w-0 flex-1 grid-cols-1 gap-12 min-[480px]:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] min-[480px]:gap-x-10 min-[480px]:gap-y-12 lg:gap-x-14 xl:gap-x-16"
         : "grid min-w-0 flex-1 grid-cols-1 gap-12 min-[480px]:grid-cols-2 lg:grid-cols-3 lg:gap-16";
 
   return (
