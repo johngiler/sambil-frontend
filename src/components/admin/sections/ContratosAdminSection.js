@@ -35,7 +35,7 @@ import {
   dashboardClientesSearchHref,
   dashboardPedidosSearchHref,
 } from "@/lib/adminDashboardLinks";
-import { clientsListPath, contractsListPath } from "@/lib/adminListQuery";
+import { contractsListPath } from "@/lib/adminListQuery";
 import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { authJsonFetcher } from "@/lib/swr/fetchers";
 import { mediaUrlForUiWithWebp, primaryAdSpaceMediaRawFromOrderLike } from "@/lib/mediaUrls";
@@ -219,7 +219,6 @@ export function ContratosAdminSection() {
   const [filterPhase, setFilterPhase] = useState("all");
   const [filterEnding, setFilterEnding] = useState("all");
   const [filterOrdering, setFilterOrdering] = useState("-end_date");
-  const [filterClientId, setFilterClientId] = useState("");
   const debouncedFilterQ = useDebouncedValue(filterQ, 400);
   const [galleryLightbox, setGalleryLightbox] = useState({
     open: false,
@@ -227,21 +226,6 @@ export function ContratosAdminSection() {
     initialIndex: 0,
   });
   const [err, setErr] = useState("");
-
-  const clientsKey =
-    authReady && accessToken ? `${clientsListPath(1, "", "all")}&page_size=100` : null;
-  const { data: clientsData } = useSWR(clientsKey, authJsonFetcher, { revalidateOnFocus: false });
-  const clientOptions = useMemo(() => {
-    const rows = parsePaginatedResponse(clientsData).results;
-    const opts = [{ v: "", l: "Todos los clientes" }];
-    for (const c of rows) {
-      const id = c?.id;
-      const name = (c?.company_name || "").trim();
-      if (id == null || !name) continue;
-      opts.push({ v: String(id), l: name });
-    }
-    return opts;
-  }, [clientsData]);
 
   const listKey =
     authReady && accessToken
@@ -252,7 +236,6 @@ export function ContratosAdminSection() {
           filterPhase,
           filterEnding,
           filterOrdering,
-          filterClientId,
           "",
         )
       : null;
@@ -273,8 +256,7 @@ export function ContratosAdminSection() {
     filterOrderStatus !== "all" ||
     filterPhase !== "all" ||
     filterEnding !== "all" ||
-    filterOrdering !== "-end_date" ||
-    filterClientId !== "";
+    filterOrdering !== "-end_date";
 
   useEffect(() => {
     setPage(1);
@@ -284,7 +266,6 @@ export function ContratosAdminSection() {
     filterPhase,
     filterEnding,
     filterOrdering,
-    filterClientId,
   ]);
 
   useEffect(() => {
@@ -297,10 +278,22 @@ export function ContratosAdminSection() {
     setGalleryLightbox({ open: true, items, initialIndex: 0 });
   }, []);
 
-  const ready =
-    !(authReady && accessToken) || (!isLoading && (data !== undefined || swrError !== undefined));
+  /** No usar `isLoading` aquí: al cambiar la clave SWR la nueva entrada arranca sin caché y `isLoading` pasa a true, se muestra el skeleton y el input de búsqueda pierde el foco. Con `keepPreviousData`, `data` sigue definido salvo la primera carga. */
+  const showBlockingSkeleton =
+    Boolean(authReady && accessToken && listKey) &&
+    data === undefined &&
+    swrError === undefined &&
+    isLoading;
 
-  if (!ready) {
+  if (!authReady || !accessToken) {
+    return (
+      <div className="mx-auto max-w-6xl py-16 text-center text-sm text-zinc-500">
+        Cargando…
+      </div>
+    );
+  }
+
+  if (showBlockingSkeleton) {
     return (
       <div className={adminPanelCard}>
         <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -388,19 +381,14 @@ export function ContratosAdminSection() {
         ) : (
           <>
             <AdminFiltersRow>
-              <AdminFilterSearchInput
-                id="contratos-filter-q"
-                value={filterQ}
-                onChange={setFilterQ}
-                placeholder="Cliente, pedido, código o nombre de toma…"
-              />
-              <AdminFilterSelect
-                id="contratos-filter-client"
-                label="Cliente"
-                value={filterClientId}
-                onChange={setFilterClientId}
-                options={clientOptions}
-              />
+              <div className="w-full min-w-0 shrink-0 basis-full">
+                <AdminFilterSearchInput
+                  id="contratos-filter-q"
+                  value={filterQ}
+                  onChange={setFilterQ}
+                  placeholder="Cliente, pedido, código de toma (ej. SLC-T5A o SLC - T5A)…"
+                />
+              </div>
               <AdminFilterSelect
                 id="contratos-filter-order-status"
                 label="Pedido"
@@ -437,7 +425,6 @@ export function ContratosAdminSection() {
                   setFilterPhase("all");
                   setFilterEnding("all");
                   setFilterOrdering("-end_date");
-                  setFilterClientId("");
                   setPage(1);
                 }}
               />
@@ -458,7 +445,6 @@ export function ContratosAdminSection() {
                       setFilterPhase("all");
                       setFilterEnding("all");
                       setFilterOrdering("-end_date");
-                      setFilterClientId("");
                       setPage(1);
                     }}
                   />
@@ -467,17 +453,17 @@ export function ContratosAdminSection() {
             ) : null}
 
             {rows.length > 0 ? (
-              <div className={`overflow-x-auto ${ROUNDED_CONTROL} border border-zinc-200`}>
-                <table className="min-w-[56rem] text-left text-sm">
+              <div className={`min-w-0 overflow-x-auto ${ROUNDED_CONTROL} border border-zinc-200`}>
+                <table className="w-full min-w-[56rem] border-collapse text-left text-sm">
                   <thead className="bg-zinc-50 text-xs uppercase text-zinc-500">
-                    <tr>
+                    <tr className="border-b border-zinc-200/80">
                       <th className="w-10 px-2 py-3" aria-hidden />
                       <th className="w-14 px-2 py-2">Foto</th>
-                      <th className="min-w-[11rem] px-3 py-2">Toma</th>
-                      <th className="min-w-[9rem] px-3 py-2">Cliente</th>
+                      <th className="min-w-[11rem] max-w-[18rem] px-3 py-2">Toma</th>
+                      <th className="min-w-[9rem] max-w-[16rem] px-3 py-2">Cliente</th>
                       <th className="min-w-[14rem] px-3 py-2">Línea de tiempo / ocupación</th>
                       <th className="min-w-[8rem] px-3 py-2">Pedido</th>
-                      <th className="min-w-[7rem] px-3 py-2">Estados</th>
+                      <th className="min-w-[7rem] px-3 py-2 text-end">Estados</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -577,15 +563,15 @@ export function ContratosAdminSection() {
                                 />
                               </div>
                             </td>
-                            <td className="px-3 py-2 align-middle">
-                              <div className="flex flex-col gap-1.5">
+                            <td className="px-3 py-2 align-middle text-end">
+                              <div className="flex flex-col items-end gap-1.5">
                                 <span
-                                  className={`inline-flex w-max max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${kindPillClass(it.contract_row_kind)}`}
+                                  className={`inline-flex max-w-full rounded-full border px-2 py-0.5 text-[10px] font-semibold ${kindPillClass(it.contract_row_kind)}`}
                                 >
                                   {kindLabel(it.contract_row_kind)}
                                 </span>
                                 <span
-                                  className={`inline-flex w-max max-w-full rounded-full border border-transparent px-2 py-0.5 text-[10px] font-semibold shadow-sm ${orderStatusPillClassName(it.order_status)}`}
+                                  className={`inline-flex max-w-full rounded-full border border-transparent px-2 py-0.5 text-[10px] font-semibold shadow-sm ${orderStatusPillClassName(it.order_status)}`}
                                 >
                                   {it.order_status_label || it.order_status}
                                 </span>
@@ -614,23 +600,6 @@ export function ContratosAdminSection() {
                                     <AdminDetailField label="Días restantes (en curso)">
                                       {it.days_remaining != null ? String(it.days_remaining) : "—"}
                                     </AdminDetailField>
-                                  </div>
-                                </AdminDetailSection>
-                                <AdminDetailSection panelId={panelId} sectionId="links" title="Enlaces rápidos">
-                                  <div className="flex flex-wrap gap-3 text-sm">
-                                    <CatalogSpaceLink
-                                      spaceId={it.ad_space_id}
-                                      className="font-semibold text-[color:var(--mp-primary)] underline-offset-2 hover:underline"
-                                    >
-                                      Ver toma en catálogo
-                                    </CatalogSpaceLink>
-                                    <AdminDashboardFilterLink
-                                      href={dashboardPedidosSearchHref(
-                                        orderRef ? orderRef.replace(/^#/, "") : String(it.order_id),
-                                      )}
-                                    >
-                                      Abrir pedido en el panel
-                                    </AdminDashboardFilterLink>
                                   </div>
                                 </AdminDetailSection>
                               </AdminDetailInset>

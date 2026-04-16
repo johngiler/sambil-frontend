@@ -4,8 +4,8 @@ import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 /** Misma estructura que la tabla de contratos en `ContratosAdminSection`. */
 export function ContratosSectionSkeleton() {
   return (
-    <div className={`overflow-x-auto ${ROUNDED_CONTROL} border border-zinc-200`}>
-      <table className="min-w-[56rem] text-left text-sm">
+    <div className={`min-w-0 overflow-x-auto ${ROUNDED_CONTROL} border border-zinc-200`}>
+      <table className="w-full min-w-[56rem] border-collapse text-left text-sm">
         <thead className="bg-zinc-50 text-xs uppercase text-zinc-500">
           <tr>
             <th className="w-10 px-2 py-3" aria-hidden />
