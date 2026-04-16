@@ -6,8 +6,8 @@ import {
   IconAdminBriefcase,
   IconAdminBuilding,
   IconAdminClipboard,
+  IconAdminContract,
   IconAdminGrid,
-  IconAdminUserPlus,
 } from "@/components/admin/adminIcons";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 
@@ -23,10 +23,10 @@ const linkFocus =
  * @param {string} props.nCenters
  * @param {string} props.nSpaces
  * @param {string} props.nClients
- * @param {string} props.nUsers
+ * @param {string} props.nContractsRunning — líneas de contrato en curso (pedido activo, periodo vigente hoy).
  * @param {string} props.nOrders
  */
-export function AdminDashboardKpiCards({ nCenters, nSpaces, nClients, nUsers, nOrders }) {
+export function AdminDashboardKpiCards({ nCenters, nSpaces, nClients, nContractsRunning, nOrders }) {
   const items = [
     {
       key: "centers",
@@ -62,11 +62,11 @@ export function AdminDashboardKpiCards({ nCenters, nSpaces, nClients, nUsers, nO
       valueClass: "text-amber-950",
     },
     {
-      key: "users",
-      href: "/dashboard/usuarios",
-      label: "Usuarios",
-      value: nUsers,
-      Icon: IconAdminUserPlus,
+      key: "contracts-running",
+      href: "/dashboard/contratos?phase=running",
+      label: "Contratos en curso",
+      value: nContractsRunning,
+      Icon: IconAdminContract,
       card: `bg-gradient-to-br from-indigo-100/90 via-sky-50/80 to-white ring-1 ring-indigo-200/50`,
       iconWrap: `${iconBox} bg-gradient-to-br from-indigo-500/25 to-sky-500/22 text-indigo-700/55`,
       labelClass: "text-indigo-950/70",

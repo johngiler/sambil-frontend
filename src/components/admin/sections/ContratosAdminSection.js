@@ -1,6 +1,7 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import useSWR from "swr";
 
 import {
@@ -150,6 +151,26 @@ function contractLineLightboxItems(it) {
 
 function contractLineImageCount(it) {
   return contractLineLightboxItems(it).length;
+}
+
+function ContratosUrlPhaseSyncInner({ onPhase }) {
+  const searchParams = useSearchParams();
+  useEffect(() => {
+    const ph = (searchParams.get("phase") || "").trim().toLowerCase();
+    if (ph === "running" || ph === "upcoming" || ph === "ended" || ph === "all") {
+      onPhase(ph);
+    }
+  }, [searchParams, onPhase]);
+  return null;
+}
+
+/** Aplica `?phase=` de la URL (p. ej. enlace desde la tarjeta KPI del resumen). */
+function ContratosUrlPhaseSync({ onPhase }) {
+  return (
+    <Suspense fallback={null}>
+      <ContratosUrlPhaseSyncInner onPhase={onPhase} />
+    </Suspense>
+  );
 }
 
 function ContractTimelineBar({ row }) {
@@ -315,6 +336,7 @@ export function ContratosAdminSection() {
 
   return (
     <>
+      <ContratosUrlPhaseSync onPhase={setFilterPhase} />
       <AdminListQuerySync onQuery={setFilterQ} />
       <div className={adminPanelCard}>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

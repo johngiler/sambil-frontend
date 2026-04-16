@@ -49,13 +49,13 @@ function ResumenTab() {
     isLoading: activityLoading,
   } = useSWR(fetchStats ? DASHBOARD_ACTIVITY_PATH : null, authJsonFetcher);
 
-  const { nCenters, nSpaces, nClients, nUsers, nOrders, ready, chartStats } = useMemo(() => {
+  const { nCenters, nSpaces, nClients, nContractsRunning, nOrders, ready, chartStats } = useMemo(() => {
     if (!fetchStats) {
       return {
         nCenters: "—",
         nSpaces: "—",
         nClients: "—",
-        nUsers: "—",
+        nContractsRunning: "—",
         nOrders: "—",
         ready: true,
         chartStats: null,
@@ -66,7 +66,7 @@ function ResumenTab() {
         nCenters: "—",
         nSpaces: "—",
         nClients: "—",
-        nUsers: "—",
+        nContractsRunning: "—",
         nOrders: "—",
         ready: false,
         chartStats: null,
@@ -77,7 +77,7 @@ function ResumenTab() {
         nCenters: "—",
         nSpaces: "—",
         nClients: "—",
-        nUsers: "—",
+        nContractsRunning: "—",
         nOrders: "—",
         ready: true,
         chartStats: null,
@@ -89,7 +89,7 @@ function ResumenTab() {
       nCenters: fmt(c?.centers),
       nSpaces: fmt(c?.spaces),
       nClients: fmt(c?.clients),
-      nUsers: fmt(c?.users),
+      nContractsRunning: fmt(c?.contracts_running),
       nOrders: fmt(c?.orders),
       ready: true,
       chartStats: data ?? null,
@@ -113,7 +113,7 @@ function ResumenTab() {
         nCenters={nCenters}
         nSpaces={nSpaces}
         nClients={nClients}
-        nUsers={nUsers}
+        nContractsRunning={nContractsRunning}
         nOrders={nOrders}
       />
       <AdminDashboardSpaceMonthlyPriceCard economics={chartStats?.economics} gradId={priceGradId} />
