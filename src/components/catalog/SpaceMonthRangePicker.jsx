@@ -36,7 +36,7 @@ export function SpaceMonthRangePicker({
   availabilityYear,
   monthsOccupied,
   monthlyPriceUsd,
-  minMonths = 5,
+  minMonths = 1,
   onRangeChange,
   pickSync = null,
   cartBaselineMonths = null,
@@ -294,7 +294,11 @@ export function SpaceMonthRangePicker({
       ) : null}
       {rangeValid && !touchesBlocked && !meetsMin ? (
         <p className="text-sm text-amber-800">
-          El rango debe tener al menos <strong>{minMonths} meses</strong> seguidos en calendario. Amplía tocando meses
+          El rango debe tener al menos{" "}
+          <strong>
+            {minMonths} {minMonths === 1 ? "mes" : "meses"}
+          </strong>{" "}
+          seguidos en calendario. Amplía tocando meses
           fuera del bloque o reduce y vuelve a armar el intervalo.
         </p>
       ) : null}

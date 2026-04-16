@@ -251,7 +251,7 @@ export default function CheckoutView() {
     setResult(null);
     setPaymentUploadError("");
     if (!items.length || !meetsMin) {
-      setError("El carrito está vacío o el período no cumple 5 meses.");
+      setError("El carrito está vacío o el período no cumple al menos un mes de calendario.");
       return;
     }
     if (!accessToken) return;
@@ -325,7 +325,7 @@ export default function CheckoutView() {
     setResult(null);
     setPaymentUploadError("");
     if (!items.length || !meetsMin) {
-      setError("El carrito está vacío o el período no cumple 5 meses.");
+      setError("El carrito está vacío o el período no cumple al menos un mes de calendario.");
       return;
     }
     if (!guestDatosReady) {

@@ -10,7 +10,7 @@ import { marketplaceSecondaryBtn } from "@/lib/marketplaceActionButtons";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartProvider";
 import { spaceAllowsMarketplaceReservation } from "@/lib/spaceMarketplaceReservation";
-import { contractMonthsInclusive } from "@/lib/rentalDates";
+import { contractMonthsInclusive, MIN_RESERVATION_CALENDAR_MONTHS } from "@/lib/rentalDates";
 import { postSpaceRentalRangeCheck } from "@/services/api";
 import {
   monthBoundsFromIsoInYear,
@@ -80,7 +80,9 @@ export function SpaceDetailReservationActions({ space }) {
     const lo = Math.min(sm, em);
     const hi = Math.max(sm, em);
     if (rangeTouchesOccupiedMonth(year, lo, hi, occ)) return false;
-    return contractMonthsInclusive(pick.start_date, pick.end_date) >= 5;
+    return (
+      contractMonthsInclusive(pick.start_date, pick.end_date) >= MIN_RESERVATION_CALENDAR_MONTHS
+    );
   }, [pick, year, occ]);
 
   const hasRealModification = useMemo(() => {
@@ -202,7 +204,7 @@ export function SpaceDetailReservationActions({ space }) {
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600">
             Selecciona el rango disponible en <strong className="font-medium text-zinc-800">{year}</strong>: meses
             seguidos en un solo bloque, con un mínimo de{" "}
-            <strong className="font-medium text-zinc-800">5 meses</strong>. Toca el calendario para marcar o ajustar el
+            <strong className="font-medium text-zinc-800">1 mes</strong> de calendario. Toca el calendario para marcar o ajustar el
             intervalo; los meses en gris no se pueden reservar.
           </p>
         </div>
@@ -212,7 +214,7 @@ export function SpaceDetailReservationActions({ space }) {
             availabilityYear={year}
             monthsOccupied={space.months_occupied}
             monthlyPriceUsd={space.monthly_price_usd}
-            minMonths={5}
+            minMonths={MIN_RESERVATION_CALENDAR_MONTHS}
             onRangeChange={setPick}
             pickSync={pick}
             cartBaselineMonths={cartBaselineMonths}
@@ -282,7 +284,8 @@ export function SpaceDetailReservationActions({ space }) {
           )}
           {!pickValid && !spaceInCart ? (
             <p className="text-center text-xs text-zinc-500">
-              Selecciona un rango válido (sin meses bloqueados y con mínimo de 5 meses) para habilitar el botón.
+              Selecciona un rango válido (sin meses bloqueados y con al menos un mes de calendario) para habilitar el
+              botón.
             </p>
           ) : null}
         </div>
