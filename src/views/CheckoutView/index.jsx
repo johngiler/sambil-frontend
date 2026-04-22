@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import useSWR from "swr";
 
-import { CheckoutPaymentReceiptField } from "@/components/checkout/CheckoutPaymentReceiptField";
 import { CheckoutStepper } from "@/components/checkout/CheckoutStepper";
 import {
   PasswordPairLiveValidation,
@@ -20,7 +19,6 @@ import {
   ivaFromSubtotal,
   totalWithIva,
 } from "@/lib/marketplacePricing";
-import { checkoutPaymentMethodToApi } from "@/lib/orderPaymentMethods";
 import { cartAllItemsMeetCheckoutRules, cartTotalUsd } from "@/lib/rentalDates";
 import { EmptyState, EmptyStateIconInbox } from "@/components/ui/EmptyState";
 import {
@@ -35,7 +33,7 @@ import {
   postGuestCheckoutValidateDatos,
   postValidatePassword,
 } from "@/services/api";
-import { authFetch, authFetchForm, saveMyCompany } from "@/services/authApi";
+import { authFetch, saveMyCompany } from "@/services/authApi";
 
 function formatOrderErrorMessage(raw) {
   if (raw == null || raw === "") return "No se pudo crear el pedido.";
@@ -78,13 +76,6 @@ function formatOrderErrorMessage(raw) {
 const fieldClass = `mp-form-field-accent mt-1.5 min-h-11 w-full ${ROUNDED_CONTROL} border border-zinc-200 bg-white px-3 py-2.5 text-base text-zinc-900 transition-[border-color,box-shadow] duration-200 ease-out focus:outline-none sm:min-h-0 sm:py-2 sm:text-sm`;
 
 const labelClass = "text-[11px] font-semibold uppercase tracking-[0.14em] text-zinc-400";
-
-const PAYMENT_METHODS = [
-  { id: "card", label: "Tarjeta" },
-  { id: "transfer", label: "Transferencia" },
-  { id: "crypto", label: "Cripto" },
-  { id: "zelle", label: "Zelle" },
-];
 
 /**
  * Interpreta la respuesta de `/api/checkout/guest/validate-datos/` (sin efectos).
@@ -158,9 +149,6 @@ export default function CheckoutView() {
   const isGuest = !me;
 
   const [step, setStep] = useState("datos");
-  const [paymentMethod, setPaymentMethod] = useState("card");
-  const [paymentReceiptFile, setPaymentReceiptFile] = useState(null);
-  const [paymentUploadError, setPaymentUploadError] = useState("");
   const [company_name, setCompanyName] = useState("");
   const [contact_name, setContactName] = useState("");
   const [email, setEmail] = useState("");
@@ -249,7 +237,6 @@ export default function CheckoutView() {
   async function ensureCompanyThenSubmit() {
     setError("");
     setResult(null);
-    setPaymentUploadError("");
     if (!items.length || !meetsMin) {
       setError("El carrito está vacío o el período no cumple al menos un mes de calendario.");
       return;
@@ -290,28 +277,9 @@ export default function CheckoutView() {
         body: {},
         token: accessToken,
       });
-      const fd = new FormData();
-      fd.append("payment_method", checkoutPaymentMethodToApi(paymentMethod));
-      if (paymentReceiptFile) {
-        fd.append("payment_receipt", paymentReceiptFile);
-      }
-      try {
-        await authFetchForm(`/api/orders/${submitted.id}/`, {
-          method: "PATCH",
-          formData: fd,
-          token: accessToken,
-        });
-      } catch (patchErr) {
-        setPaymentUploadError(
-          patchErr instanceof Error
-            ? patchErr.message
-            : "No se pudo guardar el método o el comprobante.",
-        );
-      }
       setResult(submitted);
       setGuestCreatedAccount(false);
       setCompletedAsGuest(false);
-      setPaymentReceiptFile(null);
       clear();
     } catch (err) {
       setError(err instanceof Error ? formatOrderErrorMessage(err.message) : "Error al enviar");
@@ -323,7 +291,6 @@ export default function CheckoutView() {
   async function guestSubmit() {
     setError("");
     setResult(null);
-    setPaymentUploadError("");
     if (!items.length || !meetsMin) {
       setError("El carrito está vacío o el período no cumple al menos un mes de calendario.");
       return;
@@ -373,19 +340,16 @@ export default function CheckoutView() {
           create_account: createAccount,
           password: createAccount ? password : "",
           password_confirm: createAccount ? passwordConfirm : "",
-          payment_method: checkoutPaymentMethodToApi(paymentMethod),
           items: items.map((i) => ({
             ad_space: i.id,
             start_date: i.start_date,
             end_date: i.end_date,
           })),
         },
-        { receiptFile: paymentReceiptFile || undefined },
       );
       setResult(submitted);
       setGuestCreatedAccount(createAccount);
       setCompletedAsGuest(true);
-      setPaymentReceiptFile(null);
       clear();
     } catch (err) {
       setError(err instanceof Error ? formatOrderErrorMessage(err.message) : "Error al enviar");
@@ -402,14 +366,13 @@ export default function CheckoutView() {
           Pedido <span className="font-mono font-medium text-zinc-900">#{result.id}</span> — estado:{" "}
           <span className="capitalize">{result.status}</span>
         </p>
-        {paymentUploadError ? (
-          <p
-            className={`mt-4 ${ROUNDED_CONTROL} border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950`}
-          >
-            Tu solicitud quedó enviada, pero no se pudieron guardar el método de pago o el comprobante:{" "}
-            <span className="break-words font-medium">{paymentUploadError}</span>
-          </p>
-        ) : null}
+        <p className="mt-4 text-sm text-zinc-600">
+          El comprobante de pago lo subirás más adelante, cuando el pedido esté facturado, desde{" "}
+          <Link href="/cuenta/pedidos" className="font-semibold text-zinc-900 no-underline underline-offset-4 hover:underline">
+            Mis pedidos
+          </Link>
+          .
+        </p>
         {result.hold_expires_at ? (
           <p className="mt-2 break-words text-sm text-zinc-600">
             Reserva en revisión hasta{" "}
@@ -609,7 +572,7 @@ export default function CheckoutView() {
                           return;
                         }
                       }
-                      setStep("pago");
+                      setStep("confirmar");
                     } catch (err) {
                       setGuestClientEmailBlock(
                         err instanceof Error
@@ -759,7 +722,7 @@ export default function CheckoutView() {
                   className="space-y-5"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    if (datosStepCanContinue) setStep("pago");
+                    if (datosStepCanContinue) setStep("confirmar");
                   }}
                 >
                   <div>
@@ -828,62 +791,13 @@ export default function CheckoutView() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setStep("pago")}
+                    onClick={() => setStep("confirmar")}
                     className={`${marketplacePrimaryBtn} min-h-11 w-full py-3 text-sm font-semibold`}
                   >
                     Continuar
                   </button>
                 </div>
               )}
-            </div>
-          ) : null}
-
-          {step === "pago" ? (
-            <div className="mt-10 space-y-8">
-              <p className="text-sm text-zinc-600">
-                Elige un método de pago de referencia (la facturación real la confirma el equipo de {displayName}).
-              </p>
-              <div className="grid grid-cols-2 gap-3">
-                {PAYMENT_METHODS.map((m) => {
-                  const on = paymentMethod === m.id;
-                  return (
-                    <button
-                      key={m.id}
-                      type="button"
-                      onClick={() => setPaymentMethod(m.id)}
-                      className={`min-h-[3.25rem] rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
-                        on
-                          ? "border-[color-mix(in_srgb,var(--mp-primary)_58%,#d4d4d8)] bg-[color-mix(in_srgb,var(--mp-primary)_12%,#fff)] mp-text-brand ring-1 ring-[color-mix(in_srgb,var(--mp-primary)_22%,transparent)]"
-                          : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300"
-                      }`}
-                    >
-                      {m.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <CheckoutPaymentReceiptField
-                id="checkout-payment-receipt"
-                value={paymentReceiptFile}
-                onChange={setPaymentReceiptFile}
-                helperText="Opcional con tarjeta; si pagas por transferencia o Zelle, adjunta captura o PDF. Se envía junto con tu solicitud al confirmar el pedido."
-              />
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep("datos")}
-                  className={`${marketplaceSecondaryBtn} min-h-11 flex-1 py-2.5 text-sm font-semibold`}
-                >
-                  Atrás
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep("confirmar")}
-                  className={`${marketplacePrimaryBtn} min-h-11 flex-1 py-2.5 text-sm font-semibold`}
-                >
-                  Continuar
-                </button>
-              </div>
             </div>
           ) : null}
 
@@ -925,7 +839,7 @@ export default function CheckoutView() {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setStep("pago")}
+                  onClick={() => setStep("datos")}
                   className={`${marketplaceSecondaryBtn} min-h-11 flex-1 py-2.5 text-sm font-semibold`}
                 >
                   Atrás

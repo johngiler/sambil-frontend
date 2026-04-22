@@ -134,6 +134,33 @@ export function normalizeMediaUrlForUi(url) {
 }
 
 /**
+ * Ruta ``/media/…`` para ``authFetchBlob`` / ``apiUrl`` a partir de ``file_url`` del API (relativa o absoluta).
+ * El iframe del navegador no envía ``Authorization``; para PDFs protegidos hay que obtener un blob con JWT.
+ */
+export function apiBlobPathFromMediaField(raw) {
+  const s = typeof raw === "string" ? raw.trim() : "";
+  if (!s) return "";
+  const n = normalizeMediaUrlForUi(s);
+  if (n && n.startsWith("/media/")) return n;
+  try {
+    const u = new URL(s);
+    if (u.pathname.startsWith("/media/")) return `${u.pathname}${u.search}`;
+  } catch {
+    /* ignore */
+  }
+  return "";
+}
+
+/**
+ * Rutas donde no se genera compañero `.webp` en servidor (p. ej. artes de pedido subidos por el cliente).
+ * Evita un 404 previo innecesario en ``<img>`` / lightbox.
+ */
+function mediaPathSkipsWebpFirst(url) {
+  const s = String(url || "");
+  return /\/media\/orders\//i.test(s);
+}
+
+/**
  * Si la URL es raster (.jpg/.png/.gif), devuelve la misma ruta con extensión `.webp` (migración en disco).
  */
 export function rasterUrlTryWebpVariant(url) {
@@ -172,6 +199,7 @@ export function mediaUrlForUiWithWebp(rawUrl) {
   if (rawUrl == null || typeof rawUrl !== "string" || rawUrl.trim() === "") return "";
   const n = normalizeMediaUrlForUi(rawUrl.trim());
   if (!n) return "";
+  if (mediaPathSkipsWebpFirst(n)) return n;
   return rasterUrlTryWebpVariant(n) || n;
 }
 
@@ -185,6 +213,7 @@ export function rasterDisplayCandidates(rawUrl) {
   if (!s) return [];
   const normalized = normalizeMediaUrlForUi(s);
   if (!normalized) return [];
+  if (mediaPathSkipsWebpFirst(normalized)) return [normalized];
   const webp = rasterUrlTryWebpVariant(normalized);
   if (webp && webp !== normalized) return [webp, normalized];
   return [normalized];

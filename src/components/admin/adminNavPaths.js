@@ -2,6 +2,11 @@
 export const ADMIN_NAV_PATHS = [
   { segment: "resumen", href: "/dashboard", label: "Resumen" },
   { segment: "centros", href: "/dashboard/centros", label: "Centros comerciales" },
+  {
+    segment: "proveedores-montaje",
+    href: "/dashboard/proveedores-montaje",
+    label: "Proveedores de montaje",
+  },
   { segment: "tomas", href: "/dashboard/tomas", label: "Tomas" },
   { segment: "usuarios", href: "/dashboard/usuarios", label: "Usuarios" },
   { segment: "clientes", href: "/dashboard/clientes", label: "Clientes" },

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { SpaceDetailCoverWithLightbox } from "@/components/catalog/SpaceDetailCoverWithLightbox";
 import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvailabilityBar";
+import { SpaceMarketplaceCompliance } from "@/components/catalog/SpaceMarketplaceCompliance";
 import { SpaceDetailReservationActions } from "@/components/catalog/SpaceDetailReservationActions";
 import { SPACE_TYPES, spaceStatusLabel, spaceStatusPillClassName } from "@/components/admin/adminConstants";
 import { subtitleCityAfterCenterName } from "@/lib/shoppingCenterDisplay";
@@ -227,6 +228,7 @@ export default async function SpaceDetailView({ spaceId }) {
         </aside>
       </div>
 
+      <SpaceMarketplaceCompliance space={space} />
       <SpaceDetailReservationActions space={space} />
     </div>
   );

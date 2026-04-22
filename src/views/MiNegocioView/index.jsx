@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useState } from "react";
 
 import { IconRowTrash } from "@/components/admin/rowActionIcons";
+import { FileDropZoneField } from "@/components/ui/FileDropZoneField";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
@@ -63,12 +64,15 @@ function FileBlock({
   helper,
   existingUrl,
   previewObjectUrl,
-  inputRef,
-  onPick,
+  file,
+  onFileChange,
   onClearMark,
+  formatsHint,
+  formatErrorMessage,
   /** @type {'logoWide' | 'square100'} */
   previewVariant = "square100",
 }) {
+  const fieldId = useId();
   const imgSrc =
     previewObjectUrl ||
     (existingUrl ? normalizeMediaUrlForUi(existingUrl) : "");
@@ -100,18 +104,22 @@ function FileBlock({
           Sin archivo
         </p>
       )}
-      <div className="mt-2 flex flex-wrap items-center gap-2">
-        <label className="cursor-pointer rounded-[10px] border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 shadow-sm hover:bg-zinc-50">
-          Elegir archivo
-          <input
-            ref={inputRef}
-            type="file"
-            accept={brandAccept}
-            className="sr-only"
-            onChange={(e) => onPick(e.target.files?.[0] ?? null)}
-          />
-        </label>
-        {existingUrl && !previewObjectUrl ? (
+      <div className="mt-2 space-y-2">
+        <FileDropZoneField
+          id={fieldId}
+          showLabel={false}
+          ariaLabel={label}
+          value={file}
+          onChange={onFileChange}
+          accept={brandAccept}
+          helperText=""
+          formatsHint={formatsHint}
+          formatErrorMessage={formatErrorMessage}
+          maxBytesErrorMessage="El archivo supera el tamaño máximo permitido (5 MB). Elige otro archivo."
+          showInlinePreview={false}
+          dropZoneAriaLabel={`Zona para adjuntar: ${label}`}
+        />
+        {existingUrl && !file ? (
           <button
             type="button"
             className="mp-ring-brand inline-flex shrink-0 items-center justify-center rounded-[15px] border border-transparent p-2 text-red-600 transition-colors hover:border-red-200/90 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)]"
@@ -161,10 +169,6 @@ export default function MiNegocioView() {
   const [logoPreview, setLogoPreview] = useState(null);
   const [logoMarkPreview, setLogoMarkPreview] = useState(null);
   const [faviconPreview, setFaviconPreview] = useState(null);
-
-  const logoRef = useRef(null);
-  const markRef = useRef(null);
-  const favRef = useRef(null);
 
   const [saveErr, setSaveErr] = useState("");
   const [saveOk, setSaveOk] = useState("");
@@ -244,9 +248,6 @@ export default function MiNegocioView() {
         setRemoveLogo(false);
         setRemoveLogoMark(false);
         setRemoveFavicon(false);
-        if (logoRef.current) logoRef.current.value = "";
-        if (markRef.current) markRef.current.value = "";
-        if (favRef.current) favRef.current.value = "";
       } catch (e) {
         if (!cancelled) setLoadErr(e instanceof Error ? e.message : "Error al cargar");
       } finally {
@@ -293,9 +294,6 @@ export default function MiNegocioView() {
       setRemoveLogo(false);
       setRemoveLogoMark(false);
       setRemoveFavicon(false);
-      if (logoRef.current) logoRef.current.value = "";
-      if (markRef.current) markRef.current.value = "";
-      if (favRef.current) favRef.current.value = "";
       setSaveOk("Cambios guardados.");
       await reloadWorkspace();
     } catch (err) {
@@ -546,15 +544,16 @@ export default function MiNegocioView() {
                 helper="SVG, PNG, JPEG, GIF o WebP. Vista previa 150×50 px (en cabecera el logotipo se muestra hasta 150×30 px)."
                 existingUrl={logoExisting}
                 previewObjectUrl={logoPreview}
-                inputRef={logoRef}
-                onPick={(f) => {
+                file={logoFile}
+                formatsHint="SVG, PNG, JPEG, GIF o WebP · máximo 5 MB"
+                formatErrorMessage="Formato no permitido. Usa SVG, PNG, JPEG, GIF o WebP."
+                onFileChange={(f) => {
                   setLogoFile(f);
                   setRemoveLogo(false);
                 }}
                 onClearMark={() => {
                   setRemoveLogo(true);
                   setLogoFile(null);
-                  if (logoRef.current) logoRef.current.value = "";
                 }}
               />
               <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-6">
@@ -564,15 +563,16 @@ export default function MiNegocioView() {
                   helper="Símbolo o marca reducida. Vista previa 100×100 px. Mismos formatos."
                   existingUrl={markExisting}
                   previewObjectUrl={logoMarkPreview}
-                  inputRef={markRef}
-                  onPick={(f) => {
+                  file={logoMarkFile}
+                  formatsHint="SVG, PNG, JPEG, GIF o WebP · máximo 5 MB"
+                  formatErrorMessage="Formato no permitido. Usa SVG, PNG, JPEG, GIF o WebP."
+                  onFileChange={(f) => {
                     setLogoMarkFile(f);
                     setRemoveLogoMark(false);
                   }}
                   onClearMark={() => {
                     setRemoveLogoMark(true);
                     setLogoMarkFile(null);
-                    if (markRef.current) markRef.current.value = "";
                   }}
                 />
                 <FileBlock
@@ -581,15 +581,16 @@ export default function MiNegocioView() {
                   helper="SVG, PNG, ICO, JPEG, GIF o WebP. Vista previa 100×100 px."
                   existingUrl={favExisting}
                   previewObjectUrl={faviconPreview}
-                  inputRef={favRef}
-                  onPick={(f) => {
+                  file={faviconFile}
+                  formatsHint="SVG, PNG, ICO, JPEG, GIF o WebP · máximo 5 MB"
+                  formatErrorMessage="Formato no permitido. Usa SVG, PNG, ICO, JPEG, GIF o WebP."
+                  onFileChange={(f) => {
                     setFaviconFile(f);
                     setRemoveFavicon(false);
                   }}
                   onClearMark={() => {
                     setRemoveFavicon(true);
                     setFaviconFile(null);
-                    if (favRef.current) favRef.current.value = "";
                   }}
                 />
               </div>

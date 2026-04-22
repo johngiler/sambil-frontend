@@ -56,6 +56,36 @@ export function IconRowTrash({ className = "" }) {
   );
 }
 
+/** Añadir fila (mismo trazo que el resto de iconos de fila). */
+export function IconRowPlus({ className = "" }) {
+  return (
+    <svg className={`${ic} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 4.5v15m7.5-7.5h-15"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Enviar / confirmar (avión de papel, outline). */
+export function IconRowPaperAirplane({ className = "" }) {
+  return (
+    <svg className={`${ic} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M6 12 3.269 3.126A59.769 59.769 0 0121.485 12 59.768 59.768 0 013.27 20.876L5.999 12zm6 0h8.25"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function IconBuildingSection({ className = "" }) {
   return (
     <svg className={`h-8 w-8 ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>

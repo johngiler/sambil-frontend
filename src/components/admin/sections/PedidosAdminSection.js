@@ -33,6 +33,7 @@ import {
   ORDER_STATUS_FILTER_OPTIONS,
 } from "@/components/admin/adminConstants";
 import { IconAdminArrowDownTray, IconAdminClipboard } from "@/components/admin/adminIcons";
+import { PedidoDocumentosNegociacionAdmin } from "@/components/admin/PedidoDocumentosNegociacionAdmin";
 import { PedidosSectionSkeleton } from "@/components/admin/skeletons/PedidosSectionSkeleton";
 import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
@@ -151,7 +152,7 @@ function PedidoDatosPagoPortal({ order, panelId }) {
               </button>
             ) : (
               <p className="text-sm text-zinc-500">
-                El cliente no adjuntó comprobante en el checkout.
+                El cliente puede subir el comprobante cuando el pedido esté facturado o pagado, desde Mis pedidos.
               </p>
             )}
           </AdminDetailField>
@@ -479,6 +480,115 @@ export function PedidosAdminSection() {
 
                       <div className="mt-4 grid w-full grid-cols-1 gap-4 lg:mt-5 lg:grid-cols-2 lg:items-start lg:gap-6 xl:gap-7">
                         <div className="min-w-0">
+                        <AdminDetailSection panelId={panelId} sectionId="client" title="Cliente">
+                          <AdminDetailInset className="w-full min-w-0">
+                            {o.client_detail ? (
+                              <div className="grid w-full min-w-0 grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-4">
+                                <AdminDetailField label="Cliente">
+                                  {o.client_detail.company_name?.trim() ? (
+                                    <AdminDashboardFilterLink
+                                      href={dashboardClientesSearchHref(o.client_detail.company_name.trim())}
+                                    >
+                                      {o.client_detail.company_name.trim()}
+                                    </AdminDashboardFilterLink>
+                                  ) : (
+                                    adminDetailEmpty("")
+                                  )}
+                                </AdminDetailField>
+                                <AdminDetailField label="Teléfono">
+                                  {o.client_detail.phone?.trim() ? (
+                                    <span className="inline-flex max-w-full flex-wrap items-center gap-1.5">
+                                      <span>{o.client_detail.phone.trim()}</span>
+                                      <AdminCopyIconButton
+                                        value={o.client_detail.phone.trim()}
+                                        ariaLabel="Copiar teléfono"
+                                      />
+                                    </span>
+                                  ) : (
+                                    adminDetailEmpty("")
+                                  )}
+                                </AdminDetailField>
+                                <AdminDetailField label="RIF">
+                                  {o.client_detail.rif?.trim() ? (
+                                    <span className="inline-flex max-w-full flex-wrap items-center gap-1.5 font-mono text-zinc-800">
+                                      <span>{o.client_detail.rif.trim()}</span>
+                                      <AdminCopyIconButton
+                                        value={o.client_detail.rif.trim()}
+                                        ariaLabel="Copiar RIF"
+                                      />
+                                    </span>
+                                  ) : (
+                                    <span className="font-mono text-zinc-800">{adminDetailEmpty("")}</span>
+                                  )}
+                                </AdminDetailField>
+                                <AdminDetailField label="Dirección">
+                                  {o.client_detail.address || adminDetailEmpty("")}
+                                </AdminDetailField>
+                                <AdminDetailField label="Contacto">
+                                  {o.client_detail.contact_name?.trim() ? (
+                                    <span className="inline-flex max-w-full flex-wrap items-center gap-1.5">
+                                      <span>{o.client_detail.contact_name.trim()}</span>
+                                      <AdminCopyIconButton
+                                        value={o.client_detail.contact_name.trim()}
+                                        ariaLabel="Copiar contacto"
+                                      />
+                                    </span>
+                                  ) : (
+                                    adminDetailEmpty("")
+                                  )}
+                                </AdminDetailField>
+                                <AdminDetailField label="Ciudad">
+                                  {o.client_detail.city || adminDetailEmpty("")}
+                                </AdminDetailField>
+                                <AdminDetailField label="Correo">
+                                  {o.client_detail.email ? (
+                                    <a
+                                      href={`mailto:${encodeURIComponent(o.client_detail.email)}`}
+                                      className="break-all font-medium text-zinc-900 no-underline underline-offset-2 hover:underline"
+                                    >
+                                      {o.client_detail.email}
+                                    </a>
+                                  ) : (
+                                    adminDetailEmpty("")
+                                  )}
+                                </AdminDetailField>
+                                <AdminDetailField label="Estado de la ficha (cliente)">
+                                  {o.client_detail.status ? (
+                                    <span
+                                      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${clientStatusPillClassName(o.client_detail.status)}`}
+                                    >
+                                      {clientStatusLabel(
+                                        o.client_detail.status,
+                                        o.client_detail.status_label,
+                                      )}
+                                    </span>
+                                  ) : (
+                                    adminDetailEmpty("")
+                                  )}
+                                </AdminDetailField>
+                              </div>
+                            ) : (
+                              <div className="grid w-full grid-cols-1 sm:grid-cols-2">
+                                <div className="sm:col-span-2">
+                                  <AdminDetailField label="Cliente">
+                                    {o.client_company_name?.trim() ? (
+                                      <AdminDashboardFilterLink
+                                        href={dashboardClientesSearchHref(o.client_company_name.trim())}
+                                      >
+                                        {o.client_company_name.trim()}
+                                      </AdminDashboardFilterLink>
+                                    ) : (
+                                      adminDetailEmpty("")
+                                    )}
+                                  </AdminDetailField>
+                                </div>
+                              </div>
+                            )}
+                          </AdminDetailInset>
+                        </AdminDetailSection>
+                        </div>
+
+                        <div className="min-w-0">
                         <AdminDetailSection panelId={panelId} sectionId="meta" title="Datos del pedido">
                           <AdminDetailInset>
                             <AdminDetailField label="Total (USD)">
@@ -638,113 +748,13 @@ export function PedidosAdminSection() {
                         </AdminDetailSection>
                         </div>
 
-                        <div className="min-w-0">
-                        <AdminDetailSection panelId={panelId} sectionId="client" title="Cliente">
-                          <AdminDetailInset className="w-full min-w-0">
-                            {o.client_detail ? (
-                              <div className="grid w-full min-w-0 grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2 sm:gap-x-5 sm:gap-y-4">
-                                <AdminDetailField label="Cliente">
-                                  {o.client_detail.company_name?.trim() ? (
-                                    <AdminDashboardFilterLink
-                                      href={dashboardClientesSearchHref(o.client_detail.company_name.trim())}
-                                    >
-                                      {o.client_detail.company_name.trim()}
-                                    </AdminDashboardFilterLink>
-                                  ) : (
-                                    adminDetailEmpty("")
-                                  )}
-                                </AdminDetailField>
-                                <AdminDetailField label="Teléfono">
-                                  {o.client_detail.phone?.trim() ? (
-                                    <span className="inline-flex max-w-full flex-wrap items-center gap-1.5">
-                                      <span>{o.client_detail.phone.trim()}</span>
-                                      <AdminCopyIconButton
-                                        value={o.client_detail.phone.trim()}
-                                        ariaLabel="Copiar teléfono"
-                                      />
-                                    </span>
-                                  ) : (
-                                    adminDetailEmpty("")
-                                  )}
-                                </AdminDetailField>
-                                <AdminDetailField label="RIF">
-                                  {o.client_detail.rif?.trim() ? (
-                                    <span className="inline-flex max-w-full flex-wrap items-center gap-1.5 font-mono text-zinc-800">
-                                      <span>{o.client_detail.rif.trim()}</span>
-                                      <AdminCopyIconButton
-                                        value={o.client_detail.rif.trim()}
-                                        ariaLabel="Copiar RIF"
-                                      />
-                                    </span>
-                                  ) : (
-                                    <span className="font-mono text-zinc-800">{adminDetailEmpty("")}</span>
-                                  )}
-                                </AdminDetailField>
-                                <AdminDetailField label="Dirección">
-                                  {o.client_detail.address || adminDetailEmpty("")}
-                                </AdminDetailField>
-                                <AdminDetailField label="Contacto">
-                                  {o.client_detail.contact_name?.trim() ? (
-                                    <span className="inline-flex max-w-full flex-wrap items-center gap-1.5">
-                                      <span>{o.client_detail.contact_name.trim()}</span>
-                                      <AdminCopyIconButton
-                                        value={o.client_detail.contact_name.trim()}
-                                        ariaLabel="Copiar contacto"
-                                      />
-                                    </span>
-                                  ) : (
-                                    adminDetailEmpty("")
-                                  )}
-                                </AdminDetailField>
-                                <AdminDetailField label="Ciudad">
-                                  {o.client_detail.city || adminDetailEmpty("")}
-                                </AdminDetailField>
-                                <AdminDetailField label="Correo">
-                                  {o.client_detail.email ? (
-                                    <a
-                                      href={`mailto:${encodeURIComponent(o.client_detail.email)}`}
-                                      className="break-all font-medium text-zinc-900 no-underline underline-offset-2 hover:underline"
-                                    >
-                                      {o.client_detail.email}
-                                    </a>
-                                  ) : (
-                                    adminDetailEmpty("")
-                                  )}
-                                </AdminDetailField>
-                                <AdminDetailField label="Estado de la ficha (cliente)">
-                                  {o.client_detail.status ? (
-                                    <span
-                                      className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${clientStatusPillClassName(o.client_detail.status)}`}
-                                    >
-                                      {clientStatusLabel(
-                                        o.client_detail.status,
-                                        o.client_detail.status_label,
-                                      )}
-                                    </span>
-                                  ) : (
-                                    adminDetailEmpty("")
-                                  )}
-                                </AdminDetailField>
-                              </div>
-                            ) : (
-                              <div className="grid w-full grid-cols-1 sm:grid-cols-2">
-                                <div className="sm:col-span-2">
-                                  <AdminDetailField label="Cliente">
-                                    {o.client_company_name?.trim() ? (
-                                      <AdminDashboardFilterLink
-                                        href={dashboardClientesSearchHref(o.client_company_name.trim())}
-                                      >
-                                        {o.client_company_name.trim()}
-                                      </AdminDashboardFilterLink>
-                                    ) : (
-                                      adminDetailEmpty("")
-                                    )}
-                                  </AdminDetailField>
-                                </div>
-                              </div>
-                            )}
-                          </AdminDetailInset>
-                        </AdminDetailSection>
+                        <div className="min-w-0 lg:col-span-2">
+                          <PedidoDocumentosNegociacionAdmin
+                            order={o}
+                            panelId={panelId}
+                            accessToken={accessToken}
+                            onSaved={reloadOrders}
+                          />
                         </div>
                       </div>
                     </AdminAccordionRowPanel>

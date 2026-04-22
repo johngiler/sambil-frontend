@@ -16,6 +16,7 @@ import { AdminListPagination } from "@/components/admin/AdminListPagination";
 import { ORDER_STATUS, orderStatusPillClassName } from "@/components/admin/adminConstants";
 import { CatalogSpaceLink } from "@/components/catalog/CatalogSpaceLink";
 import { MisPedidosSkeleton } from "@/components/orders/MisPedidosSkeleton";
+import { OrderClientWorkflowPanel } from "@/components/orders/OrderClientWorkflowPanel";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
 import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
@@ -232,6 +233,17 @@ function SectionTitle({ children, id }) {
   );
 }
 
+/** Pestañas tipo barra (no chips): indicador inferior alineado con el borde del bloque. */
+function orderDetailTabTriggerClass(isSelected) {
+  return [
+    "relative -mb-px inline-flex min-h-10 shrink-0 items-center border-b-2 px-3 py-2.5 text-center text-xs font-medium transition-colors sm:px-4 sm:text-sm",
+    "rounded-t-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)] focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-50",
+    isSelected
+      ? "z-[1] border-[color:var(--mp-primary)] font-semibold text-[color:var(--mp-primary)]"
+      : "border-transparent text-zinc-500 hover:bg-zinc-100/70 hover:text-zinc-800",
+  ].join(" ");
+}
+
 function OrderTimeline({ events }) {
   if (!events || !events.length) {
     return (
@@ -326,6 +338,8 @@ export default function MisPedidosView() {
   const searchParams = useSearchParams();
   const { authReady, me, isAdmin, isClient, accessToken } = useAuth();
   const [openId, setOpenId] = useState(null);
+  /** Pestaña del panel expandido de un pedido: documentos | detalle | historial */
+  const [orderDetailTab, setOrderDetailTab] = useState("documents");
   const [err, setErr] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterSearch, setFilterSearch] = useState("");
@@ -356,9 +370,31 @@ export default function MisPedidosView() {
 
   const canFetchOrders = authReady && isClient && !!accessToken;
   const listKey = canFetchOrders ? ordersListPath(page, debouncedSearch, filterStatus) : null;
-  const { data, error: ordersError, isLoading: ordersLoading } = useSWR(listKey, authJsonFetcher, {
-    keepPreviousData: true,
-  });
+  const { data, error: ordersError, isLoading: ordersLoading, mutate: mutateOrders } = useSWR(
+    listKey,
+    authJsonFetcher,
+    {
+      keepPreviousData: true,
+    },
+  );
+
+  const mergeOrderIntoList = useCallback(
+    (updated) => {
+      mutateOrders(
+        (current) => {
+          if (!current || typeof current !== "object") return current;
+          const p = parsePaginatedResponse(current);
+          const uid = Number(updated?.id);
+          const results = p.results.map((r) =>
+            Number.isFinite(uid) && Number(r?.id) === uid ? { ...r, ...updated } : r,
+          );
+          return { ...current, results, count: p.count };
+        },
+        { revalidate: false },
+      );
+    },
+    [mutateOrders],
+  );
 
   const { rows, totalCount } = useMemo(() => {
     if (!data) return { rows: [], totalCount: 0 };
@@ -391,6 +427,10 @@ export default function MisPedidosView() {
   useEffect(() => {
     setOpenId(null);
   }, [listKey]);
+
+  useEffect(() => {
+    setOrderDetailTab("documents");
+  }, [openId]);
 
   useEffect(() => {
     setErr(
@@ -739,85 +779,167 @@ export default function MisPedidosView() {
                     id={panelId}
                     className="border-t border-zinc-100 bg-zinc-50/80 px-4 pb-5 pt-4 sm:px-5 sm:pb-6"
                   >
-                    <div className="grid gap-6 sm:grid-cols-1">
-                      <div className="rounded-xl border border-zinc-100 bg-white/90 p-4 shadow-sm">
-                        <SectionTitle id={`${panelId}-lineas`}>Detalle por toma</SectionTitle>
-                        <p className="mt-2 text-xs leading-relaxed text-zinc-500">
-                          Cada fila es una toma distinta: fechas del periodo reservado e importe de esa
-                          línea <span className="font-medium text-zinc-600">sin IVA</span>. No todas
-                          las tomas comparten las mismas fechas si reservaste periodos distintos.
-                        </p>
-                        <ul
-                          className="mt-4 space-y-3 text-sm"
-                          aria-labelledby={`${panelId}-lineas`}
-                        >
-                          {(o.items || []).map((it) => {
-                            const lineCoverRaw = primaryAdSpaceMediaRawFromOrderLike(it);
-                            const lineImgCount = orderLineItemImageCount(it);
-                            return (
-                              <li
-                                key={it.id}
-                                className="flex flex-col gap-3 border-b border-zinc-100 pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between"
-                              >
-                                <div className="flex min-w-0 flex-1 items-start gap-3">
-                                  {lineCoverRaw ? (
-                                    <button
-                                      type="button"
-                                      onClick={() => openOrderLineGallery(o, it.id)}
-                                      className={`${squareAdminTablePortadaFrameClass} ${squareListImagePreviewButtonRingClass} p-0`}
-                                      aria-label={
-                                        lineImgCount > 1
-                                          ? `Abrir galería de esta toma (${lineImgCount} imágenes)`
-                                          : "Abrir imagen ampliada"
-                                      }
-                                    >
-                                      <RasterFromApiUrl
-                                        url={lineCoverRaw}
-                                        alt=""
-                                        width={60}
-                                        height={60}
-                                        className={`${squareAdminTablePortadaImgClass} transition duration-200 group-hover:scale-105`}
-                                        {...catalogRasterImgAttrs}
-                                      />
-                                    </button>
-                                  ) : null}
-                                  <div className="min-w-0">
-                                    <CatalogSpaceLink spaceId={it.ad_space} variant="mono">
-                                      {it.ad_space_code || `#${it.ad_space}`}
-                                    </CatalogSpaceLink>
-                                    {it.ad_space_title ? (
-                                      <CatalogSpaceLink
-                                        spaceId={it.ad_space}
-                                        className="mt-0.5 block text-sm leading-snug text-zinc-800"
-                                      >
-                                        {it.ad_space_title}
-                                      </CatalogSpaceLink>
-                                    ) : null}
-                                    <p className="mt-1 text-xs text-zinc-600">
-                                      <span className="font-medium text-zinc-700">Periodo reservado:</span>{" "}
-                                      <span className="tabular-nums text-zinc-600">
-                                        {formatContractRange(it.start_date, it.end_date)}
-                                      </span>
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="shrink-0 text-right sm:pt-0.5">
-                                  <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
-                                    Línea (sin IVA)
-                                  </p>
-                                  <span className="tabular-nums text-sm font-semibold text-zinc-900">
-                                    {formatUsdMoney(Number(it.subtotal))}
-                                  </span>
-                                </div>
-                              </li>
-                            );
-                          })}
-                        </ul>
+                    <div
+                      role="tablist"
+                      aria-label="Secciones del pedido"
+                      className="flex flex-wrap gap-x-0.5 border-b border-zinc-200/90"
+                    >
+                      <button
+                        type="button"
+                        role="tab"
+                        id={`${panelId}-tab-doc`}
+                        aria-selected={orderDetailTab === "documents"}
+                        aria-controls={`${panelId}-panel-doc`}
+                        className={orderDetailTabTriggerClass(orderDetailTab === "documents")}
+                        onClick={() => setOrderDetailTab("documents")}
+                      >
+                        Documentos
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        id={`${panelId}-tab-detail`}
+                        aria-selected={orderDetailTab === "detail"}
+                        aria-controls={`${panelId}-panel-detail`}
+                        className={orderDetailTabTriggerClass(orderDetailTab === "detail")}
+                        onClick={() => setOrderDetailTab("detail")}
+                      >
+                        Detalle
+                      </button>
+                      <button
+                        type="button"
+                        role="tab"
+                        id={`${panelId}-tab-hist`}
+                        aria-selected={orderDetailTab === "history"}
+                        aria-controls={`${panelId}-panel-history`}
+                        className={orderDetailTabTriggerClass(orderDetailTab === "history")}
+                        onClick={() => setOrderDetailTab("history")}
+                      >
+                        Historial
+                      </button>
+                    </div>
+
+                    <div className="mt-4 min-w-0">
+                      <div
+                        role="tabpanel"
+                        id={`${panelId}-panel-doc`}
+                        aria-labelledby={`${panelId}-doc-heading`}
+                        hidden={orderDetailTab !== "documents"}
+                      >
+                        <SectionTitle id={`${panelId}-doc-heading`}>
+                          Documentos y siguientes pasos
+                        </SectionTitle>
+                        <div className="mt-3 min-w-0">
+                          {accessToken ? (
+                            <OrderClientWorkflowPanel
+                              order={o}
+                              accessToken={accessToken}
+                              onOrderUpdated={mergeOrderIntoList}
+                              sectionTitleId={`${panelId}-doc-heading`}
+                            />
+                          ) : (
+                            <p
+                              className={`mt-3 text-sm text-zinc-600 ${ROUNDED_CONTROL} border border-zinc-200/90 bg-white px-4 py-3 shadow-sm`}
+                            >
+                              Inicia sesión de nuevo para ver y gestionar los documentos de este pedido.
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="rounded-xl border border-zinc-100 bg-white/90 p-4 shadow-sm">
+
+                      <div
+                        role="tabpanel"
+                        id={`${panelId}-panel-detail`}
+                        aria-labelledby={`${panelId}-lineas`}
+                        hidden={orderDetailTab !== "detail"}
+                      >
+                        <SectionTitle id={`${panelId}-lineas`}>Detalle por toma</SectionTitle>
+                        <div className="mt-3 rounded-xl border border-zinc-100 bg-white/90 p-4 shadow-sm">
+                          <p className="text-xs leading-relaxed text-zinc-500">
+                            Cada fila es una toma distinta: fechas del periodo reservado e importe de esa
+                            línea <span className="font-medium text-zinc-600">sin IVA</span>. No todas
+                            las tomas comparten las mismas fechas si reservaste periodos distintos.
+                          </p>
+                          <ul
+                            className="mt-4 space-y-3 text-sm"
+                            aria-labelledby={`${panelId}-lineas`}
+                          >
+                            {(o.items || []).map((it) => {
+                              const lineCoverRaw = primaryAdSpaceMediaRawFromOrderLike(it);
+                              const lineImgCount = orderLineItemImageCount(it);
+                              return (
+                                <li
+                                  key={it.id}
+                                  className="flex flex-col gap-3 border-b border-zinc-100 pb-3 last:border-0 last:pb-0 sm:flex-row sm:items-start sm:justify-between"
+                                >
+                                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                                    {lineCoverRaw ? (
+                                      <button
+                                        type="button"
+                                        onClick={() => openOrderLineGallery(o, it.id)}
+                                        className={`${squareAdminTablePortadaFrameClass} ${squareListImagePreviewButtonRingClass} p-0`}
+                                        aria-label={
+                                          lineImgCount > 1
+                                            ? `Abrir galería de esta toma (${lineImgCount} imágenes)`
+                                            : "Abrir imagen ampliada"
+                                        }
+                                      >
+                                        <RasterFromApiUrl
+                                          url={lineCoverRaw}
+                                          alt=""
+                                          width={60}
+                                          height={60}
+                                          className={`${squareAdminTablePortadaImgClass} transition duration-200 group-hover:scale-105`}
+                                          {...catalogRasterImgAttrs}
+                                        />
+                                      </button>
+                                    ) : null}
+                                    <div className="min-w-0">
+                                      <CatalogSpaceLink spaceId={it.ad_space} variant="mono">
+                                        {it.ad_space_code || `#${it.ad_space}`}
+                                      </CatalogSpaceLink>
+                                      {it.ad_space_title ? (
+                                        <CatalogSpaceLink
+                                          spaceId={it.ad_space}
+                                          className="mt-0.5 block text-sm leading-snug text-zinc-800"
+                                        >
+                                          {it.ad_space_title}
+                                        </CatalogSpaceLink>
+                                      ) : null}
+                                      <p className="mt-1 text-xs text-zinc-600">
+                                        <span className="font-medium text-zinc-700">Periodo reservado:</span>{" "}
+                                        <span className="tabular-nums text-zinc-600">
+                                          {formatContractRange(it.start_date, it.end_date)}
+                                        </span>
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="shrink-0 text-right sm:pt-0.5">
+                                    <p className="text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+                                      Línea (sin IVA)
+                                    </p>
+                                    <span className="tabular-nums text-sm font-semibold text-zinc-900">
+                                      {formatUsdMoney(Number(it.subtotal))}
+                                    </span>
+                                  </div>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      </div>
+
+                      <div
+                        role="tabpanel"
+                        id={`${panelId}-panel-history`}
+                        aria-labelledby={`${panelId}-hist`}
+                        hidden={orderDetailTab !== "history"}
+                      >
                         <SectionTitle id={`${panelId}-hist`}>Historial de estados</SectionTitle>
-                        <div className="mt-4" aria-labelledby={`${panelId}-hist`}>
-                          <OrderTimeline events={timeline} />
+                        <div className="mt-3 rounded-xl border border-zinc-100 bg-white/90 p-4 shadow-sm">
+                          <div aria-labelledby={`${panelId}-hist`}>
+                            <OrderTimeline events={timeline} />
+                          </div>
                         </div>
                       </div>
                     </div>

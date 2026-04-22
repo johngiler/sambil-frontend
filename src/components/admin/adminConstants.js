@@ -61,14 +61,17 @@ export function spaceStatusPillClassName(status) {
   return "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200/80";
 }
 
-/** Estados de pedido (API `status`); mismas etiquetas que el panel Pedidos. */
+/**
+ * Estados de pedido (API `status`); orden alineado al flujo comercial:
+ * solicitud aprobada → facturada → pagada → arte aprobado → permiso → instalación → activa.
+ */
 export const ORDER_STATUS = [
   { v: "draft", l: "Borrador" },
   { v: "submitted", l: "Enviada" },
   { v: "client_approved", l: "Solicitud aprobada" },
-  { v: "art_approved", l: "Arte aprobado" },
   { v: "invoiced", l: "Facturada" },
   { v: "paid", l: "Pagada" },
+  { v: "art_approved", l: "Arte aprobado" },
   { v: "permit_pending", l: "Permiso alcaldía" },
   { v: "installation", l: "Instalación" },
   { v: "active", l: "Activa" },

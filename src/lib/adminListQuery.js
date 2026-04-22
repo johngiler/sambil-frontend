@@ -54,6 +54,20 @@ export function spacesAdminListPath(page, search, status) {
  * @param {string} ordering `-end_date` | `end_date` | `-start_date` | `start_date` | `client`
  * @param {string} [adSpaceId] — opcional; id numérico de toma
  */
+/**
+ * Proveedores de montaje del workspace.
+ * @param {number|string} page
+ * @param {number|string} [shoppingCenterId] — si se indica, filtra por centro.
+ */
+export function mountingProvidersListPath(page, shoppingCenterId) {
+  const p = new URLSearchParams();
+  p.set("page", String(page));
+  p.set("page_size", "50");
+  const cid = shoppingCenterId != null ? String(shoppingCenterId).trim() : "";
+  if (cid) p.set("shopping_center", cid);
+  return `/api/admin/mounting-providers/?${p.toString()}`;
+}
+
 export function contractsListPath(page, search, orderStatus, phase, endingWithin, ordering, adSpaceId) {
   const p = new URLSearchParams();
   p.set("page", String(page));

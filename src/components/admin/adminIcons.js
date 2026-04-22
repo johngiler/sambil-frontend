@@ -155,6 +155,21 @@ export function IconAdminArrowsPointingOut({ className = "" }) {
   );
 }
 
+/** Montaje / obra (proveedores autorizados en centro). */
+export function IconAdminHardHat({ className = "" }) {
+  return (
+    <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M10.5 3.75h3M9 6.75h6M4.5 9.75V18a1.5 1.5 0 001.5 1.5h12a1.5 1.5 0 001.5-1.5V9.75M4.5 9.75L2.25 6h19.5L19.5 9.75M4.5 9.75h15"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 export function IconAdminArrowDownTray({ className = "" }) {
   return (
     <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>

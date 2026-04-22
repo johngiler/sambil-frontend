@@ -5,6 +5,7 @@ import {
   IconAdminClipboard,
   IconAdminContract,
   IconAdminGrid,
+  IconAdminHardHat,
   IconAdminUserPlus,
 } from "@/components/admin/adminIcons";
 
@@ -13,6 +14,7 @@ import { ADMIN_NAV_PATHS } from "@/components/admin/adminNavPaths";
 const ICON_BY_SEGMENT = {
   resumen: IconAdminChart,
   centros: IconAdminBuilding,
+  "proveedores-montaje": IconAdminHardHat,
   tomas: IconAdminGrid,
   usuarios: IconAdminUserPlus,
   clientes: IconAdminBriefcase,

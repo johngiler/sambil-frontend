@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { rasterUrlTryWebpVariant } from "@/lib/mediaUrls";
 
@@ -362,7 +363,7 @@ export function ImageLightbox({
   const viewIsDefault =
     Math.abs(scale - 1) < 0.001 && Math.abs(tx) < 0.5 && Math.abs(ty) < 0.5;
 
-  return (
+  const overlay = (
     <div
       className="fixed inset-0 z-[80] flex items-center justify-center bg-black/65 p-3 backdrop-blur-[2px] sm:p-5"
       role="dialog"
@@ -526,4 +527,7 @@ export function ImageLightbox({
       </div>
     </div>
   );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(overlay, document.body);
 }
