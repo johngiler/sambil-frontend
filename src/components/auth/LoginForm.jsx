@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { getAccessToken } from "@/lib/authStorage";
+import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
 import { postLoginRedirectPath } from "@/lib/postLoginRedirect";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { fetchMe } from "@/services/authApi";
@@ -226,7 +227,7 @@ export default function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className={`min-h-11 w-full ${ROUNDED_CONTROL} bg-zinc-900 px-5 py-2.5 text-base font-semibold text-white shadow-md shadow-zinc-900/15 transition-[background-color,box-shadow,transform] duration-200 hover:bg-zinc-800 hover:shadow-lg hover:shadow-zinc-900/20 active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-zinc-400 disabled:shadow-none sm:text-sm`}
+            className={`${marketplacePrimaryBtn} min-h-11 w-full justify-center px-5 py-2.5 text-base font-semibold sm:text-sm`}
           >
             {loading ? "Entrando…" : "Entrar"}
           </button>

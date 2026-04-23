@@ -87,49 +87,53 @@ function FileBlock({
   const imgClass = isLogoWide
     ? "max-h-[50px] max-w-[150px] object-contain object-left"
     : "max-h-full max-w-full object-contain";
-  const emptyClass = isLogoWide
-    ? "mt-2 flex items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 text-center text-xs text-zinc-500"
-    : "mt-2 flex items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 text-center text-xs text-zinc-500";
+
+  const handleRemoveClick = () => {
+    if (file) {
+      onFileChange(null);
+    } else {
+      onClearMark();
+    }
+  };
 
   return (
     <div className="min-w-0">
       <label className="block text-sm font-medium text-zinc-800">{label}</label>
       {imgSrc ? (
-        <div className={previewBoxClass} style={previewStyle}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={imgSrc} alt="" className={imgClass} decoding="async" loading="lazy" />
-        </div>
+        <>
+          <div className={previewBoxClass} style={previewStyle}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imgSrc} alt="" className={imgClass} decoding="async" loading="lazy" />
+          </div>
+          <div className="mt-2">
+            <button
+              type="button"
+              className="mp-ring-brand inline-flex shrink-0 items-center justify-center rounded-[15px] border border-transparent p-2 text-red-600 transition-colors hover:border-red-200/90 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)]"
+              aria-label={file ? "Quitar archivo seleccionado" : "Quitar archivo actual"}
+              onClick={handleRemoveClick}
+            >
+              <IconRowTrash />
+            </button>
+          </div>
+        </>
       ) : (
-        <p className={emptyClass} style={previewStyle}>
-          Sin archivo
-        </p>
+        <div className="mt-2">
+          <FileDropZoneField
+            id={fieldId}
+            showLabel={false}
+            ariaLabel={label}
+            value={file}
+            onChange={onFileChange}
+            accept={brandAccept}
+            helperText=""
+            formatsHint={formatsHint}
+            formatErrorMessage={formatErrorMessage}
+            maxBytesErrorMessage="El archivo supera el tamaño máximo permitido (5 MB). Elige otro archivo."
+            showInlinePreview={false}
+            dropZoneAriaLabel={`Zona para adjuntar: ${label}`}
+          />
+        </div>
       )}
-      <div className="mt-2 space-y-2">
-        <FileDropZoneField
-          id={fieldId}
-          showLabel={false}
-          ariaLabel={label}
-          value={file}
-          onChange={onFileChange}
-          accept={brandAccept}
-          helperText=""
-          formatsHint={formatsHint}
-          formatErrorMessage={formatErrorMessage}
-          maxBytesErrorMessage="El archivo supera el tamaño máximo permitido (5 MB). Elige otro archivo."
-          showInlinePreview={false}
-          dropZoneAriaLabel={`Zona para adjuntar: ${label}`}
-        />
-        {existingUrl && !file ? (
-          <button
-            type="button"
-            className="mp-ring-brand inline-flex shrink-0 items-center justify-center rounded-[15px] border border-transparent p-2 text-red-600 transition-colors hover:border-red-200/90 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)]"
-            aria-label="Quitar archivo actual"
-            onClick={onClearMark}
-          >
-            <IconRowTrash />
-          </button>
-        ) : null}
-      </div>
       {helper ? <p className="mt-1 text-xs text-zinc-500">{helper}</p> : null}
     </div>
   );

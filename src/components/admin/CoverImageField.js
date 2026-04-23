@@ -156,67 +156,89 @@ export function CoverImageField({
   }
 
   if (!enableDropZone) {
+    const hasImageNoDrop = Boolean(showUrl);
     return (
       <div>
         <p className={adminLabel}>{resolvedLabel}</p>
-        {showUrl ? (
-          <div className={`mt-2 ${v.wrapClass}`}>
-            {filePreviewUrl ? (
-              <img
-                src={filePreviewUrl}
-                alt=""
-                className={v.imgClass}
-                {...avatarDims}
-                {...catalogRasterImgAttrs}
-              />
-            ) : existingUrl ? (
-              <RasterFromApiUrl
-                url={existingUrl}
-                alt=""
-                className={v.imgClass}
-                {...avatarDims}
-                {...catalogRasterImgAttrs}
-              />
-            ) : null}
-          </div>
+        {hasImageNoDrop ? (
+          <>
+            <div className={`mt-2 ${v.wrapClass}`}>
+              {filePreviewUrl ? (
+                <img
+                  src={filePreviewUrl}
+                  alt=""
+                  className={v.imgClass}
+                  {...avatarDims}
+                  {...catalogRasterImgAttrs}
+                />
+              ) : existingUrl ? (
+                <RasterFromApiUrl
+                  url={existingUrl}
+                  alt=""
+                  className={v.imgClass}
+                  {...avatarDims}
+                  {...catalogRasterImgAttrs}
+                />
+              ) : null}
+            </div>
+            <div className="mt-2">
+              <button
+                type="button"
+                className="mp-ring-brand inline-flex shrink-0 items-center justify-center rounded-[15px] border border-transparent p-2 text-red-600 transition-colors hover:border-red-200/90 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)]"
+                aria-label={filePreviewUrl ? v.clearSelectionAriaLabel : v.clearAriaLabel}
+                onClick={() => {
+                  setErr("");
+                  if (filePreviewUrl) {
+                    applyFile(null);
+                  } else {
+                    onClearExisting?.();
+                  }
+                  if (inputRef.current) inputRef.current.value = "";
+                }}
+              >
+                <IconRowTrash />
+              </button>
+            </div>
+          </>
         ) : (
-          <p className="mt-2 rounded-[10px] border border-dashed border-zinc-200 bg-zinc-50/80 py-8 text-center text-xs text-zinc-500">
-            {v.emptyHint}
-          </p>
+          <>
+            <p className="mt-2 rounded-[10px] border border-dashed border-zinc-200 bg-zinc-50/80 py-8 text-center text-xs text-zinc-500">
+              {v.emptyHint}
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <label className="cursor-pointer rounded-[10px] border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 shadow-sm hover:bg-zinc-50">
+                Elegir archivo
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept={ACCEPT}
+                  className="sr-only"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    applyFile(f ?? null);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+          </>
         )}
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <label className="cursor-pointer rounded-[10px] border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 shadow-sm hover:bg-zinc-50">
-            Elegir archivo
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ACCEPT}
-              className="sr-only"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                applyFile(f ?? null);
-                e.target.value = "";
-              }}
-            />
-          </label>
-          {existingUrl && !filePreviewUrl ? (
-            <button
-              type="button"
-              className="mp-ring-brand inline-flex shrink-0 items-center justify-center rounded-[15px] border border-transparent p-2 text-red-600 transition-colors hover:border-red-200/90 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)]"
-              aria-label={v.clearAriaLabel}
-              onClick={onClearExisting}
-            >
-              <IconRowTrash />
-            </button>
-          ) : null}
-        </div>
         <p className="mt-1 text-xs text-zinc-500">{v.helper}</p>
       </div>
     );
   }
 
   const hasImage = Boolean(showUrl);
-  const dropCompact = hasImage;
+
+  const handleTrashClick = () => {
+    setErr("");
+    if (filePreviewUrl) {
+      applyFile(null);
+    } else {
+      onClearExisting?.();
+    }
+    if (inputRef.current) inputRef.current.value = "";
+  };
 
   return (
     <div>
@@ -250,97 +272,63 @@ export function CoverImageField({
               />
             ) : null}
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            {existingUrl && !filePreviewUrl ? (
-              <button
-                type="button"
-                className="mp-ring-brand inline-flex shrink-0 items-center justify-center rounded-[15px] border border-transparent p-2 text-red-600 transition-colors hover:border-red-200/90 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)]"
-                aria-label={v.clearAriaLabel}
-                onClick={() => {
-                  setErr("");
-                  onClearExisting?.();
-                  if (inputRef.current) inputRef.current.value = "";
-                }}
-              >
-                <IconRowTrash />
-              </button>
-            ) : null}
-            {filePreviewUrl ? (
-              <button
-                type="button"
-                className="rounded-[10px] border border-zinc-200 bg-white px-3 py-2 text-xs font-medium text-zinc-700 shadow-sm hover:bg-zinc-50"
-                aria-label={v.clearSelectionAriaLabel}
-                onClick={() => {
-                  setErr("");
-                  applyFile(null);
-                  if (inputRef.current) inputRef.current.value = "";
-                }}
-              >
-                Quitar selección
-              </button>
-            ) : null}
+          <div className="mt-2">
+            <button
+              type="button"
+              className="mp-ring-brand inline-flex shrink-0 items-center justify-center rounded-[15px] border border-transparent p-2 text-red-600 transition-colors hover:border-red-200/90 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)]"
+              aria-label={filePreviewUrl ? v.clearSelectionAriaLabel : v.clearAriaLabel}
+              onClick={handleTrashClick}
+            >
+              <IconRowTrash />
+            </button>
           </div>
         </div>
       ) : null}
 
-      <div
-        onDragOver={(e) => {
-          e.preventDefault();
-          setZoneDrag(true);
-        }}
-        onDragLeave={onDragLeaveZone}
-        onDrop={onDropZone}
-        className={`mt-3 flex w-full flex-col items-center justify-center border-2 border-dashed px-4 transition-colors rounded-[10px] ${
-          dropCompact ? "py-6" : "min-h-[200px] py-10"
-        } ${
-          zoneDrag
-            ? "border-[color-mix(in_srgb,var(--mp-primary)_55%,#a1a1aa)] bg-[color-mix(in_srgb,var(--mp-primary)_8%,#fff)]"
-            : "border-zinc-200 bg-zinc-50/80 hover:border-zinc-300"
-        }`}
-      >
-        <div className="flex max-w-md flex-col items-center gap-2 text-center">
-          <div className="flex h-10 w-10 items-center justify-center rounded-md bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-200">
-            <UploadIcon className="h-5 w-5" />
-          </div>
-          <p className="text-sm font-semibold text-zinc-800">
-            {hasImage ? (
-              <>
-                Reemplazar: arrastra aquí o{" "}
-                <button
-                  type="button"
-                  className="mp-text-brand no-underline underline-offset-2 transition-colors hover:underline hover:decoration-[color-mix(in_srgb,var(--mp-primary)_85%,transparent)]"
-                  onClick={openPicker}
-                >
-                  elige un archivo
-                </button>
-              </>
-            ) : (
-              <>
-                Arrastra una imagen aquí o{" "}
-                <button
-                  type="button"
-                  className="mp-text-brand no-underline underline-offset-2 transition-colors hover:underline hover:decoration-[color-mix(in_srgb,var(--mp-primary)_85%,transparent)]"
-                  onClick={openPicker}
-                >
-                  elige un archivo
-                </button>
-              </>
-            )}
-          </p>
-          <p className="text-xs text-zinc-500">Solo una imagen · máx. 10 MB</p>
-        </div>
-        <input
-          ref={inputRef}
-          type="file"
-          accept={ACCEPT}
-          className="sr-only"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            applyFile(f ?? null);
-            e.target.value = "";
+      {!hasImage ? (
+        <div
+          onDragOver={(e) => {
+            e.preventDefault();
+            setZoneDrag(true);
           }}
-        />
-      </div>
+          onDragLeave={onDragLeaveZone}
+          onDrop={onDropZone}
+          className={`mt-3 flex min-h-[200px] w-full flex-col items-center justify-center border-2 border-dashed px-4 py-10 transition-colors rounded-[10px] ${
+            zoneDrag
+              ? "border-[color-mix(in_srgb,var(--mp-primary)_55%,#a1a1aa)] bg-[color-mix(in_srgb,var(--mp-primary)_8%,#fff)]"
+              : "border-zinc-200 bg-zinc-50/80 hover:border-zinc-300"
+          }`}
+        >
+          <div className="flex max-w-md flex-col items-center gap-2 text-center">
+            <div className="flex h-10 w-10 items-center justify-center rounded-md bg-white text-zinc-600 shadow-sm ring-1 ring-zinc-200">
+              <UploadIcon className="h-5 w-5" />
+            </div>
+            <p className="text-sm font-semibold text-zinc-800">
+              Arrastra una imagen aquí o{" "}
+              <button
+                type="button"
+                className="mp-text-brand no-underline underline-offset-2 transition-colors hover:underline hover:decoration-[color-mix(in_srgb,var(--mp-primary)_85%,transparent)]"
+                onClick={openPicker}
+              >
+                elige un archivo
+              </button>
+            </p>
+            <p className="text-xs text-zinc-500">Solo una imagen · máx. 10 MB</p>
+          </div>
+        </div>
+      ) : null}
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept={ACCEPT}
+        className="sr-only"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          applyFile(f ?? null);
+          e.target.value = "";
+        }}
+      />
     </div>
   );
 }

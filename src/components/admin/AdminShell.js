@@ -28,10 +28,11 @@ export function AdminShell({ children }) {
   }
 
   return (
-    <div className="flex min-h-[min(100dvh,1200px)] w-full min-w-0 max-w-[100vw] overflow-x-hidden">
+    // Sin overflow-x en este flex: si no, `position:sticky` del sidebar deja de adherirse al viewport (Chrome).
+    <div className="flex min-h-[min(100dvh,1200px)] w-full min-w-0 max-w-[100vw]">
       <AdminSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
       <div
-        className={`min-w-0 w-full flex-1 px-4 py-6 sm:px-6 lg:py-8${
+        className={`min-w-0 w-full flex-1 overflow-x-hidden px-4 py-6 sm:px-6 lg:py-8${
           mobileOpen ? " max-lg:pointer-events-none" : ""
         }`}
       >

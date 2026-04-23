@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
 import { ADMIN_NAV } from "@/components/admin/adminNavConfig";
@@ -42,6 +42,27 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
     } catch {
       /* ignore */
     }
+  }, []);
+
+  /** Alinea el `sticky` del sidebar con el borde inferior del header global (evita hueco por offset fijo en rem). */
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const header = document.querySelector("header");
+    if (!header) return undefined;
+
+    const apply = () => {
+      const h = Math.ceil(header.getBoundingClientRect().height);
+      root.style.setProperty("--mp-admin-sidebar-sticky-top", `${h}px`);
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(header);
+    window.addEventListener("resize", apply);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", apply);
+      root.style.removeProperty("--mp-admin-sidebar-sticky-top");
+    };
   }, []);
 
   const toggleCollapsed = () => {
@@ -106,9 +127,9 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
       />
 
       <aside
-        className={`flex w-[min(17rem,88vw)] flex-col border-r border-zinc-200 bg-zinc-50 transition-[width,transform] duration-200 ease-out max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-[60] max-lg:h-[100dvh] max-lg:shadow-xl lg:static lg:z-20 lg:h-auto lg:min-h-[calc(100dvh-4rem)] lg:shrink-0 lg:shadow-none ${
+        className={`flex w-[min(17rem,88vw)] flex-col border-r border-zinc-200 bg-zinc-50 transition-[width,transform] duration-200 ease-out max-lg:fixed max-lg:inset-y-0 max-lg:left-0 max-lg:z-[60] max-lg:h-[100dvh] max-lg:overflow-y-auto max-lg:shadow-xl lg:sticky lg:z-20 lg:max-h-[calc(100dvh_-_var(--mp-admin-sidebar-sticky-top))] lg:min-h-0 lg:shrink-0 lg:self-start lg:transform-none lg:shadow-none lg:top-[var(--mp-admin-sidebar-sticky-top)] ${
           collapsed ? "lg:w-[4.25rem]" : "lg:w-56"
-        } ${mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full"} lg:translate-x-0`}
+        } ${mobileOpen ? "max-lg:translate-x-0" : "max-lg:-translate-x-full"}`}
       >
         <div className="flex items-center justify-between border-b border-zinc-200 px-3 py-3 lg:hidden">
           <p className="text-sm font-semibold text-zinc-900">Menú</p>
@@ -156,9 +177,11 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
           </button>
         </div>
 
-        {nav}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain">
+          {nav}
+        </div>
 
-        <div className="mt-auto border-t border-zinc-200 p-3 lg:mt-4">
+        <div className="shrink-0 border-t border-zinc-200 p-3 lg:mt-0">
           <Link
             href="/"
             className={`flex items-center justify-center gap-2 px-3 ${ROUNDED_CONTROL} py-2 text-sm font-medium text-zinc-900 hover:bg-zinc-200/60 ${

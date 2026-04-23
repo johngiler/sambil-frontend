@@ -14,6 +14,10 @@
   /* Marca por tenant (`WorkspaceBranding` puede sobrescribir tras cargar el API). */
   --mp-primary: #0c9dcf;
   --mp-secondary: #ea580c;
+  /**
+   * Panel admin: fallback hasta que `AdminSidebar` mida el `<header>` global y ponga el valor en px.
+   */
+  --mp-admin-sidebar-sticky-top: 4.75rem;
   /* Mismo criterio que `ROUNDED_CONTROL` (botones, campos, tarjetas admin). */
   --mp-control-radius: 15px;
   /* Modales admin: `rounded-[10px]` en componentes + reglas `.mp-admin-modal` abajo. */

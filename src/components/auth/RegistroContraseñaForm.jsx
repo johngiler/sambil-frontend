@@ -8,6 +8,7 @@ import {
   PasswordPairLiveValidation,
   PASSWORD_PAIR_MIN_LENGTH,
 } from "@/components/checkout/PasswordPairLiveValidation";
+import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import {
   formatPasswordPolicyErrorBody,
@@ -134,7 +135,7 @@ export default function RegistroContraseñaForm() {
         </p>
         <Link
           href="/login"
-          className={`mt-8 inline-flex min-h-11 w-full items-center justify-center ${ROUNDED_CONTROL} bg-zinc-900 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-zinc-800`}
+          className={`${marketplacePrimaryBtn} mt-8 min-h-11 w-full justify-center px-5 py-2.5 text-sm font-semibold`}
         >
           Ir al inicio de sesión
         </Link>
@@ -198,7 +199,7 @@ export default function RegistroContraseñaForm() {
           <button
             type="submit"
             disabled={loading}
-            className={`min-h-11 w-full ${ROUNDED_CONTROL} bg-[#d98e32] py-3 text-sm font-semibold text-white transition-colors hover:bg-[#c48a2b] disabled:cursor-not-allowed disabled:bg-zinc-300 disabled:text-zinc-500`}
+            className={`${marketplacePrimaryBtn} min-h-11 w-full justify-center px-5 py-2.5 text-sm font-semibold`}
           >
             {loading ? "Guardando…" : "Guardar contraseña"}
           </button>
