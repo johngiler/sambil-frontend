@@ -5,10 +5,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { FilterClearAction } from "@/components/admin/AdminListFilters";
 import {
   MONTH_SHORT_ES,
+  mergeOccupiedWithPastMonths,
   monthBoundsFromIsoInYear,
   monthRangeToIsoDates,
   normalizeMonthsOccupied,
   rangeTouchesOccupiedMonth,
+  selectableMonthsExistInYear,
 } from "@/lib/spaceCalendar";
 import { contractMonthsInclusive } from "@/lib/rentalDates";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
@@ -41,7 +43,17 @@ export function SpaceMonthRangePicker({
   pickSync = null,
   cartBaselineMonths = null,
 }) {
+  const refDate = useMemo(() => new Date(), []);
   const occ = useMemo(() => normalizeMonthsOccupied(monthsOccupied), [monthsOccupied]);
+  const disabled = useMemo(
+    () => mergeOccupiedWithPastMonths(availabilityYear, occ, refDate),
+    [availabilityYear, occ, refDate],
+  );
+  const anySelectable = useMemo(
+    () => selectableMonthsExistInYear(availabilityYear, occ, refDate),
+    [availabilityYear, occ, refDate],
+  );
+
   const [startM, setStartM] = useState(null);
   const [endM, setEndM] = useState(null);
 
@@ -79,11 +91,9 @@ export function SpaceMonthRangePicker({
       const leftSpan = leftHi >= leftLo ? leftHi - leftLo + 1 : 0;
       const rightSpan = rightHi >= rightLo ? rightHi - rightLo + 1 : 0;
       const leftOk =
-        leftSpan > 0 &&
-        !rangeTouchesOccupiedMonth(availabilityYear, leftLo, leftHi, occ);
+        leftSpan > 0 && !rangeTouchesOccupiedMonth(availabilityYear, leftLo, leftHi, disabled);
       const rightOk =
-        rightSpan > 0 &&
-        !rangeTouchesOccupiedMonth(availabilityYear, rightLo, rightHi, occ);
+        rightSpan > 0 && !rangeTouchesOccupiedMonth(availabilityYear, rightLo, rightHi, disabled);
       if (leftOk && !rightOk) return [leftLo, leftHi];
       if (!leftOk && rightOk) return [rightLo, rightHi];
       if (leftOk && rightOk) {
@@ -93,12 +103,12 @@ export function SpaceMonthRangePicker({
       }
       return null;
     },
-    [availabilityYear, occ],
+    [availabilityYear, disabled],
   );
 
   const onMonthClick = useCallback(
     (m) => {
-      if (occ[m - 1]) return;
+      if (disabled[m - 1]) return;
       if (startM == null || endM == null) {
         applyRange(m, m);
         return;
@@ -142,7 +152,7 @@ export function SpaceMonthRangePicker({
       if (leftSpan === 0 && rightSpan > 0) applyRange(rightLo, rightHi);
       else if (rightSpan === 0 && leftSpan > 0) applyRange(leftLo, leftHi);
     },
-    [applyRange, endM, onRangeChange, pickRangeAfterRemovingInterior, startM],
+    [applyRange, disabled, endM, onRangeChange, pickRangeAfterRemovingInterior, startM],
   );
 
   const reset = useCallback(() => {
@@ -158,7 +168,7 @@ export function SpaceMonthRangePicker({
     lo != null && hi != null ? monthRangeToIsoDates(availabilityYear, lo, hi) : null;
   const spanMonths = dates ? contractMonthsInclusive(dates.start_date, dates.end_date) : 0;
   const touchesBlocked =
-    lo != null && hi != null && rangeTouchesOccupiedMonth(availabilityYear, lo, hi, occ);
+    lo != null && hi != null && rangeTouchesOccupiedMonth(availabilityYear, lo, hi, disabled);
   const meetsMin = spanMonths >= minMonths;
   const price = Number(monthlyPriceUsd);
   const subtotal =
@@ -182,7 +192,7 @@ export function SpaceMonthRangePicker({
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-zinc-500">
           <span className="inline-flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm border border-zinc-200 bg-white" aria-hidden />
-            Disponible
+            Libre
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm bg-zinc-100 ring-1 ring-zinc-200/80" aria-hidden />
@@ -190,7 +200,7 @@ export function SpaceMonthRangePicker({
           </span>
           <span className="inline-flex items-center gap-1.5">
             <span className="h-2.5 w-2.5 rounded-sm bg-orange-50 ring-1 ring-[#d98e32]/40" aria-hidden />
-            En tu selección
+            Tu selección
           </span>
           {hasCartBaseline ? (
             <span className="inline-flex items-center gap-1.5">
@@ -198,16 +208,22 @@ export function SpaceMonthRangePicker({
                 className="h-2.5 w-2.5 rounded-sm border border-dashed border-sky-400/80 bg-sky-50 ring-1 ring-sky-200/50"
                 aria-hidden
               />
-              En el carrito (referencia)
+              En carrito
             </span>
           ) : null}
         </div>
       </div>
 
+      {!anySelectable ? (
+        <p className="text-sm text-amber-900">
+          En {availabilityYear} no quedan meses futuros disponibles en este calendario. Contacta al centro comercial.
+        </p>
+      ) : null}
+
       <div className="grid grid-cols-4 gap-2 sm:gap-2.5" role="group" aria-label={`Meses de ${availabilityYear}`}>
         {MONTH_SHORT_ES.map((label, i) => {
           const m = i + 1;
-          const blocked = occ[i];
+          const blocked = disabled[i];
           const inRange = lo != null && hi != null && m >= lo && m <= hi;
           const inBaseline = hasCartBaseline && m >= blo && m <= bhi;
           const baselineOnly = inBaseline && !inRange;
@@ -231,8 +247,10 @@ export function SpaceMonthRangePicker({
               aria-pressed={inRange}
               title={
                 baselineOnly
-                  ? "Mes guardado en el carrito; fuera de tu selección actual"
-                  : undefined
+                  ? "Mes en el carrito (referencia)"
+                  : blocked && !occ[i]
+                    ? "Mes no disponible para nuevas reservas"
+                    : undefined
               }
               className={`min-h-11 rounded-xl border text-xs font-semibold transition-colors sm:min-h-10 ${
                 blocked ? DISABLED : cellClass
@@ -260,13 +278,12 @@ export function SpaceMonthRangePicker({
               <>
                 {rangeLabel}
                 <span className="ml-2 tabular-nums text-zinc-600">
-                  ({spanMonths} {spanMonths === 1 ? "mes" : "meses"} en calendario)
+                  ({spanMonths} {spanMonths === 1 ? "mes" : "meses"})
                 </span>
               </>
             ) : (
               <span className="text-zinc-500">
-                Toca meses para elegir un bloque continuo: fuera del bloque lo amplías; un mes ya
-                elegido sirve para acortar (en el centro se mantiene el tramo más largo posible).
+                Elige meses seguidos. Toca fuera del bloque para ampliar; en un extremo para acortar.
               </span>
             )}
           </p>
@@ -284,7 +301,7 @@ export function SpaceMonthRangePicker({
               : "—"}
           </p>
           {subtotal != null ? (
-            <p className="mt-0.5 text-[11px] text-zinc-500">Precio mensual × meses del rango</p>
+            <p className="mt-0.5 text-[11px] text-zinc-500">Precio mensual × meses</p>
           ) : null}
         </div>
       </div>
@@ -294,12 +311,8 @@ export function SpaceMonthRangePicker({
       ) : null}
       {rangeValid && !touchesBlocked && !meetsMin ? (
         <p className="text-sm text-amber-800">
-          El rango debe tener al menos{" "}
-          <strong>
-            {minMonths} {minMonths === 1 ? "mes" : "meses"}
-          </strong>{" "}
-          seguidos en calendario. Amplía tocando meses
-          fuera del bloque o reduce y vuelve a armar el intervalo.
+          Mínimo <strong>{minMonths}</strong> {minMonths === 1 ? "mes" : "meses"} seguidos. Amplía el bloque o
+          vuelve a elegir.
         </p>
       ) : null}
     </div>

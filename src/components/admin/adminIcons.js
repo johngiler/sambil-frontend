@@ -183,3 +183,33 @@ export function IconAdminArrowDownTray({ className = "" }) {
     </svg>
   );
 }
+
+/** Chevron abajo (disparadores compactos en tablas admin). */
+export function IconAdminChevronDown({ className = "" }) {
+  return (
+    <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M6 9l6 6 6-6"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/** Alerta suave (p. ej. requisito pendiente en una fila). */
+export function IconAdminAlertSoft({ className = "" }) {
+  return (
+    <svg className={`${c} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M12 9v3.75M12 17.25h.008v.008H12V17.25zM10.29 3.86L1.82 18a1.5 1.5 0 001.29 2.25h16.78a1.5 1.5 0 001.29-2.25L13.71 3.86a1.5 1.5 0 00-2.58 0z"
+        stroke="currentColor"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}

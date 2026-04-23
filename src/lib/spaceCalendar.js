@@ -19,11 +19,47 @@ export function availableMonthsCount(occupied) {
  * @param {number} endMonth 1–12
  * @param {boolean[]} occupied
  */
-export function rangeTouchesOccupiedMonth(year, startMonth, endMonth, occupied) {
+export function rangeTouchesOccupiedMonth(_year, startMonth, endMonth, occupied) {
   for (let m = startMonth; m <= endMonth; m += 1) {
     if (occupied[m - 1]) return true;
   }
   return false;
+}
+
+/**
+ * Mes pasado o mes en curso respecto a `ref` (mismo año calendario que `availabilityYear`).
+ * @param {number} availabilityYear
+ * @param {number} month1to12
+ * @param {Date} [ref]
+ */
+export function isMonthPastOrCurrentInYear(availabilityYear, month1to12, ref = new Date()) {
+  const cy = ref.getFullYear();
+  const cm = ref.getMonth() + 1;
+  if (availabilityYear < cy) return true;
+  if (availabilityYear > cy) return false;
+  return month1to12 <= cm;
+}
+
+/**
+ * Combina meses ocupados/bloqueados del API con meses no elegibles (pasados o el mes actual).
+ * @param {number} availabilityYear
+ * @param {unknown} monthsOccupied
+ * @param {Date} [ref]
+ * @returns {boolean[]}
+ */
+export function mergeOccupiedWithPastMonths(availabilityYear, monthsOccupied, ref = new Date()) {
+  const occ = normalizeMonthsOccupied(monthsOccupied);
+  return occ.map((o, i) => o || isMonthPastOrCurrentInYear(availabilityYear, i + 1, ref));
+}
+
+/**
+ * @param {number} availabilityYear
+ * @param {unknown} monthsOccupied
+ * @param {Date} [ref]
+ */
+export function selectableMonthsExistInYear(availabilityYear, monthsOccupied, ref = new Date()) {
+  const flags = mergeOccupiedWithPastMonths(availabilityYear, monthsOccupied, ref);
+  return flags.some((x) => !x);
 }
 
 /**

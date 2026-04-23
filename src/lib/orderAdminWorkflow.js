@@ -1,0 +1,294 @@
+import { ORDER_STATUS } from "@/components/admin/adminConstants";
+
+/**
+ * Flujo que el admin avanza paso a paso. «Vencida» no entra aquí: la pone el sistema
+ * cuando vence la vigencia (`expire_active_orders` / `expire_active_orders_after_contract_end`).
+ */
+export const ORDER_HAPPY_PATH_ADMIN = [
+  "draft",
+  "submitted",
+  "client_approved",
+  "invoiced",
+  "paid",
+  "art_approved",
+  "permit_pending",
+  "installation",
+  "active",
+];
+
+const TERMINAL = new Set(["cancelled", "expired"]);
+
+/** Verbo de la acción (infinitivo) para el botón «acción?» en el listado admin. */
+const ORDER_ADMIN_TRANSITION_ACTION = {
+  submitted: "Enviar",
+  client_approved: "Aprobar solicitud",
+  invoiced: "Facturar",
+  paid: "Confirmar pago",
+  art_approved: "Aprobar arte",
+  permit_pending: "Solicitar permiso",
+  installation: "Iniciar instalación",
+  active: "Activar",
+  cancelled: "Cancelar",
+};
+
+/**
+ * Texto del botón de transición: solo la acción con signo de interrogación.
+ * @param {string} targetStatus Valor API del estado destino (`ORDER_STATUS`).
+ */
+export function formatOrderAdminTransitionButtonLabel(targetStatus) {
+  const v = String(targetStatus ?? "");
+  const action = ORDER_ADMIN_TRANSITION_ACTION[v];
+  if (action) return `${action}?`;
+  const meta = ORDER_STATUS.find((x) => String(x.v) === v);
+  const stateLabel = meta?.l ?? v;
+  return `${stateLabel}?`;
+}
+
+function happyIndex(status) {
+  const s = String(status ?? "");
+  return ORDER_HAPPY_PATH_ADMIN.indexOf(s);
+}
+
+function hasNegotiationSheetSigned(order) {
+  const u = order?.negotiation_sheet_signed_url;
+  return typeof u === "string" && u.trim() !== "";
+}
+
+function hasPaymentReceipt(order) {
+  const u = order?.payment_receipt_url;
+  return typeof u === "string" && u.trim() !== "";
+}
+
+function hasArtAttachments(order) {
+  const a = order?.art_attachments;
+  return Array.isArray(a) && a.length > 0;
+}
+
+/** Solicitud de permiso de instalación enviada por el cliente (OneToOne en API). */
+function hasInstallationPermit(order) {
+  const p = order?.installation_permit;
+  return p != null && typeof p === "object";
+}
+
+/**
+ * Opciones del select de estado (misma forma que `ORDER_STATUS`) con
+ * `disabled` y `disabledReason` para guiar al admin sin saltar pasos.
+ */
+export function buildOrderAdminStatusSelectOptions(order) {
+  const current = String(order?.status ?? "");
+  const curIdx = happyIndex(current);
+
+  return ORDER_STATUS.map((opt) => {
+    const v = String(opt.v);
+
+    if (v === current) {
+      return { ...opt, disabled: false, disabledReason: "" };
+    }
+
+    if (TERMINAL.has(current)) {
+      return {
+        ...opt,
+        disabled: true,
+        disabledReason: "Este pedido ya está en un estado final.",
+      };
+    }
+
+    if (v === "cancelled") {
+      return { ...opt, disabled: false, disabledReason: "" };
+    }
+
+    if (v === "expired" && current !== "expired") {
+      return {
+        ...opt,
+        disabled: true,
+        disabledReason:
+          "La vencida la asigna el sistema cuando la última línea supera su fecha de fin (tarea programada).",
+      };
+    }
+
+    if (v === "draft") {
+      if (current === "draft") {
+        return { ...opt, disabled: false, disabledReason: "" };
+      }
+      if (current === "submitted") {
+        return {
+          ...opt,
+          disabled: false,
+          disabledReason: "",
+        };
+      }
+      return {
+        ...opt,
+        disabled: true,
+        disabledReason:
+          "Volver a borrador solo está disponible desde «Enviada».",
+      };
+    }
+
+    const targetIdx = happyIndex(v);
+    if (targetIdx < 0) {
+      return {
+        ...opt,
+        disabled: true,
+        disabledReason: "Transición no disponible.",
+      };
+    }
+
+    if (curIdx < 0) {
+      return {
+        ...opt,
+        disabled: true,
+        disabledReason: "Estado actual fuera del flujo principal.",
+      };
+    }
+
+    if (targetIdx < curIdx) {
+      return {
+        ...opt,
+        disabled: true,
+        disabledReason: "No puedes retroceder en el flujo desde este listado.",
+      };
+    }
+
+    if (targetIdx > curIdx + 1) {
+      return {
+        ...opt,
+        disabled: true,
+        disabledReason: "Avanza un solo paso a la vez en el flujo principal.",
+      };
+    }
+
+    if (targetIdx === curIdx + 1) {
+      if (
+        v === "invoiced" &&
+        current === "client_approved" &&
+        !hasNegotiationSheetSigned(order)
+      ) {
+        return {
+          ...opt,
+          disabled: true,
+          disabledReason:
+            "Falta la hoja de negociación firmada por el cliente (revisa el detalle del pedido).",
+        };
+      }
+      if (
+        v === "paid" &&
+        current === "invoiced" &&
+        !hasPaymentReceipt(order)
+      ) {
+        return {
+          ...opt,
+          disabled: true,
+          disabledReason:
+            "Falta el comprobante de pago del cliente (Mis pedidos o detalle del pedido).",
+        };
+      }
+      if (
+        v === "art_approved" &&
+        current === "paid" &&
+        !hasArtAttachments(order)
+      ) {
+        return {
+          ...opt,
+          disabled: true,
+          disabledReason:
+            "Falta al menos un archivo de arte del cliente (Mis pedidos o detalle del pedido).",
+        };
+      }
+      if (
+        v === "permit_pending" &&
+        current === "art_approved" &&
+        !hasInstallationPermit(order)
+      ) {
+        return {
+          ...opt,
+          disabled: true,
+          disabledReason:
+            "Falta la solicitud de permiso de instalación del cliente (Mis pedidos o detalle del pedido).",
+        };
+      }
+      return { ...opt, disabled: false, disabledReason: "" };
+    }
+
+    return {
+      ...opt,
+      disabled: true,
+      disabledReason: "Transición no disponible.",
+    };
+  });
+}
+
+/**
+ * Siguiente paso del flujo principal, si aplica, y bloqueo por requisitos (p. ej. firma).
+ * @returns {{ status: string, label: string, blockedReason: string } | null}
+ */
+/** Botón explícito de cancelación en listado admin (pedido ya en contrato activo). */
+export function orderAdminShowCancelPedidoActivoButton(order) {
+  return String(order?.status ?? "") === "active";
+}
+
+export function getOrderAdminQuickNext(order) {
+  const current = String(order?.status ?? "");
+  if (TERMINAL.has(current)) return null;
+
+  const curIdx = happyIndex(current);
+  if (curIdx < 0 || curIdx >= ORDER_HAPPY_PATH_ADMIN.length - 1) return null;
+
+  const nextStatus = ORDER_HAPPY_PATH_ADMIN[curIdx + 1];
+  const meta = ORDER_STATUS.find((x) => String(x.v) === nextStatus);
+  const label = meta?.l ?? nextStatus;
+
+  if (
+    nextStatus === "invoiced" &&
+    current === "client_approved" &&
+    !hasNegotiationSheetSigned(order)
+  ) {
+    return {
+      status: nextStatus,
+      label,
+      blockedReason:
+        "No puedes pasar a «Facturada» sin la hoja firmada. El cliente debe subirla desde Mis pedidos.",
+    };
+  }
+
+  if (
+    nextStatus === "paid" &&
+    current === "invoiced" &&
+    !hasPaymentReceipt(order)
+  ) {
+    return {
+      status: nextStatus,
+      label,
+      blockedReason:
+        "No puedes pasar a «Pagada» sin comprobante. El cliente debe adjuntarlo desde Mis pedidos.",
+    };
+  }
+
+  if (
+    nextStatus === "art_approved" &&
+    current === "paid" &&
+    !hasArtAttachments(order)
+  ) {
+    return {
+      status: nextStatus,
+      label,
+      blockedReason:
+        "No puedes pasar a «Arte aprobado» sin archivos de arte. El cliente debe subirlos desde Mis pedidos.",
+    };
+  }
+
+  if (
+    nextStatus === "permit_pending" &&
+    current === "art_approved" &&
+    !hasInstallationPermit(order)
+  ) {
+    return {
+      status: nextStatus,
+      label,
+      blockedReason:
+        "No puedes pasar a «Permiso alcaldía» sin solicitud de permiso. El cliente debe enviarla desde Mis pedidos.",
+    };
+  }
+
+  return { status: nextStatus, label, blockedReason: "" };
+}

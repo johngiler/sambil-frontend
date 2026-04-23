@@ -121,7 +121,7 @@ function timelineTone(toStatus) {
       bar: "from-sky-200 to-sky-300",
       card: "border-sky-100 bg-sky-50/60",
     };
-  if (s === "cancelled" || s === "rejected" || s === "expired")
+  if (s === "cancelled" || s === "expired")
     return {
       dot: "bg-rose-500",
       ring: "ring-rose-100",
@@ -404,8 +404,7 @@ export default function MisPedidosView() {
 
   const summary = data?.summary;
   const orderCounts = summary?.order_counts;
-  const closedNoActivate =
-    (orderCounts?.cancelled ?? 0) + (orderCounts?.rejected ?? 0);
+  const closedNoActivate = orderCounts?.cancelled ?? 0;
 
   const misPedidosStatusOptions = useMemo(
     () => [{ v: "all", l: "Todos los estados" }, ...ORDER_STATUS.filter((x) => x.v !== "draft")],
@@ -502,12 +501,10 @@ export default function MisPedidosView() {
             </p>
           </div>
           <div className={`${ROUNDED_CONTROL} border border-zinc-200/90 bg-zinc-50/70 p-4 shadow-sm`}>
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-              Cancelados o rechazados
-            </p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Cancelados</p>
             <p className="mt-1 text-xl font-bold tabular-nums text-zinc-900">{closedNoActivate}</p>
             <p className="mt-1 text-xs text-zinc-500">
-              Cancelados: {orderCounts?.cancelled ?? 0} · Rechazados: {orderCounts?.rejected ?? 0}
+              Pedidos que el centro dejó de tramitar en este estado.
             </p>
           </div>
         </div>

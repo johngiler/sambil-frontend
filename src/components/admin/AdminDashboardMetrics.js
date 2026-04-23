@@ -344,19 +344,11 @@ export function AdminDashboardMetrics({ metrics }) {
           </ul>
         </div>
         <div className={G.rose}>
-          <p className={TITLE}>Canceladas y rechazo</p>
+          <p className={TITLE}>Pedidos cancelados</p>
           <ul className="mt-3 space-y-2 text-sm">
             <li className="flex justify-between gap-2">
-              <span className="text-zinc-600">Pedidos cancelados</span>
+              <span className="text-zinc-600">Total en estado cancelada</span>
               <span className="font-semibold">{metrics.orders_cancelled_total ?? 0}</span>
-            </li>
-            <li className="flex justify-between gap-2">
-              <span className="text-zinc-600">Pedidos rechazados</span>
-              <span className="font-semibold">{metrics.orders_rejected_total ?? 0}</span>
-            </li>
-            <li className="flex justify-between gap-2">
-              <span className="text-zinc-600">Tasa rechazo / no borrador</span>
-              <span className="font-semibold">{fmtPct(metrics.rejection_rate_pct)}</span>
             </li>
           </ul>
           <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">Cancelación desde</p>

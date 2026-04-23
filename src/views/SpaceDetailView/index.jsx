@@ -164,15 +164,13 @@ export default async function SpaceDetailView({ spaceId }) {
               <span className="text-2xl font-semibold tabular-nums text-[#c2410c] sm:text-3xl">
                 {formatUsdMonthly(space.monthly_price_usd)}
               </span>
-              <span className="text-sm text-zinc-500">USD / mes, antes de impuestos si aplican</span>
+              <span className="text-sm text-zinc-500">USD / mes (+ impuestos si aplican)</span>
             </p>
             <div className="mt-3 border-t border-zinc-100 pt-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                 Disponibilidad en {year}
               </p>
-              <p className="mt-1 text-xs leading-snug text-zinc-500">
-                Franja por meses: naranja = ocupado o bloqueado; gris claro = libre.
-              </p>
+              <p className="mt-1 text-xs text-zinc-500">Naranja = ocupado. Gris claro = libre.</p>
               <div className="mt-2 min-w-0">
                 <SpaceMonthAvailabilityBar
                   monthsOccupied={space.months_occupied}
@@ -228,8 +226,8 @@ export default async function SpaceDetailView({ spaceId }) {
         </aside>
       </div>
 
-      <SpaceMarketplaceCompliance space={space} />
       <SpaceDetailReservationActions space={space} />
+      <SpaceMarketplaceCompliance space={space} />
     </div>
   );
 }

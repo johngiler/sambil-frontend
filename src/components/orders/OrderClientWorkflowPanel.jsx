@@ -245,20 +245,12 @@ function getClientOrderGuidanceNotice(ctx) {
         "En esta fase el centro coordina la instalación física del anuncio. Te informarán si hace falta alguna gestión adicional en sitio.",
     };
   }
-  if (s === "rejected") {
-    return {
-      kind: "outcome",
-      nextStep: "Solicitud no aprobada",
-      detail:
-        "El equipo revisó tu solicitud y no continuará con este pedido en el estado actual. Si tienes dudas, escribe al centro o a soporte.",
-    };
-  }
   if (s === "cancelled") {
     return {
       kind: "outcome",
       nextStep: "Pedido cancelado",
       detail:
-        "Este pedido figura como cancelado. Si no fue lo que esperabas, contacta al centro comercial para aclararlo.",
+        "Este pedido figura como cancelado (incluye solicitudes que no siguieron adelante). Si tienes dudas, escribe al centro comercial o a soporte.",
     };
   }
   if (s === "expired") {
@@ -2101,13 +2093,12 @@ export function OrderClientWorkflowPanel({
                         type="button"
                         title="Quitar esta persona"
                         aria-label="Quitar esta persona"
-                        className="inline-flex min-h-10 items-center gap-1.5 rounded-xl border border-transparent px-2 text-xs font-semibold text-red-700 transition hover:border-red-100 hover:bg-red-50/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200/80"
+                        className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-red-200/90 bg-white text-red-600 shadow-sm transition hover:border-red-300 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200/80 disabled:opacity-50"
                         onClick={() =>
                           setStaffRows((rows) => rows.filter((_, i) => i !== idx))
                         }
                       >
-                        <IconRowTrash className="text-red-600" />
-                        Quitar
+                        <IconRowTrash className="!h-5 !w-5 text-red-600" />
                       </button>
                     ) : null}
                     {isLast ? (
@@ -2122,9 +2113,9 @@ export function OrderClientWorkflowPanel({
                             { full_name: "", id_number: "" },
                           ])
                         }
-                        className={`${marketplaceSecondaryBtn} inline-flex size-10 shrink-0 items-center justify-center rounded-xl border p-0 text-zinc-800 disabled:opacity-50`}
+                        className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border-2 border-zinc-400 bg-zinc-100 p-0 text-zinc-900 shadow-sm transition hover:border-zinc-500 hover:bg-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_32%,transparent)] disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <IconRowPlus className="h-5 w-5" />
+                        <IconRowPlus className="text-zinc-900" />
                       </button>
                     ) : null}
                   </div>

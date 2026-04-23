@@ -77,7 +77,6 @@ export const ORDER_STATUS = [
   { v: "active", l: "Activa" },
   { v: "expired", l: "Vencida" },
   { v: "cancelled", l: "Cancelada" },
-  { v: "rejected", l: "Rechazada" },
 ];
 
 export const ORDER_STATUS_FILTER_OPTIONS = [{ v: "all", l: "Todos los estados" }, ...ORDER_STATUS];
@@ -103,6 +102,6 @@ export function orderStatusPillClassName(status) {
   if (s === "installation") return "bg-teal-50 text-teal-900 ring-1 ring-teal-200/80";
   if (s === "active") return "bg-emerald-50 text-emerald-900 ring-1 ring-emerald-300/90";
   if (s === "expired") return "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200/80";
-  if (s === "cancelled" || s === "rejected") return "bg-rose-50 text-rose-900 ring-1 ring-rose-200/80";
+  if (s === "cancelled") return "bg-rose-50 text-rose-900 ring-1 ring-rose-200/80";
   return "bg-zinc-100 text-zinc-700 ring-1 ring-zinc-200/80";
 }

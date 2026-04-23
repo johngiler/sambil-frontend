@@ -1,12 +1,24 @@
 "use client";
 
-import Select from "react-select";
+import Select, { components as selectComponents } from "react-select";
 
-const menuPortal = { menuPortal: (base) => ({ ...base, zIndex: 200 }) };
+const menuPortal = { menuPortal: (base) => ({ ...base, zIndex: 8000 }) };
+
+function AdminSelectOption(props) {
+  const { data, children } = props;
+  const reason = typeof data?.disabledReason === "string" ? data.disabledReason.trim() : "";
+  const title = data?.isDisabled && reason ? reason : undefined;
+  return (
+    <selectComponents.Option {...props}>
+      <span title={title}>{children}</span>
+    </selectComponents.Option>
+  );
+}
 
 /**
  * Select con estilo admin (react-select).
  * @param {{ v: string|number, l: string }[]} options
+ * @param {boolean} [props.defaultMenuIsOpen] — abre el menú al montar (p. ej. panel flotante en tabla).
  */
 export function AdminSelect({
   id,
@@ -22,11 +34,13 @@ export function AdminSelect({
   compact = false,
   isClearable = false,
   isSearchable: isSearchableProp,
+  defaultMenuIsOpen = false,
 }) {
   const mapped = options.map((o) => ({
     value: o.v,
     label: o.l,
     isDisabled: Boolean(o.disabled),
+    disabledReason: typeof o.disabledReason === "string" ? o.disabledReason : "",
   }));
   const emptyOption = mapped.find((x) => String(x.value) === "");
   const selected =
@@ -98,6 +112,7 @@ export function AdminSelect({
         inputId={inputId ?? id}
         instanceId={id}
         classNamePrefix="admin-rs"
+        components={{ Option: AdminSelectOption }}
         options={mapped}
         value={selected}
         onChange={(opt) => onChange(opt != null ? opt.value : "")}
@@ -106,6 +121,7 @@ export function AdminSelect({
         placeholder={placeholder}
         isClearable={isClearable}
         isSearchable={isSearchable}
+        defaultMenuIsOpen={defaultMenuIsOpen}
         menuPortalTarget={typeof document !== "undefined" ? document.body : null}
         styles={styles}
         aria-label={ariaLabel}

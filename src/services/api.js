@@ -139,8 +139,58 @@ export async function getSpaces(centerSlug) {
 }
 
 export async function getSpace(id) {
-  const paths = [`/api/spaces/${id}/`, `/api/catalog/spaces/${id}/`];
-  return fetchJsonFirst(paths);
+  const headers = {
+    "Content-Type": "application/json",
+    ...workspaceSlugRequestHeaders(),
+  };
+  const sid = encodeURIComponent(String(id));
+  const paths = [`/api/spaces/${sid}/`, `/api/catalog/spaces/${sid}/`];
+  let last = null;
+  for (const path of paths) {
+    try {
+      const res = await fetch(apiUrl(path), {
+        headers,
+        cache: "no-store",
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || `HTTP ${res.status}`);
+      }
+      return res.json();
+    } catch (e) {
+      last = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+  throw last ?? new Error("No hubo respuesta del servicio");
+}
+
+/**
+ * Carga la siguiente página de proveedores de montaje (`next` de la respuesta paginada DRF).
+ * @param {string} nextPath URL absoluta o ruta relativa (`/api/catalog/...`)
+ */
+export async function fetchMountingProvidersPage(nextPath) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...workspaceSlugRequestHeaders(),
+  };
+  const s = nextPath != null ? String(nextPath).trim() : "";
+  if (!s) throw new Error("Sin página siguiente");
+  let rel = s.startsWith("http") ? drfNextToRelativePath(s) : s;
+  if (!rel) throw new Error("Sin página siguiente");
+
+  async function doFetch(path) {
+    const res = await fetch(apiUrl(path), { headers, cache: "no-store" });
+    const parsed = await parseFetchResponse(res);
+    return { res, parsed };
+  }
+
+  let { res, parsed } = await doFetch(rel);
+  if (!parsed.ok && res.status === 404 && rel.includes("/api/catalog/")) {
+    const alt = rel.replace(/^\/api\/catalog\//, "/api/");
+    ({ res, parsed } = await doFetch(alt));
+  }
+  if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
+  return parsePaginatedResponse(parsed.data);
 }
 
 /**
@@ -149,6 +199,7 @@ export async function getSpace(id) {
  * @param {{ start_date: string, end_date: string }} range ISO date (YYYY-MM-DD)
  * @returns {Promise<{ ok: boolean, detail?: string }>}
  */
+
 export async function postSpaceRentalRangeCheck(
   spaceId,
   { start_date, end_date },

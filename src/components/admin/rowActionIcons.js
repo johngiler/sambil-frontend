@@ -56,14 +56,14 @@ export function IconRowTrash({ className = "" }) {
   );
 }
 
-/** Añadir fila (mismo trazo que el resto de iconos de fila). */
+/** Añadir fila (trazo algo más grueso para legibilidad en botones compactos). */
 export function IconRowPlus({ className = "" }) {
   return (
-    <svg className={`${ic} ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg className={`h-6 w-6 ${className}`} viewBox="0 0 24 24" fill="none" aria-hidden>
       <path
         d="M12 4.5v15m7.5-7.5h-15"
         stroke="currentColor"
-        strokeWidth={1.5}
+        strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
       />

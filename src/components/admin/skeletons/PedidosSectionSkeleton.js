@@ -16,10 +16,13 @@ export function PedidosSectionSkeleton() {
               <Skeleton className="h-3 w-14" />
             </th>
             <th className="px-3 py-3">
-              <Skeleton className="h-3 w-16" />
+              <Skeleton className="h-3 w-20" />
             </th>
             <th className="px-3 py-3">
-              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3 w-28" />
+            </th>
+            <th className="px-3 py-3">
+              <Skeleton className="h-3 w-24" />
             </th>
             <th className="px-3 py-3">
               <Skeleton className="h-3 w-16" />
@@ -45,7 +48,13 @@ export function PedidosSectionSkeleton() {
                 <Skeleton className="h-4 w-36" />
               </td>
               <td className="px-3 py-3">
-                <Skeleton className={`h-9 w-28 ${ROUNDED_CONTROL}`} />
+                <Skeleton className={`h-7 w-24 ${ROUNDED_CONTROL}`} />
+              </td>
+              <td className="px-3 py-3">
+                <div className="flex flex-nowrap items-center gap-2">
+                  <Skeleton className={`h-8 w-20 ${ROUNDED_CONTROL}`} />
+                  <Skeleton className={`size-8 shrink-0 ${ROUNDED_CONTROL}`} />
+                </div>
               </td>
               <td className="px-3 py-3">
                 <Skeleton className="h-4 w-16" />
