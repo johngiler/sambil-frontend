@@ -391,8 +391,9 @@ export default function MiNegocioView() {
         transactional_email_use_tls: txTls,
         transactional_email_use_ssl: txUseSsl,
         transactional_email_username: txUser.trim(),
-        transactional_email_password: txPassword.trim(),
       };
+      const pwd = txPassword.trim();
+      if (pwd) body.transactional_email_password = pwd;
       const r = await testMyWorkspaceTransactionalSmtp(body, {
         token: accessToken,
       });
