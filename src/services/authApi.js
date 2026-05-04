@@ -89,15 +89,22 @@ export async function refreshAccessToken() {
   refreshInFlight = (async () => {
     const refresh = getRefreshToken();
     if (!refresh) return null;
-    const res = await fetch(apiUrl("/api/auth/token/refresh/"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...workspaceSlugRequestHeaders(),
-      },
-      body: JSON.stringify({ refresh }),
-      cache: "no-store",
-    });
+    let res;
+    try {
+      res = await fetch(apiUrl("/api/auth/token/refresh/"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...workspaceSlugRequestHeaders(),
+        },
+        body: JSON.stringify({ refresh }),
+        cache: "no-store",
+      });
+    } catch {
+      clearTokens();
+      emitAuthTokensChanged();
+      return null;
+    }
     const parsed = await parseFetchResponse(res);
     if (!parsed.ok || !parsed.data?.access) {
       clearTokens();
@@ -124,13 +131,19 @@ export function logoutStorage() {
 export async function fetchMe(accessToken) {
   const token = accessToken ?? getAccessToken();
   if (!token) return null;
-  const res = await fetch(apiUrl("/api/auth/me/"), {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...workspaceSlugRequestHeaders(),
-    },
-    cache: "no-store",
-  });
+  let res;
+  try {
+    res = await fetch(apiUrl("/api/auth/me/"), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...workspaceSlugRequestHeaders(),
+      },
+      cache: "no-store",
+    });
+  } catch {
+    // Red, CORS, API caído o URL mal configurada → no propagar TypeError ("Failed to fetch").
+    return null;
+  }
   // 403: cuenta no autorizada en el marketplace (p. ej. solo Django / plataforma).
   // No limpiar en 401 aquí: el refresh del access sigue en AuthContext.
   if (res.status === 403) {
@@ -138,7 +151,11 @@ export async function fetchMe(accessToken) {
     return null;
   }
   if (!res.ok) return null;
-  return res.json();
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
 /** `body` JSON serializable o `FormData` (foto de perfil, remove_cover). */
@@ -174,16 +191,25 @@ export async function changeMePassword({ old_password, new_password }, { token }
 export async function fetchMyCompany(accessToken) {
   const token = accessToken ?? getAccessToken();
   if (!token) return undefined;
-  const res = await fetch(apiUrl("/api/me/company/"), {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...workspaceSlugRequestHeaders(),
-    },
-    cache: "no-store",
-  });
+  let res;
+  try {
+    res = await fetch(apiUrl("/api/me/company/"), {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        ...workspaceSlugRequestHeaders(),
+      },
+      cache: "no-store",
+    });
+  } catch {
+    return undefined;
+  }
   if (res.status === 204) return null;
   if (!res.ok) return undefined;
-  return res.json();
+  try {
+    return await res.json();
+  } catch {
+    return undefined;
+  }
 }
 
 /** JSON o `FormData` (logo/foto de empresa y `remove_company_cover`). */
@@ -235,6 +261,53 @@ export async function fetchMyWorkspace({ token } = {}) {
 
 export async function patchMyWorkspace(formData, { token } = {}) {
   return authFetchForm("/api/me/workspace/", { method: "PATCH", formData, token });
+}
+
+async function pollTransactionalSmtpTestResult(taskId, { token, intervalMs = 700, maxWaitMs = 45000 } = {}) {
+  const deadline = Date.now() + maxWaitMs;
+  const enc = encodeURIComponent(taskId);
+  while (Date.now() < deadline) {
+    const parsed = await fetchWithAuth(
+      `/api/me/workspace/test-transactional-smtp/status/${enc}/`,
+      { method: "GET", token },
+    );
+    if (!parsed.ok) {
+      throw new Error(errorMessageFromParsed(parsed));
+    }
+    const d = parsed.data;
+    if (d && d.ready) {
+      return {
+        ok: Boolean(d.ok),
+        detail: typeof d.detail === "string" ? d.detail : "",
+        technical: d.technical != null ? String(d.technical) : null,
+      };
+    }
+    await new Promise((r) => setTimeout(r, intervalMs));
+  }
+  throw new Error(
+    "Tiempo de espera al obtener el resultado de la prueba SMTP. Comprueba que el worker de Celery esté en ejecución.",
+  );
+}
+
+/**
+ * Prueba conexión/autenticación SMTP del workspace (no guarda ni envía correo).
+ * Con broker Celery: el POST devuelve 202 y se hace polling hasta tener { ok, detail, technical }.
+ * @returns {Promise<{ ok: boolean, detail: string, technical?: string | null }>}
+ */
+export async function testMyWorkspaceTransactionalSmtp(body, { token } = {}) {
+  const parsed = await fetchWithAuth("/api/me/workspace/test-transactional-smtp/", {
+    method: "POST",
+    body,
+    token,
+  });
+  if (!parsed.ok) {
+    throw new Error(errorMessageFromParsed(parsed));
+  }
+  const data = parsed.data;
+  if (data && data.queued === true && typeof data.task_id === "string" && data.task_id.length > 0) {
+    return pollTransactionalSmtpTestResult(data.task_id, { token });
+  }
+  return data;
 }
 
 export async function authFetch(path, { method = "GET", body, token } = {}) {

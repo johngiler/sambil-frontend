@@ -52,39 +52,45 @@ export function AuthProvider({ children }) {
 
     (async () => {
       setSessionLoading(true);
-      const token = accessToken;
-      if (!token) {
-        setMe(null);
-        setCompany(undefined);
-        if (!cancelled) setSessionLoading(false);
-        return;
-      }
-
-      let t = token;
-      let m = await fetchMe(t);
-      if (!m) {
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-          t = refreshed;
-          if (!cancelled) setAccessTokenState(refreshed);
-          m = await fetchMe(refreshed);
+      try {
+        const token = accessToken;
+        if (!token) {
+          setMe(null);
+          setCompany(undefined);
+          return;
         }
-      }
 
-      if (cancelled) return;
-      setMe(m);
-      // Tras fetchMe (p. ej. 403 → clearTokens), alinear estado con almacenamiento.
-      setAccessTokenState(getAccessToken());
+        let t = token;
+        let m = await fetchMe(t);
+        if (!m) {
+          const refreshed = await refreshAccessToken();
+          if (refreshed) {
+            t = refreshed;
+            if (!cancelled) setAccessTokenState(refreshed);
+            m = await fetchMe(refreshed);
+          }
+        }
 
-      if (m) {
-        const c = await fetchMyCompany(getAccessToken());
         if (cancelled) return;
-        setCompany(c === undefined ? null : c);
-      } else {
-        setCompany(undefined);
-      }
+        setMe(m);
+        // Tras fetchMe (p. ej. 403 → clearTokens), alinear estado con almacenamiento.
+        setAccessTokenState(getAccessToken());
 
-      if (!cancelled) setSessionLoading(false);
+        if (m) {
+          const c = await fetchMyCompany(getAccessToken());
+          if (cancelled) return;
+          setCompany(c === undefined ? null : c);
+        } else {
+          setCompany(undefined);
+        }
+      } catch {
+        if (!cancelled) {
+          setMe(null);
+          setCompany(undefined);
+        }
+      } finally {
+        if (!cancelled) setSessionLoading(false);
+      }
     })();
 
     return () => {

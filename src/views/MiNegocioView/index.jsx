@@ -11,7 +11,11 @@ import { useWorkspace } from "@/context/WorkspaceContext";
 import { marketplacePrimaryBtn } from "@/lib/marketplaceActionButtons";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { normalizeMediaUrlForUi } from "@/lib/mediaUrls";
-import { fetchMyWorkspace, patchMyWorkspace } from "@/services/authApi";
+import {
+  fetchMyWorkspace,
+  patchMyWorkspace,
+  testMyWorkspaceTransactionalSmtp,
+} from "@/services/authApi";
 
 const fieldClass = `mp-form-field-accent mt-1.5 min-h-11 w-full ${ROUNDED_CONTROL} border border-zinc-200 bg-white px-3.5 py-2.5 text-base text-zinc-900 shadow-sm transition-[border-color,box-shadow] duration-200 ease-out placeholder:text-zinc-400 focus:outline-none sm:min-h-0 sm:py-2 sm:text-sm`;
 
@@ -20,7 +24,14 @@ const fieldClassNoTopMargin = fieldClass.replace(/\bmt-1\.5\s+/, "");
 
 function IconEye({ className = "h-5 w-5 shrink-0 text-zinc-500" }) {
   return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg
+      className={className}
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
       <path
         d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
         stroke="currentColor"
@@ -39,7 +50,14 @@ function IconEye({ className = "h-5 w-5 shrink-0 text-zinc-500" }) {
 
 function IconEyeOff({ className = "h-5 w-5 shrink-0 text-zinc-500" }) {
   return (
-    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+    <svg
+      className={className}
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+    >
       <path
         d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"
         stroke="currentColor"
@@ -139,13 +157,21 @@ function FileBlock({
         <>
           <div className={previewBoxClass} style={previewStyle}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imgSrc} alt="" className={imgClass} decoding="async" loading="lazy" />
+            <img
+              src={imgSrc}
+              alt=""
+              className={imgClass}
+              decoding="async"
+              loading="lazy"
+            />
           </div>
           <div className="mt-2">
             <button
               type="button"
               className="mp-ring-brand inline-flex shrink-0 items-center justify-center rounded-[15px] border border-transparent p-2 text-red-600 transition-colors hover:border-red-200/90 hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_35%,transparent)]"
-              aria-label={file ? "Quitar archivo seleccionado" : "Quitar archivo actual"}
+              aria-label={
+                file ? "Quitar archivo seleccionado" : "Quitar archivo actual"
+              }
               onClick={handleRemoveClick}
             >
               <IconRowTrash />
@@ -198,6 +224,10 @@ export default function MiNegocioView() {
   const [txHost, setTxHost] = useState("");
   const [txPort, setTxPort] = useState("587");
   const [txTls, setTxTls] = useState(true);
+  const [txUseSsl, setTxUseSsl] = useState(false);
+  const [smtpTestStatus, setSmtpTestStatus] = useState(null);
+  const [smtpTestLoading, setSmtpTestLoading] = useState(false);
+
   const [txUser, setTxUser] = useState("");
   const [txPassword, setTxPassword] = useState("");
   const [txFrom, setTxFrom] = useState("");
@@ -281,32 +311,56 @@ export default function MiNegocioView() {
         setSlug(typeof d.slug === "string" ? d.slug : "");
         setName(typeof d.name === "string" ? d.name : "");
         setLegalName(typeof d.legal_name === "string" ? d.legal_name : "");
-        setMarketplaceTitle(typeof d.marketplace_title === "string" ? d.marketplace_title : "");
-        setMarketplaceTagline(typeof d.marketplace_tagline === "string" ? d.marketplace_tagline : "");
+        setMarketplaceTitle(
+          typeof d.marketplace_title === "string" ? d.marketplace_title : "",
+        );
+        setMarketplaceTagline(
+          typeof d.marketplace_tagline === "string"
+            ? d.marketplace_tagline
+            : "",
+        );
         setPrimaryColor(defaultHex(d.primary_color, "#0c9dcf"));
         setSecondaryColor(defaultHex(d.secondary_color, "#ea580c"));
-        setSupportEmail(typeof d.support_email === "string" ? d.support_email : "");
+        setSupportEmail(
+          typeof d.support_email === "string" ? d.support_email : "",
+        );
         setPhone(typeof d.phone === "string" ? d.phone : "");
         setCountry(typeof d.country === "string" ? d.country : "");
         setCity(typeof d.city === "string" ? d.city : "");
-        setTxHost(typeof d.transactional_email_host === "string" ? d.transactional_email_host : "");
+        setTxHost(
+          typeof d.transactional_email_host === "string"
+            ? d.transactional_email_host
+            : "",
+        );
         setTxPort(
-          d.transactional_email_port != null && String(d.transactional_email_port).trim() !== ""
+          d.transactional_email_port != null &&
+            String(d.transactional_email_port).trim() !== ""
             ? String(d.transactional_email_port)
             : "587",
         );
         setTxTls(d.transactional_email_use_tls !== false);
-        setTxUser(typeof d.transactional_email_username === "string" ? d.transactional_email_username : "");
+        setTxUseSsl(d.transactional_email_use_ssl === true);
+        setTxUser(
+          typeof d.transactional_email_username === "string"
+            ? d.transactional_email_username
+            : "",
+        );
         setTxPassword("");
         setTxFrom(
-          typeof d.transactional_email_from_address === "string" ? d.transactional_email_from_address : "",
+          typeof d.transactional_email_from_address === "string"
+            ? d.transactional_email_from_address
+            : "",
         );
         setTxFromName(
-          typeof d.transactional_email_from_name === "string" ? d.transactional_email_from_name : "",
+          typeof d.transactional_email_from_name === "string"
+            ? d.transactional_email_from_name
+            : "",
         );
         setTxPwdSet(Boolean(d.transactional_email_password_set));
         setLogoUrl(typeof d.logo_url === "string" ? d.logo_url : "");
-        setLogoMarkUrl(typeof d.logo_mark_url === "string" ? d.logo_mark_url : "");
+        setLogoMarkUrl(
+          typeof d.logo_mark_url === "string" ? d.logo_mark_url : "",
+        );
         setFaviconUrl(typeof d.favicon_url === "string" ? d.favicon_url : "");
         setLogoFile(null);
         setLogoMarkFile(null);
@@ -315,7 +369,8 @@ export default function MiNegocioView() {
         setRemoveLogoMark(false);
         setRemoveFavicon(false);
       } catch (e) {
-        if (!cancelled) setLoadErr(e instanceof Error ? e.message : "Error al cargar");
+        if (!cancelled)
+          setLoadErr(e instanceof Error ? e.message : "Error al cargar");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -324,6 +379,37 @@ export default function MiNegocioView() {
       cancelled = true;
     };
   }, [authReady, me, isAdmin, accessToken, router]);
+
+  async function onTestSmtp() {
+    setSmtpTestStatus(null);
+    setSmtpTestLoading(true);
+    try {
+      const body = {
+        transactional_email_host: txHost.trim(),
+        transactional_email_port:
+          Number.parseInt(String(txPort).trim(), 10) || 587,
+        transactional_email_use_tls: txTls,
+        transactional_email_use_ssl: txUseSsl,
+        transactional_email_username: txUser.trim(),
+        transactional_email_password: txPassword.trim(),
+      };
+      const r = await testMyWorkspaceTransactionalSmtp(body, {
+        token: accessToken,
+      });
+      setSmtpTestStatus(r);
+    } catch (err) {
+      setSmtpTestStatus({
+        ok: false,
+        detail:
+          err instanceof Error
+            ? err.message
+            : "No se pudo contactar al servidor.",
+        technical: null,
+      });
+    } finally {
+      setSmtpTestLoading(false);
+    }
+  }
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -343,10 +429,15 @@ export default function MiNegocioView() {
       fd.append("country", country.trim());
       fd.append("city", city.trim());
       fd.append("transactional_email_host", txHost.trim());
-      fd.append("transactional_email_port", String(Number.parseInt(String(txPort).trim(), 10) || 587));
+      fd.append(
+        "transactional_email_port",
+        String(Number.parseInt(String(txPort).trim(), 10) || 587),
+      );
       fd.append("transactional_email_use_tls", txTls ? "true" : "false");
+      fd.append("transactional_email_use_ssl", txUseSsl ? "true" : "false");
       fd.append("transactional_email_username", txUser.trim());
-      if (txPassword.trim()) fd.append("transactional_email_password", txPassword.trim());
+      if (txPassword.trim())
+        fd.append("transactional_email_password", txPassword.trim());
       fd.append("transactional_email_from_address", txFrom.trim());
       fd.append("transactional_email_from_name", txFromName.trim());
       if (logoFile) fd.append("logo", logoFile);
@@ -359,8 +450,12 @@ export default function MiNegocioView() {
       const data = await patchMyWorkspace(fd, { token: accessToken });
       setSlug(typeof data.slug === "string" ? data.slug : slug);
       setLogoUrl(typeof data.logo_url === "string" ? data.logo_url : "");
-      setLogoMarkUrl(typeof data.logo_mark_url === "string" ? data.logo_mark_url : "");
-      setFaviconUrl(typeof data.favicon_url === "string" ? data.favicon_url : "");
+      setLogoMarkUrl(
+        typeof data.logo_mark_url === "string" ? data.logo_mark_url : "",
+      );
+      setFaviconUrl(
+        typeof data.favicon_url === "string" ? data.favicon_url : "",
+      );
       setLogoFile(null);
       setLogoMarkFile(null);
       setFaviconFile(null);
@@ -404,7 +499,10 @@ export default function MiNegocioView() {
     return (
       <div className="mx-auto max-w-2xl px-4 py-10">
         <p className="text-sm text-red-700">{loadErr}</p>
-        <Link href="/cuenta/perfil" className={`${marketplacePrimaryBtn} mt-6 inline-flex px-5 py-2.5 text-sm font-semibold`}>
+        <Link
+          href="/cuenta/perfil"
+          className={`${marketplacePrimaryBtn} mt-6 inline-flex px-5 py-2.5 text-sm font-semibold`}
+        >
           Volver a mi perfil
         </Link>
       </div>
@@ -418,7 +516,10 @@ export default function MiNegocioView() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
-      <nav className="flex flex-wrap gap-2 text-sm" aria-label="Sección de cuenta">
+      <nav
+        className="flex flex-wrap gap-2 text-sm"
+        aria-label="Sección de cuenta"
+      >
         <Link href="/cuenta/perfil" className={`${pillBase} ${pillInactive}`}>
           Mi perfil
         </Link>
@@ -428,11 +529,19 @@ export default function MiNegocioView() {
       </nav>
 
       <div className="relative mt-8 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white px-5 py-6 shadow-[0_2px_12px_rgba(15,23,42,0.06)] sm:px-6 sm:py-7">
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] mp-admin-filters-top-accent" aria-hidden />
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-[1] mp-admin-filters-top-accent"
+          aria-hidden
+        />
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-balance text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">Mi negocio</h1>
+          <h1 className="text-balance text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
+            Mi negocio
+          </h1>
           {profileRoleBadge ? (
-            <span className={roleBadgeClass} aria-label={`Rol: ${profileRoleBadge}`}>
+            <span
+              className={roleBadgeClass}
+              aria-label={`Rol: ${profileRoleBadge}`}
+            >
               {profileRoleBadge}
             </span>
           ) : null}
@@ -446,12 +555,18 @@ export default function MiNegocioView() {
         onSubmit={onSubmit}
         className={`relative mt-8 overflow-hidden ${ROUNDED_CONTROL} border border-zinc-200/90 bg-white shadow-[0_2px_8px_rgba(15,23,42,0.05)] ring-1 ring-zinc-100/80`}
       >
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] mp-admin-filters-top-accent" aria-hidden />
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 z-[1] mp-admin-filters-top-accent"
+          aria-hidden
+        />
         <div className="space-y-8 p-5 sm:p-6">
           <section aria-labelledby="sec-ident">
             <SectionTitle id="sec-ident">Identificador</SectionTitle>
             <div className="mt-4">
-              <label htmlFor="ws-slug" className="block text-sm font-medium text-zinc-800">
+              <label
+                htmlFor="ws-slug"
+                className="block text-sm font-medium text-zinc-800"
+              >
                 Slug (solo lectura)
               </label>
               <input
@@ -468,7 +583,10 @@ export default function MiNegocioView() {
             <SectionTitle id="sec-textos">Textos y marca</SectionTitle>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="ws-name" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="ws-name"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   Nombre comercial
                 </label>
                 <input
@@ -481,7 +599,10 @@ export default function MiNegocioView() {
                 />
               </div>
               <div>
-                <label htmlFor="ws-legal" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="ws-legal"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   Razón social (opcional)
                 </label>
                 <input
@@ -492,7 +613,10 @@ export default function MiNegocioView() {
                 />
               </div>
               <div>
-                <label htmlFor="ws-mtitle" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="ws-mtitle"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   Título del marketplace (opcional)
                 </label>
                 <input
@@ -504,7 +628,10 @@ export default function MiNegocioView() {
                 />
               </div>
               <div>
-                <label htmlFor="ws-tagline" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="ws-tagline"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   Eslogan (opcional)
                 </label>
                 <input
@@ -521,11 +648,17 @@ export default function MiNegocioView() {
             <SectionTitle id="sec-colores">Colores</SectionTitle>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
-                <span className="block text-sm font-medium text-zinc-800">Color primario</span>
+                <span className="block text-sm font-medium text-zinc-800">
+                  Color primario
+                </span>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   <input
                     type="color"
-                    value={/^#([0-9a-fA-F]{6})$/.test((primaryColor || "").trim()) ? primaryColor.trim() : "#0c9dcf"}
+                    value={
+                      /^#([0-9a-fA-F]{6})$/.test((primaryColor || "").trim())
+                        ? primaryColor.trim()
+                        : "#0c9dcf"
+                    }
                     onChange={(e) => setPrimaryColor(e.target.value)}
                     className="h-11 w-14 cursor-pointer rounded-md border border-zinc-200 bg-white p-1 shadow-sm"
                     aria-label="Muestra color primario"
@@ -539,11 +672,17 @@ export default function MiNegocioView() {
                 </div>
               </div>
               <div>
-                <span className="block text-sm font-medium text-zinc-800">Color secundario</span>
+                <span className="block text-sm font-medium text-zinc-800">
+                  Color secundario
+                </span>
                 <div className="mt-1.5 flex flex-wrap items-center gap-2">
                   <input
                     type="color"
-                    value={/^#([0-9a-fA-F]{6})$/.test((secondaryColor || "").trim()) ? secondaryColor.trim() : "#ea580c"}
+                    value={
+                      /^#([0-9a-fA-F]{6})$/.test((secondaryColor || "").trim())
+                        ? secondaryColor.trim()
+                        : "#ea580c"
+                    }
                     onChange={(e) => setSecondaryColor(e.target.value)}
                     className="h-11 w-14 cursor-pointer rounded-md border border-zinc-200 bg-white p-1 shadow-sm"
                     aria-label="Muestra color secundario"
@@ -560,15 +699,21 @@ export default function MiNegocioView() {
           </section>
 
           <section aria-labelledby="sec-txmail">
-            <SectionTitle id="sec-txmail">Envío de notificaciones de pedidos</SectionTitle>
+            <SectionTitle id="sec-txmail">
+              Envío de notificaciones de pedidos
+            </SectionTitle>
             <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-600">
-              Cuenta SMTP para avisos automáticos cuando cambia el estado de un pedido: llegan a los
-              administradores (correo en Mi perfil) y a la empresa (Mi empresa). Sin servidor indicado
-              no se envía correo desde aquí.
+              Cuenta SMTP para avisos automáticos cuando cambia el estado de un
+              pedido: llegan a los administradores (correo en Mi perfil) y a la
+              empresa (Mi empresa). Sin servidor indicado no se envía correo
+              desde aquí.
             </p>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <label htmlFor="tx-host" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="tx-host"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   Servidor SMTP
                 </label>
                 <input
@@ -581,7 +726,10 @@ export default function MiNegocioView() {
                 />
               </div>
               <div>
-                <label htmlFor="tx-port" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="tx-port"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   Puerto
                 </label>
                 <input
@@ -592,19 +740,39 @@ export default function MiNegocioView() {
                   className={fieldClass}
                 />
               </div>
-              <div className="flex items-end pb-1">
+              <div className="flex flex-wrap items-end gap-4 pb-1 sm:col-span-2">
                 <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-800">
                   <input
                     type="checkbox"
                     checked={txTls}
-                    onChange={(e) => setTxTls(e.target.checked)}
+                    onChange={(e) => {
+                      const v = e.target.checked;
+                      setTxTls(v);
+                      if (v) setTxUseSsl(false);
+                    }}
                     className="h-4 w-4 rounded border-zinc-300 accent-[color:var(--mp-primary)]"
                   />
-                  Usar TLS
+                  Usar TLS (STARTTLS, típico en puerto 587)
+                </label>
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-800">
+                  <input
+                    type="checkbox"
+                    checked={txUseSsl}
+                    onChange={(e) => {
+                      const v = e.target.checked;
+                      setTxUseSsl(v);
+                      if (v) setTxTls(false);
+                    }}
+                    className="h-4 w-4 rounded border-zinc-300 accent-[color:var(--mp-primary)]"
+                  />
+                  SSL implícito (típico en puerto 465)
                 </label>
               </div>
               <div>
-                <label htmlFor="tx-user" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="tx-user"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   Usuario SMTP
                 </label>
                 <input
@@ -616,7 +784,10 @@ export default function MiNegocioView() {
                 />
               </div>
               <div>
-                <label htmlFor="tx-pass" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="tx-pass"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   Contraseña SMTP
                 </label>
                 <div className="relative mt-1.5">
@@ -625,14 +796,25 @@ export default function MiNegocioView() {
                     type={txShowPassword ? "text" : "password"}
                     value={txPassword}
                     onChange={(e) => setTxPassword(e.target.value)}
-                    className={fieldClassNoTopMargin.replace(/\bpx-3\.5\b/, "pl-3.5 pr-11")}
+                    className={fieldClassNoTopMargin.replace(
+                      /\bpx-3\.5\b/,
+                      "pl-3.5 pr-11",
+                    )}
                     autoComplete="new-password"
-                    placeholder={txPwdSet ? "Deja en blanco para no cambiar la guardada" : ""}
+                    placeholder={
+                      txPwdSet
+                        ? "Deja en blanco para no cambiar la guardada"
+                        : ""
+                    }
                   />
                   <button
                     type="button"
                     className="mp-ring-brand absolute inset-y-0 right-0 flex w-11 items-center justify-center text-zinc-500 transition-colors hover:bg-zinc-100/60 hover:text-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_22%,transparent)] rounded-r-[15px]"
-                    aria-label={txShowPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    aria-label={
+                      txShowPassword
+                        ? "Ocultar contraseña"
+                        : "Mostrar contraseña"
+                    }
                     aria-pressed={txShowPassword}
                     onClick={() => setTxShowPassword((v) => !v)}
                   >
@@ -641,7 +823,10 @@ export default function MiNegocioView() {
                 </div>
               </div>
               <div>
-                <label htmlFor="tx-from" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="tx-from"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   Correo remitente (From)
                 </label>
                 <input
@@ -654,7 +839,10 @@ export default function MiNegocioView() {
                 />
               </div>
               <div>
-                <label htmlFor="tx-fromname" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="tx-fromname"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   Nombre remitente (opcional)
                 </label>
                 <input
@@ -666,13 +854,53 @@ export default function MiNegocioView() {
                 />
               </div>
             </div>
+            <div className="mt-5 border-t border-zinc-200/90 pt-4">
+              <p className="max-w-xl text-xs text-zinc-600">
+                Solo comprueba conexión y credenciales; no envía correo.
+              </p>
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={onTestSmtp}
+                  disabled={
+                    smtpTestLoading ||
+                    !txHost.trim() ||
+                    !txUser.trim() ||
+                    (!txPassword.trim() && !txPwdSet)
+                  }
+                  className="mp-ring-brand inline-flex shrink-0 items-center justify-center rounded-[15px] border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_22%,transparent)] disabled:pointer-events-none disabled:opacity-50"
+                >
+                  {smtpTestLoading ? "Comprobando…" : "Probar conexión SMTP"}
+                </button>
+              </div>
+              {smtpTestStatus ? (
+                <div
+                  className={`mt-3 rounded-xl border px-3 py-2.5 text-sm ${
+                    smtpTestStatus.ok
+                      ? "border-emerald-200/90 bg-emerald-50/90 text-emerald-950"
+                      : "border-red-200/90 bg-red-50/90 text-red-950"
+                  }`}
+                  role="status"
+                >
+                  <p className="font-medium">{smtpTestStatus.detail}</p>
+                  {smtpTestStatus.technical ? (
+                    <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap break-all font-mono text-xs text-zinc-800">
+                      {smtpTestStatus.technical}
+                    </pre>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
           </section>
 
           <section aria-labelledby="sec-contacto">
             <SectionTitle id="sec-contacto">Contacto público</SectionTitle>
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label htmlFor="ws-email" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="ws-email"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   Correo de soporte
                 </label>
                 <input
@@ -684,7 +912,10 @@ export default function MiNegocioView() {
                 />
               </div>
               <div>
-                <label htmlFor="ws-phone" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="ws-phone"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   Teléfono
                 </label>
                 <input
@@ -695,7 +926,10 @@ export default function MiNegocioView() {
                 />
               </div>
               <div>
-                <label htmlFor="ws-country" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="ws-country"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   País
                 </label>
                 <input
@@ -706,7 +940,10 @@ export default function MiNegocioView() {
                 />
               </div>
               <div>
-                <label htmlFor="ws-city" className="block text-sm font-medium text-zinc-800">
+                <label
+                  htmlFor="ws-city"
+                  className="block text-sm font-medium text-zinc-800"
+                >
                   Ciudad
                 </label>
                 <input
