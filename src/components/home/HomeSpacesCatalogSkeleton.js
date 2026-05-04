@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 /** Replica encabezado al aire (sin tarjeta), búsqueda píldora, pills y rejilla (gap 10px). */
 export function HomeSpacesCatalogSkeleton() {
   return (
-    <div className="space-y-8 sm:space-y-10" aria-busy="true" aria-label="Cargando espacios">
+    <div className="space-y-4 sm:space-y-5" aria-busy="true" aria-label="Cargando espacios">
       <div className="space-y-4 sm:space-y-5">
         <div className="-mx-4 rounded-2xl px-4 pb-3 pt-5 sm:-mx-6 sm:rounded-3xl sm:px-6 sm:pb-4 sm:pt-6 lg:-mx-8 lg:px-8">
           <div className="max-w-3xl space-y-4">

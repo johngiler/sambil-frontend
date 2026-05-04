@@ -15,42 +15,7 @@ function AdminSelectOption(props) {
   );
 }
 
-/**
- * Select con estilo admin (react-select).
- * @param {{ v: string|number, l: string }[]} options
- * @param {boolean} [props.defaultMenuIsOpen] — abre el menú al montar (p. ej. panel flotante en tabla).
- */
-export function AdminSelect({
-  id,
-  inputId,
-  options,
-  value,
-  onChange,
-  isDisabled,
-  placeholder = "Seleccionar…",
-  className,
-  "aria-label": ariaLabel,
-  inModal = false,
-  compact = false,
-  isClearable = false,
-  isSearchable: isSearchableProp,
-  defaultMenuIsOpen = false,
-}) {
-  const mapped = options.map((o) => ({
-    value: o.v,
-    label: o.l,
-    isDisabled: Boolean(o.disabled),
-    disabledReason: typeof o.disabledReason === "string" ? o.disabledReason : "",
-  }));
-  const emptyOption = mapped.find((x) => String(x.value) === "");
-  const selected =
-    value === "" || value === null || value === undefined
-      ? (emptyOption ?? null)
-      : (mapped.find((x) => String(x.value) === String(value)) ?? null);
-
-  const isSearchable =
-    isSearchableProp !== undefined ? isSearchableProp : mapped.length > 8;
-
+function buildStyles({ compact, inModal, isDisabled, isMulti }) {
   const r = inModal ? 10 : 15;
   const minH = compact ? 34 : 40;
   const focusBorder = "color-mix(in srgb, var(--mp-primary) 50%, #d4d4d8)";
@@ -58,7 +23,7 @@ export function AdminSelect({
   const optionSelectedBg = "var(--mp-primary)";
   const optionFocusedBg = "color-mix(in srgb, var(--mp-primary) 6%, #f4f4f5)";
 
-  const styles = {
+  return {
     control: (base, state) => ({
       ...base,
       minHeight: minH,
@@ -72,6 +37,7 @@ export function AdminSelect({
     valueContainer: (b) => ({
       ...b,
       padding: compact ? "0 6px" : "0 10px",
+      gap: isMulti ? 4 : undefined,
     }),
     menu: (b) => ({
       ...b,
@@ -95,6 +61,17 @@ export function AdminSelect({
       opacity: state.isDisabled ? 0.55 : 1,
     }),
     singleValue: (b) => ({ ...b, color: "#18181b" }),
+    multiValue: (b) => ({
+      ...b,
+      borderRadius: 8,
+      backgroundColor: "color-mix(in srgb, var(--mp-primary) 12%, #f4f4f5)",
+    }),
+    multiValueLabel: (b) => ({ ...b, color: "#18181b", fontSize: compact ? "0.75rem" : "0.8125rem" }),
+    multiValueRemove: (b) => ({
+      ...b,
+      color: "#52525b",
+      ":hover": { backgroundColor: "rgba(0,0,0,0.06)", color: "#18181b" },
+    }),
     placeholder: (b) => ({ ...b, color: "#71717a" }),
     input: (b) => ({ ...b, color: "#18181b" }),
     indicatorSeparator: () => ({ display: "none" }),
@@ -105,6 +82,83 @@ export function AdminSelect({
     }),
     ...menuPortal,
   };
+}
+
+/**
+ * Select con estilo admin (react-select).
+ * @param {{ v: string|number, l: string }[]} options
+ * @param {boolean} [props.defaultMenuIsOpen] — abre el menú al montar (p. ej. panel flotante en tabla).
+ * @param {boolean} [props.isMulti] — selección múltiple; `value` es array de ids y `onChange` recibe array.
+ */
+export function AdminSelect({
+  id,
+  inputId,
+  options,
+  value,
+  onChange,
+  isDisabled,
+  placeholder = "Seleccionar…",
+  className,
+  "aria-label": ariaLabel,
+  inModal = false,
+  compact = false,
+  isClearable = false,
+  isSearchable: isSearchableProp,
+  defaultMenuIsOpen = false,
+  isMulti = false,
+}) {
+  const mapped = options.map((o) => ({
+    value: o.v,
+    label: o.l,
+    isDisabled: Boolean(o.disabled),
+    disabledReason: typeof o.disabledReason === "string" ? o.disabledReason : "",
+  }));
+
+  const isSearchable =
+    isSearchableProp !== undefined ? isSearchableProp : mapped.length > 8;
+
+  const styles = buildStyles({ compact, inModal, isDisabled, isMulti });
+
+  if (isMulti) {
+    const selIds = Array.isArray(value) ? value : [];
+    const selectedMulti = mapped.filter(
+      (x) => String(x.value) !== "" && selIds.some((id) => String(id) === String(x.value)),
+    );
+    return (
+      <div className={className}>
+        <Select
+          inputId={inputId ?? id}
+          instanceId={id}
+          classNamePrefix="admin-rs"
+          components={{ Option: AdminSelectOption }}
+          options={mapped.filter((x) => String(x.value) !== "")}
+          value={selectedMulti}
+          onChange={(opts) => {
+            const arr = Array.isArray(opts) ? opts.map((o) => o.value).filter((v) => String(v) !== "") : [];
+            onChange(arr);
+          }}
+          isOptionDisabled={(opt) => Boolean(opt?.isDisabled)}
+          isDisabled={isDisabled}
+          placeholder={placeholder}
+          isClearable={isClearable}
+          isSearchable={isSearchable}
+          isMulti
+          hideSelectedOptions={false}
+          closeMenuOnSelect={false}
+          defaultMenuIsOpen={defaultMenuIsOpen}
+          menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+          styles={styles}
+          aria-label={ariaLabel}
+        />
+      </div>
+    );
+  }
+
+  const emptyOption = mapped.find((x) => String(x.value) === "");
+  const selected =
+    value === "" || value === null || value === undefined
+      ? (emptyOption ?? null)
+      : (mapped.find((x) => String(x.value) === String(value)) ?? null);
 
   return (
     <div className={className}>

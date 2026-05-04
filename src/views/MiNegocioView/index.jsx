@@ -15,6 +15,42 @@ import { fetchMyWorkspace, patchMyWorkspace } from "@/services/authApi";
 
 const fieldClass = `mp-form-field-accent mt-1.5 min-h-11 w-full ${ROUNDED_CONTROL} border border-zinc-200 bg-white px-3.5 py-2.5 text-base text-zinc-900 shadow-sm transition-[border-color,box-shadow] duration-200 ease-out placeholder:text-zinc-400 focus:outline-none sm:min-h-0 sm:py-2 sm:text-sm`;
 
+/** Misma base que `fieldClass` sin `mt-1.5` (el margen va en el contenedor con el botón). */
+const fieldClassNoTopMargin = fieldClass.replace(/\bmt-1\.5\s+/, "");
+
+function IconEye({ className = "h-5 w-5 shrink-0 text-zinc-500" }) {
+  return (
+    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconEyeOff({ className = "h-5 w-5 shrink-0 text-zinc-500" }) {
+  return (
+    <svg className={className} width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const pillBase = `${ROUNDED_CONTROL} border px-3 py-1.5 text-sm font-medium shadow-sm transition`;
 const pillInactive = `border-zinc-200/90 bg-white text-zinc-700 hover:border-[color-mix(in_srgb,var(--mp-primary)_40%,transparent)] hover:text-[color:var(--mp-primary)]`;
 const pillCurrent = `border-[color-mix(in_srgb,var(--mp-primary)_45%,#d4d4d8)] bg-[color-mix(in_srgb,var(--mp-primary)_10%,color-mix(in_srgb,var(--mp-secondary)_5%,#fff))] font-semibold text-[color:var(--mp-primary)] ring-1 ring-[color-mix(in_srgb,var(--mp-primary)_18%,transparent)]`;
@@ -159,6 +195,16 @@ export default function MiNegocioView() {
   const [country, setCountry] = useState("");
   const [city, setCity] = useState("");
 
+  const [txHost, setTxHost] = useState("");
+  const [txPort, setTxPort] = useState("587");
+  const [txTls, setTxTls] = useState(true);
+  const [txUser, setTxUser] = useState("");
+  const [txPassword, setTxPassword] = useState("");
+  const [txFrom, setTxFrom] = useState("");
+  const [txFromName, setTxFromName] = useState("");
+  const [txPwdSet, setTxPwdSet] = useState(false);
+  const [txShowPassword, setTxShowPassword] = useState(false);
+
   const [logoUrl, setLogoUrl] = useState("");
   const [logoMarkUrl, setLogoMarkUrl] = useState("");
   const [faviconUrl, setFaviconUrl] = useState("");
@@ -243,6 +289,22 @@ export default function MiNegocioView() {
         setPhone(typeof d.phone === "string" ? d.phone : "");
         setCountry(typeof d.country === "string" ? d.country : "");
         setCity(typeof d.city === "string" ? d.city : "");
+        setTxHost(typeof d.transactional_email_host === "string" ? d.transactional_email_host : "");
+        setTxPort(
+          d.transactional_email_port != null && String(d.transactional_email_port).trim() !== ""
+            ? String(d.transactional_email_port)
+            : "587",
+        );
+        setTxTls(d.transactional_email_use_tls !== false);
+        setTxUser(typeof d.transactional_email_username === "string" ? d.transactional_email_username : "");
+        setTxPassword("");
+        setTxFrom(
+          typeof d.transactional_email_from_address === "string" ? d.transactional_email_from_address : "",
+        );
+        setTxFromName(
+          typeof d.transactional_email_from_name === "string" ? d.transactional_email_from_name : "",
+        );
+        setTxPwdSet(Boolean(d.transactional_email_password_set));
         setLogoUrl(typeof d.logo_url === "string" ? d.logo_url : "");
         setLogoMarkUrl(typeof d.logo_mark_url === "string" ? d.logo_mark_url : "");
         setFaviconUrl(typeof d.favicon_url === "string" ? d.favicon_url : "");
@@ -280,6 +342,13 @@ export default function MiNegocioView() {
       fd.append("phone", phone.trim());
       fd.append("country", country.trim());
       fd.append("city", city.trim());
+      fd.append("transactional_email_host", txHost.trim());
+      fd.append("transactional_email_port", String(Number.parseInt(String(txPort).trim(), 10) || 587));
+      fd.append("transactional_email_use_tls", txTls ? "true" : "false");
+      fd.append("transactional_email_username", txUser.trim());
+      if (txPassword.trim()) fd.append("transactional_email_password", txPassword.trim());
+      fd.append("transactional_email_from_address", txFrom.trim());
+      fd.append("transactional_email_from_name", txFromName.trim());
       if (logoFile) fd.append("logo", logoFile);
       if (removeLogo) fd.append("remove_logo", "true");
       if (logoMarkFile) fd.append("logo_mark", logoMarkFile);
@@ -298,6 +367,8 @@ export default function MiNegocioView() {
       setRemoveLogo(false);
       setRemoveLogoMark(false);
       setRemoveFavicon(false);
+      setTxPassword("");
+      setTxPwdSet(Boolean(data.transactional_email_password_set));
       setSaveOk("Cambios guardados.");
       await reloadWorkspace();
     } catch (err) {
@@ -484,6 +555,115 @@ export default function MiNegocioView() {
                     placeholder="#ea580c"
                   />
                 </div>
+              </div>
+            </div>
+          </section>
+
+          <section aria-labelledby="sec-txmail">
+            <SectionTitle id="sec-txmail">Envío de notificaciones de pedidos</SectionTitle>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-zinc-600">
+              Cuenta SMTP para avisos automáticos cuando cambia el estado de un pedido: llegan a los
+              administradores (correo en Mi perfil) y a la empresa (Mi empresa). Sin servidor indicado
+              no se envía correo desde aquí.
+            </p>
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label htmlFor="tx-host" className="block text-sm font-medium text-zinc-800">
+                  Servidor SMTP
+                </label>
+                <input
+                  id="tx-host"
+                  value={txHost}
+                  onChange={(e) => setTxHost(e.target.value)}
+                  className={fieldClass}
+                  placeholder="smtp.ejemplo.com"
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label htmlFor="tx-port" className="block text-sm font-medium text-zinc-800">
+                  Puerto
+                </label>
+                <input
+                  id="tx-port"
+                  inputMode="numeric"
+                  value={txPort}
+                  onChange={(e) => setTxPort(e.target.value)}
+                  className={fieldClass}
+                />
+              </div>
+              <div className="flex items-end pb-1">
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-zinc-800">
+                  <input
+                    type="checkbox"
+                    checked={txTls}
+                    onChange={(e) => setTxTls(e.target.checked)}
+                    className="h-4 w-4 rounded border-zinc-300 accent-[color:var(--mp-primary)]"
+                  />
+                  Usar TLS
+                </label>
+              </div>
+              <div>
+                <label htmlFor="tx-user" className="block text-sm font-medium text-zinc-800">
+                  Usuario SMTP
+                </label>
+                <input
+                  id="tx-user"
+                  value={txUser}
+                  onChange={(e) => setTxUser(e.target.value)}
+                  className={fieldClass}
+                  autoComplete="off"
+                />
+              </div>
+              <div>
+                <label htmlFor="tx-pass" className="block text-sm font-medium text-zinc-800">
+                  Contraseña SMTP
+                </label>
+                <div className="relative mt-1.5">
+                  <input
+                    id="tx-pass"
+                    type={txShowPassword ? "text" : "password"}
+                    value={txPassword}
+                    onChange={(e) => setTxPassword(e.target.value)}
+                    className={fieldClassNoTopMargin.replace(/\bpx-3\.5\b/, "pl-3.5 pr-11")}
+                    autoComplete="new-password"
+                    placeholder={txPwdSet ? "Deja en blanco para no cambiar la guardada" : ""}
+                  />
+                  <button
+                    type="button"
+                    className="mp-ring-brand absolute inset-y-0 right-0 flex w-11 items-center justify-center text-zinc-500 transition-colors hover:bg-zinc-100/60 hover:text-zinc-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_22%,transparent)] rounded-r-[15px]"
+                    aria-label={txShowPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    aria-pressed={txShowPassword}
+                    onClick={() => setTxShowPassword((v) => !v)}
+                  >
+                    {txShowPassword ? <IconEyeOff /> : <IconEye />}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label htmlFor="tx-from" className="block text-sm font-medium text-zinc-800">
+                  Correo remitente (From)
+                </label>
+                <input
+                  id="tx-from"
+                  type="email"
+                  value={txFrom}
+                  onChange={(e) => setTxFrom(e.target.value)}
+                  className={fieldClass}
+                  placeholder="notificaciones@tudominio.com"
+                />
+              </div>
+              <div>
+                <label htmlFor="tx-fromname" className="block text-sm font-medium text-zinc-800">
+                  Nombre remitente (opcional)
+                </label>
+                <input
+                  id="tx-fromname"
+                  value={txFromName}
+                  onChange={(e) => setTxFromName(e.target.value)}
+                  className={fieldClass}
+                  placeholder="Nombre del marketplace"
+                />
               </div>
             </div>
           </section>

@@ -3,10 +3,11 @@
  * Permite revalidar desde el panel admin tras crear/editar/eliminar tomas.
  */
 
-import { getSpacesCatalogPage, getSpacesLocationFacets } from "@/services/api";
+import { getSpacesCatalogPage, getSpacesCenterFacets, getSpacesLocationFacets } from "@/services/api";
 
 export const HOME_CATALOG_PAGE_SWR_TAG = "home-catalog-page";
 export const HOME_CATALOG_FACETS_SWR_TAG = "home-catalog-facets";
+export const HOME_CATALOG_CENTER_FACETS_SWR_TAG = "home-catalog-center-facets";
 
 /**
  * Opciones del listado público del home.
@@ -42,6 +43,14 @@ export function buildHomeCatalogFacetsKey({ search = "", center = "" } = {}) {
   return [HOME_CATALOG_FACETS_SWR_TAG, String(search), String(center)];
 }
 
+/**
+ * @param {{ search?: string, city?: string }} p
+ * @returns {readonly [string, string, string]}
+ */
+export function buildHomeCatalogCenterFacetsKey({ search = "", city = "" } = {}) {
+  return [HOME_CATALOG_CENTER_FACETS_SWR_TAG, String(search), String(city)];
+}
+
 /** @param {readonly unknown[]} key */
 export async function homeCatalogPageFetcher(key) {
   if (!Array.isArray(key) || key[0] !== HOME_CATALOG_PAGE_SWR_TAG) {
@@ -68,12 +77,26 @@ export async function homeCatalogFacetsFetcher(key) {
   });
 }
 
+/** @param {readonly unknown[]} key */
+export async function homeCatalogCenterFacetsFetcher(key) {
+  if (!Array.isArray(key) || key[0] !== HOME_CATALOG_CENTER_FACETS_SWR_TAG) {
+    throw new Error("homeCatalogCenterFacetsFetcher: clave inválida");
+  }
+  const [, search, city] = key;
+  return getSpacesCenterFacets({
+    search: /** @type {string} */ (search),
+    city: /** @type {string} */ (city),
+  });
+}
+
 /** Revalida listado y facets del home (pasa `mutate` de `useSWRConfig()`). */
 export function revalidateHomeCatalog(mutate) {
   return mutate(
     (key) =>
       Array.isArray(key) &&
-      (key[0] === HOME_CATALOG_PAGE_SWR_TAG || key[0] === HOME_CATALOG_FACETS_SWR_TAG),
+      (key[0] === HOME_CATALOG_PAGE_SWR_TAG ||
+        key[0] === HOME_CATALOG_FACETS_SWR_TAG ||
+        key[0] === HOME_CATALOG_CENTER_FACETS_SWR_TAG),
     undefined,
     { revalidate: true },
   );

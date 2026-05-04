@@ -312,6 +312,41 @@ export async function getSpacesLocationFacets({
   throw last ?? new Error("No hubo respuesta del servicio");
 }
 
+/**
+ * Conteos por centro comercial para pills en portada (slug + nombre).
+ * @param {{ search?: string, city?: string }} params
+ * @returns {Promise<{ total: number, items: Array<{ slug: string, name: string, count: number }> }>}
+ */
+export async function getSpacesCenterFacets({ search = "", city = "" } = {}) {
+  const params = new URLSearchParams();
+  if (search.trim()) params.set("search", search.trim());
+  if (city.trim()) params.set("city", city.trim());
+  const q = params.toString();
+  const suffix = q ? `?${q}` : "";
+  const paths = [
+    `/api/spaces/center-facets/${suffix}`,
+    `/api/catalog/spaces/center-facets/${suffix}`,
+  ];
+  const headers = {
+    "Content-Type": "application/json",
+    ...workspaceSlugRequestHeaders(),
+  };
+  let last = null;
+  for (const path of paths) {
+    try {
+      const res = await fetch(apiUrl(path), { headers, cache: "no-store" });
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || `HTTP ${res.status}`);
+      }
+      return await res.json();
+    } catch (e) {
+      last = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+  throw last ?? new Error("No hubo respuesta del servicio");
+}
+
 /** Detalle público por slug del centro comercial (URL amigable). */
 export async function getCenterBySlug(slug) {
   const s = String(slug || "").trim();

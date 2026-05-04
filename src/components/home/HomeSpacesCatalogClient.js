@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 
@@ -12,11 +12,14 @@ import {
 } from "@/components/ui/EmptyState";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { FilterClearAction } from "@/components/admin/AdminListFilters";
+import { IconAdminChevronDown } from "@/components/admin/adminIcons";
 import { AdminListPagination } from "@/components/admin/AdminListPagination";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import {
+  buildHomeCatalogCenterFacetsKey,
   buildHomeCatalogFacetsKey,
   buildHomeCatalogPageKey,
+  homeCatalogCenterFacetsFetcher,
   homeCatalogFacetsFetcher,
   homeCatalogPageFetcher,
   homeCatalogSwrOptions,
@@ -42,6 +45,9 @@ const chipOff =
 const chipOn =
   "border-zinc-800 bg-zinc-800 text-white shadow-md ring-1 ring-zinc-700/50 hover:border-zinc-700 hover:bg-zinc-700";
 
+const filtersToggleBtn =
+  "mp-ring-brand inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-800 shadow-sm transition hover:border-zinc-300 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_22%,transparent)] min-h-12 sm:min-h-11";
+
 function facetLabel(item) {
   if (item && typeof item.label === "string" && item.label.trim() !== "")
     return item.label;
@@ -54,20 +60,41 @@ export function HomeSpacesCatalogClient() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const centerSlug = useMemo(() => (searchParams.get("center") || "").trim(), [searchParams]);
+  const centerSlug = useMemo(
+    () => (searchParams.get("center") || "").trim(),
+    [searchParams],
+  );
+  const filterUid = useId();
+  const filtersPanelId = `${filterUid}-filters-panel`;
 
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
+  const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
   const debouncedQuery = useDebouncedValue(query, 400);
 
   const pageKey = useMemo(
-    () => buildHomeCatalogPageKey({ search: debouncedQuery, city: selectedCity, center: centerSlug, page }),
+    () =>
+      buildHomeCatalogPageKey({
+        search: debouncedQuery,
+        city: selectedCity,
+        center: centerSlug,
+        page,
+      }),
     [debouncedQuery, selectedCity, centerSlug, page],
   );
   const facetsKey = useMemo(
-    () => buildHomeCatalogFacetsKey({ search: debouncedQuery, center: centerSlug }),
+    () =>
+      buildHomeCatalogFacetsKey({ search: debouncedQuery, center: centerSlug }),
     [debouncedQuery, centerSlug],
+  );
+  const centerFacetsKey = useMemo(
+    () =>
+      buildHomeCatalogCenterFacetsKey({
+        search: debouncedQuery,
+        city: selectedCity,
+      }),
+    [debouncedQuery, selectedCity],
   );
 
   const {
@@ -82,20 +109,39 @@ export function HomeSpacesCatalogClient() {
     homeCatalogSwrOptions,
   );
 
+  const { data: centerFacetsData, error: centerFacetsError } = useSWR(
+    centerFacetsKey,
+    homeCatalogCenterFacetsFetcher,
+    homeCatalogSwrOptions,
+  );
+
   const spaces = useMemo(
     () => (Array.isArray(pageData?.results) ? pageData.results : []),
     [pageData],
   );
   const totalCount = typeof pageData?.count === "number" ? pageData.count : 0;
   const facets = useMemo(() => {
-    if (!facetsData || typeof facetsData !== "object") return { total: 0, items: [] };
+    if (!facetsData || typeof facetsData !== "object")
+      return { total: 0, items: [] };
     const total = typeof facetsData.total === "number" ? facetsData.total : 0;
     const items = Array.isArray(facetsData.items) ? facetsData.items : [];
     return { total, items };
   }, [facetsData]);
 
+  const centerFacets = useMemo(() => {
+    if (!centerFacetsData || typeof centerFacetsData !== "object")
+      return { total: 0, items: [] };
+    const total =
+      typeof centerFacetsData.total === "number" ? centerFacetsData.total : 0;
+    const items = Array.isArray(centerFacetsData.items)
+      ? centerFacetsData.items
+      : [];
+    return { total, items };
+  }, [centerFacetsData]);
+
   const filtersActive = useMemo(
-    () => selectedCity.trim() !== "" || query.trim() !== "" || centerSlug !== "",
+    () =>
+      selectedCity.trim() !== "" || query.trim() !== "" || centerSlug !== "",
     [selectedCity, query, centerSlug],
   );
 
@@ -139,13 +185,24 @@ export function HomeSpacesCatalogClient() {
   );
 
   const showFacetsWarning = facetsError != null && loadError == null;
+  const showCenterFacetsWarning =
+    centerFacetsError != null && loadError == null;
+
+  function setCenterInUrl(nextSlug) {
+    const p = new URLSearchParams(searchParams.toString());
+    const s = (nextSlug || "").trim();
+    if (s) p.set("center", s);
+    else p.delete("center");
+    const qs = p.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
 
   if (showPageSkeleton) {
     return <HomeSpacesCatalogSkeleton />;
   }
 
   return (
-    <div className="space-y-8 sm:space-y-10">
+    <div className="space-y-4 sm:space-y-5">
       <section
         className="space-y-4 sm:space-y-5"
         aria-labelledby="home-catalog-heading"
@@ -176,100 +233,238 @@ export function HomeSpacesCatalogClient() {
           </header>
         </div>
 
-        <div className="space-y-5">
+        <div className="space-y-2 sm:space-y-3">
           <label htmlFor="space-search" className="sr-only">
             Buscar espacio o ubicación
           </label>
-          <div className="relative w-full">
-            <span
-              className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400"
-              aria-hidden
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
+          <div className="flex items-stretch gap-2 sm:gap-3">
+            <div className="relative min-w-0 flex-1">
+              <span
+                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400"
+                aria-hidden
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
+                  />
+                </svg>
+              </span>
+              <input
+                id="space-search"
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar por nombre, código o ubicación…"
+                className="mp-form-field-accent min-h-12 w-full rounded-full border border-zinc-200 bg-white py-3 pl-11 pr-4 text-base text-zinc-900 placeholder:text-zinc-400 transition-[border-color,box-shadow] duration-200 ease-out focus:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--mp-primary)_22%,transparent)] sm:min-h-11 sm:text-sm"
+                enterKeyHint="search"
+                autoComplete="off"
+              />
+            </div>
+            <button
+              type="button"
+              className={filtersToggleBtn}
+              aria-expanded={filtersPanelOpen}
+              aria-controls={filtersPanelId}
+              onClick={() => setFiltersPanelOpen((v) => !v)}
+            >
+              <span className="whitespace-nowrap">Filtros</span>
+              {filtersActive ? (
+                <span
+                  className="size-2 shrink-0 rounded-full bg-[color:var(--mp-primary)]"
+                  aria-hidden
                 />
-              </svg>
-            </span>
-            <input
-              id="space-search"
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar espacio o ubicación…"
-              className="mp-form-field-accent min-h-12 w-full rounded-full border border-zinc-200 bg-white py-3 pl-11 pr-4 text-base text-zinc-900 placeholder:text-zinc-400 transition-[border-color,box-shadow] duration-200 ease-out focus:border-zinc-300 focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--mp-primary)_22%,transparent)] sm:min-h-11 sm:text-sm"
-              enterKeyHint="search"
-              autoComplete="off"
-            />
+              ) : null}
+              <IconAdminChevronDown
+                className={`h-[1.125rem] w-[1.125rem] shrink-0 text-zinc-600 transition-transform duration-300 ease-out motion-reduce:transition-none ${
+                  filtersPanelOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
           </div>
 
           <div
-            className="mp-hide-scrollbar -mx-1 w-full overflow-x-auto overscroll-x-contain px-1 [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:px-0"
-            role="toolbar"
-            aria-label="Filtrar por ciudad"
+            className={`grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none ${
+              filtersPanelOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+            }`}
           >
-            <div className="flex w-max max-w-none flex-nowrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setSelectedCity("")}
-                className={`${chipBase} ${selectedCity === "" ? chipOn : chipOff}`}
+            <div className="min-h-0 overflow-hidden">
+              <div
+                id={filtersPanelId}
+                className={`rounded-2xl border border-zinc-200/90 bg-zinc-50/80 p-4 shadow-sm ring-1 ring-zinc-950/[0.03] transition-[opacity,transform] duration-300 ease-out motion-reduce:transition-none sm:p-5 ${
+                  filtersPanelOpen
+                    ? "opacity-100 translate-y-0"
+                    : "pointer-events-none opacity-0 -translate-y-1"
+                }`}
+                aria-hidden={!filtersPanelOpen}
+                aria-label="Filtros por ciudad y centro comercial"
               >
-                <span>Todos</span>
-                <span
-                  className={
-                    selectedCity === ""
-                      ? "tabular-nums text-zinc-200"
-                      : "tabular-nums font-medium text-zinc-400"
-                  }
-                >
-                  {totalForPills}
-                </span>
-              </button>
-              {facets.items.map((item) => {
-                const key =
-                  typeof item.city === "string" ? item.city : String(item.city);
-                const label = facetLabel(item);
-                const active = selectedCity === key;
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setSelectedCity(active ? "" : key)}
-                    className={`${chipBase} ${active ? chipOn : chipOff}`}
-                  >
-                    <span className="max-w-[10rem] truncate">{label}</span>
-                    <span
-                      className={
-                        active
-                          ? "tabular-nums text-zinc-200"
-                          : "tabular-nums font-medium text-zinc-400"
-                      }
+                {filtersActive ? (
+                  <div className="mb-3 flex justify-end">
+                    <FilterClearAction
+                      onClick={clearFilters}
+                      className="shrink-0 justify-center"
+                    />
+                  </div>
+                ) : null}
+
+                <div className="space-y-4">
+                  <div>
+                    <p
+                      className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-zinc-500"
+                      id="home-filter-city-label"
                     >
-                      {item.count}
-                    </span>
-                  </button>
-                );
-              })}
-              {filtersActive ? (
-                <FilterClearAction
-                  onClick={clearFilters}
-                  className="shrink-0 self-center justify-center sm:ml-1"
-                />
-              ) : null}
+                      Ciudad
+                    </p>
+                    <div
+                      className="mp-hide-scrollbar -mx-1 w-full overflow-x-auto overscroll-x-contain px-1 [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:px-0"
+                      role="toolbar"
+                      aria-labelledby="home-filter-city-label"
+                    >
+                      <div className="flex w-max max-w-none flex-nowrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCity("")}
+                          title={`Todas las ciudades · ${totalForPills} espacios`}
+                          className={`${chipBase} ${selectedCity === "" ? chipOn : chipOff}`}
+                        >
+                          <span>Todas</span>
+                          <span
+                            className={
+                              selectedCity === ""
+                                ? "tabular-nums text-zinc-200"
+                                : "tabular-nums font-medium text-zinc-400"
+                            }
+                          >
+                            {totalForPills}
+                          </span>
+                        </button>
+                        {facets.items.map((item) => {
+                          const key =
+                            typeof item.city === "string"
+                              ? item.city
+                              : String(item.city);
+                          const label = facetLabel(item);
+                          const active = selectedCity === key;
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              title={`${label} · ${item.count} espacios`}
+                              onClick={() => setSelectedCity(active ? "" : key)}
+                              className={`${chipBase} ${active ? chipOn : chipOff}`}
+                            >
+                              <span className="max-w-[10rem] truncate">
+                                {label}
+                              </span>
+                              <span
+                                className={
+                                  active
+                                    ? "tabular-nums text-zinc-200"
+                                    : "tabular-nums font-medium text-zinc-400"
+                                }
+                              >
+                                {item.count}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p
+                      className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-zinc-500"
+                      id="home-filter-center-label"
+                    >
+                      Centro comercial
+                    </p>
+                    <div
+                      className="mp-hide-scrollbar -mx-1 w-full overflow-x-auto overscroll-x-contain px-1 [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:px-0"
+                      role="toolbar"
+                      aria-labelledby="home-filter-center-label"
+                    >
+                      <div className="flex w-max max-w-none flex-nowrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setCenterInUrl("")}
+                          title={`Todos los centros · ${centerFacets.total > 0 ? centerFacets.total : totalForPills} espacios`}
+                          className={`${chipBase} ${centerSlug === "" ? chipOn : chipOff}`}
+                        >
+                          <span>Todos</span>
+                          <span
+                            className={
+                              centerSlug === ""
+                                ? "tabular-nums text-zinc-200"
+                                : "tabular-nums font-medium text-zinc-400"
+                            }
+                          >
+                            {centerFacets.total > 0
+                              ? centerFacets.total
+                              : totalForPills}
+                          </span>
+                        </button>
+                        {centerFacets.items.map((item) => {
+                          const slug =
+                            typeof item.slug === "string"
+                              ? item.slug.trim()
+                              : "";
+                          const label =
+                            typeof item.name === "string" && item.name.trim()
+                              ? item.name.trim()
+                              : slug;
+                          if (!slug) return null;
+                          const active =
+                            centerSlug.toLowerCase() === slug.toLowerCase();
+                          return (
+                            <button
+                              key={slug}
+                              type="button"
+                              title={`${label} · ${item.count} espacios`}
+                              onClick={() => setCenterInUrl(active ? "" : slug)}
+                              className={`${chipBase} ${active ? chipOn : chipOff}`}
+                            >
+                              <span className="max-w-[12rem] truncate">
+                                {label}
+                              </span>
+                              <span
+                                className={
+                                  active
+                                    ? "tabular-nums text-zinc-200"
+                                    : "tabular-nums font-medium text-zinc-400"
+                                }
+                              >
+                                {item.count}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+
           {showFacetsWarning ? (
             <p className="text-xs text-amber-800">
-              No pudimos cargar los conteos por ciudad; aún puedes filtrar con
-              la lista cargada.
+              No pudimos cargar los conteos por ciudad; igual puedes usar la
+              lista y la búsqueda.
+            </p>
+          ) : null}
+          {showCenterFacetsWarning ? (
+            <p className="text-xs text-amber-800">
+              No pudimos cargar los conteos por centro; el listado sigue
+              disponible.
             </p>
           ) : null}
         </div>
@@ -291,7 +486,7 @@ export function HomeSpacesCatalogClient() {
         <EmptyState
           icon={<EmptyStateIconSearchOff />}
           title="Nada coincide con tu búsqueda"
-          description="Prueba otro texto o cambia la ciudad para ver más resultados."
+          description="Prueba otra búsqueda o abre Filtros para ajustar ciudad y centro comercial."
           action={
             <FilterClearAction
               onClick={clearFilters}
