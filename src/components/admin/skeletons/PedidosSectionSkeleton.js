@@ -4,8 +4,10 @@ import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 /** Misma estructura que la tabla de pedidos en `PedidosAdminSection`. */
 export function PedidosSectionSkeleton() {
   return (
-    <div className={`overflow-x-auto ${ROUNDED_CONTROL} border border-zinc-200`}>
-      <table className="min-w-full text-left text-sm">
+    <div
+      className={`min-w-0 max-sm:overflow-x-auto ${ROUNDED_CONTROL} border border-zinc-200`}
+    >
+      <table className="w-full min-w-0 text-left text-sm max-sm:min-w-[34rem]">
         <thead className="bg-zinc-50 text-xs uppercase text-zinc-500">
           <tr>
             <th className="w-10 px-2 py-3" aria-hidden />

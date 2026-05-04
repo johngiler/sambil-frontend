@@ -21,6 +21,7 @@ import { DashboardChromeSkeleton } from "@/components/admin/skeletons/DashboardC
 import { ResumenTabSkeleton } from "@/components/admin/skeletons/ResumenTabSkeleton";
 import { IconChevronLeft } from "@/components/layout/navIcons";
 import { useAuth } from "@/context/AuthContext";
+import { adminDashboardMainWidthClass } from "@/components/admin/adminFormStyles";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { authJsonFetcher } from "@/lib/swr/fetchers";
 /** Etiqueta de rol como en el panel Usuarios (UserProfile). */
@@ -137,7 +138,7 @@ export default function DashboardView({ section = "resumen" }) {
 
   if (!authReady) {
     return (
-      <div className="mx-auto max-w-6xl py-16">
+      <div className={`${adminDashboardMainWidthClass} py-16`}>
         <DashboardChromeSkeleton />
       </div>
     );
@@ -146,7 +147,7 @@ export default function DashboardView({ section = "resumen" }) {
   const roleBadge = marketplaceRoleBadgeLabel(role);
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-6xl">
+    <div className={adminDashboardMainWidthClass}>
       <header className="min-w-0">
         <h1 className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 text-2xl font-bold text-zinc-900 sm:text-3xl">
           <span className="min-w-0">Panel de administración</span>

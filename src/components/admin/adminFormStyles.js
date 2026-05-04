@@ -17,6 +17,13 @@ export const adminSecondaryBtn =
 export const adminPanelCard =
   "rounded-[15px] border border-zinc-200/90 bg-white p-5 shadow-sm sm:p-6";
 
+/**
+ * Ancho máximo del bloque central del portal admin (debajo del header, junto al sidebar).
+ * En móvil/tablet compacto se mantiene `max-w-6xl`; desde `lg` crece un escalón y en `xl+` un poco más.
+ */
+export const adminDashboardMainWidthClass =
+  "mx-auto w-full min-w-0 max-w-6xl lg:max-w-7xl xl:max-w-[88rem] 2xl:max-w-[min(96rem,calc(100vw-15rem))]";
+
 /** Icono junto al título de sección: caja fija y contenido centrado (evita que el SVG quede arriba al estirarse la fila). */
 export const adminSectionHeaderIconWrap =
   "mp-admin-section-icon hidden shrink-0 sm:flex sm:size-14 sm:items-center sm:justify-center rounded-[15px]";

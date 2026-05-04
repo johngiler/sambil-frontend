@@ -13,7 +13,11 @@ import {
 } from "@/components/admin/AdminAccordionDetail";
 import { AdminAccordionToggle } from "@/components/admin/AdminAccordionToggle";
 import { AdminCopyIconButton } from "@/components/admin/AdminCopyIconButton";
-import { adminPanelCard, adminSectionHeaderIconWrap } from "@/components/admin/adminFormStyles";
+import {
+  adminDashboardMainWidthClass,
+  adminPanelCard,
+  adminSectionHeaderIconWrap,
+} from "@/components/admin/adminFormStyles";
 import {
   AdminFilterClearButton,
   AdminFiltersRow,
@@ -308,7 +312,7 @@ export function ContratosAdminSection() {
 
   if (!authReady || !accessToken) {
     return (
-      <div className="mx-auto max-w-6xl py-16 text-center text-sm text-zinc-500">
+      <div className={`${adminDashboardMainWidthClass} py-16 text-center text-sm text-zinc-500`}>
         Cargando…
       </div>
     );

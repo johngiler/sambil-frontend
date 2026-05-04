@@ -642,21 +642,21 @@ export function PedidosAdminSection() {
 
             {orders.length > 0 ? (
               <div
-                className={`${ROUNDED_CONTROL} min-w-0 overflow-x-auto overscroll-x-contain border border-zinc-200 [-webkit-overflow-scrolling:touch]`}
+                className={`${ROUNDED_CONTROL} min-w-0 border border-zinc-200 max-sm:overflow-x-auto max-sm:overscroll-x-contain max-sm:[-webkit-overflow-scrolling:touch]`}
               >
-                <table className="w-max min-w-full text-left text-sm">
+                <table className="w-full min-w-0 text-left text-sm max-sm:min-w-[34rem]">
                   <thead className="bg-zinc-50 text-xs uppercase text-zinc-500">
                     <tr>
                       <th className="w-10 px-2 py-3" aria-hidden />
-                      <th className="whitespace-nowrap px-3 py-2">Pedido</th>
-                      <th className="whitespace-nowrap px-3 py-2">Alta</th>
-                      <th className="min-w-[10rem] px-3 py-2">Cliente</th>
+                      <th className="max-sm:whitespace-nowrap px-3 py-2">Pedido</th>
+                      <th className="max-sm:whitespace-nowrap px-3 py-2">Alta</th>
+                      <th className="px-3 py-2">Cliente</th>
                       <th className="px-3 py-2">Estado actual</th>
-                      <th className="min-w-[12rem] whitespace-nowrap px-3 py-2">
+                      <th className="min-w-[12rem] max-sm:whitespace-nowrap px-3 py-2">
                         Siguiente estado
                       </th>
-                      <th className="whitespace-nowrap px-3 py-2">Total USD</th>
-                      <th className="whitespace-nowrap px-2 py-2 text-right">
+                      <th className="max-sm:whitespace-nowrap px-3 py-2">Total USD</th>
+                      <th className="max-sm:whitespace-nowrap px-2 py-2 text-right">
                         Acciones
                       </th>
                     </tr>
@@ -683,10 +683,10 @@ export function PedidosAdminSection() {
                                 controlsId={panelId}
                               />
                             </td>
-                            <td className="max-w-none whitespace-nowrap px-3 py-2 align-middle">
+                            <td className="max-w-none px-3 py-2 align-middle max-sm:whitespace-nowrap sm:max-w-[13rem]">
                               <div className="flex items-center gap-1">
                                 <span
-                                  className="font-mono text-sm font-semibold leading-snug text-zinc-800"
+                                  className="min-w-0 flex-1 font-mono text-sm font-semibold leading-snug text-zinc-800 max-sm:whitespace-nowrap sm:break-all"
                                   title={orderRef || `#${o.id}`}
                                 >
                                   {orderRef || "—"}
@@ -697,14 +697,14 @@ export function PedidosAdminSection() {
                                 />
                               </div>
                             </td>
-                            <td className="whitespace-nowrap px-3 py-2 text-xs text-zinc-600">
+                            <td className="max-sm:whitespace-nowrap px-3 py-2 text-xs text-zinc-600">
                               {formatPedidoAlta(o.created_at)}
                             </td>
-                            <td className="min-w-[10rem] max-w-[18rem] px-3 py-2 align-top">
+                            <td className="max-w-[12rem] px-3 py-2 align-top sm:max-w-[14rem]">
                               {clientQ ? (
                                 <AdminDashboardFilterLink
                                   href={dashboardClientesSearchHref(clientQ)}
-                                  className="line-clamp-2 block break-words"
+                                  className="line-clamp-2 block max-w-full"
                                   title={clientQ}
                                 >
                                   {clientQ}
@@ -762,7 +762,7 @@ export function PedidosAdminSection() {
                                 hint="Resumen y líneas del pedido"
                               />
 
-                              <div className="mt-4 grid w-full grid-cols-1 gap-4 lg:mt-5 lg:grid-cols-2 lg:items-start lg:gap-6 xl:gap-7">
+                              <div className="mt-4 grid w-full min-w-0 grid-cols-1 gap-4 lg:mt-5 lg:grid-cols-2 lg:items-start lg:gap-6 xl:gap-7">
                                 <div className="min-w-0">
                                   <AdminDetailSection
                                     panelId={panelId}

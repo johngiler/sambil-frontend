@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { useAuth } from "@/context/AuthContext";
+import { adminDashboardMainWidthClass } from "@/components/admin/adminFormStyles";
 import { AdminMobileNavToggle, AdminSidebar } from "@/components/admin/AdminSidebar";
 
 export function AdminShell({ children }) {
@@ -12,7 +13,9 @@ export function AdminShell({ children }) {
 
   if (!authReady) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-16 text-center text-zinc-500">Cargando…</div>
+      <div className={`${adminDashboardMainWidthClass} px-4 py-16 text-center text-zinc-500`}>
+        Cargando…
+      </div>
     );
   }
 
