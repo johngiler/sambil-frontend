@@ -324,11 +324,11 @@ export function HomeSpacesCatalogClient() {
                       Ciudad
                     </p>
                     <div
-                      className="mp-hide-scrollbar -mx-1 w-full overflow-x-auto overscroll-x-contain px-1 [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:px-0"
+                      className="mp-hide-scrollbar -mx-1 w-full overflow-x-auto overscroll-x-contain px-1 [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:overflow-visible sm:px-0"
                       role="toolbar"
                       aria-labelledby="home-filter-city-label"
                     >
-                      <div className="flex w-max max-w-none flex-nowrap items-center gap-2">
+                      <div className="flex w-max max-w-none flex-nowrap items-center gap-2 sm:w-full sm:flex-wrap">
                         <button
                           type="button"
                           onClick={() => setSelectedCity("")}
@@ -388,11 +388,11 @@ export function HomeSpacesCatalogClient() {
                       Centro comercial
                     </p>
                     <div
-                      className="mp-hide-scrollbar -mx-1 w-full overflow-x-auto overscroll-x-contain px-1 [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:px-0"
+                      className="mp-hide-scrollbar -mx-1 w-full overflow-x-auto overscroll-x-contain px-1 [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:overflow-visible sm:px-0"
                       role="toolbar"
                       aria-labelledby="home-filter-center-label"
                     >
-                      <div className="flex w-max max-w-none flex-nowrap items-center gap-2">
+                      <div className="flex w-max max-w-none flex-nowrap items-center gap-2 sm:w-full sm:flex-wrap">
                         <button
                           type="button"
                           onClick={() => setCenterInUrl("")}
