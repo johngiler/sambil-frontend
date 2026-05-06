@@ -15,6 +15,7 @@ import { AdminAccordionToggle } from "@/components/admin/AdminAccordionToggle";
 import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { AdminRowActions } from "@/components/admin/AdminRowActions";
+import { AdminInlineAlert } from "@/components/admin/AdminInlineAlert";
 import { AdminSelect } from "@/components/admin/AdminSelect";
 import {
   adminField,
@@ -55,7 +56,9 @@ export function MountingProvidersAdminSection() {
   /** Alta: varios centros (misma ficha de proveedor en cada CC). */
   const [modalShoppingCenterIds, setModalShoppingCenterIds] = useState([]);
   const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
+  const [pageErr, setPageErr] = useState("");
+  const [modalErr, setModalErr] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [deleteTargetId, setDeleteTargetId] = useState(null);
   const [modal, setModal] = useState(null);
   const [editRow, setEditRow] = useState(null);
@@ -143,7 +146,7 @@ export function MountingProvidersAdminSection() {
   }, [mutateProviders]);
 
   useEffect(() => {
-    setErr(
+    setPageErr(
       centersSwrError
         ? centersSwrError instanceof Error
           ? centersSwrError.message
@@ -160,6 +163,10 @@ export function MountingProvidersAdminSection() {
     setExpandedId(null);
   }, [page]);
 
+  function fieldClass(name) {
+    return `${adminField} ${fieldErrors?.[name] ? "mp-admin-field-error" : ""}`;
+  }
+
   function openCreate() {
     setEditRow(null);
     setModalShoppingCenterId("");
@@ -173,6 +180,8 @@ export function MountingProvidersAdminSection() {
     setSortOrder("0");
     setIsActive(true);
     setModal("edit");
+    setModalErr("");
+    setFieldErrors({});
   }
 
   function openEdit(row) {
@@ -188,17 +197,21 @@ export function MountingProvidersAdminSection() {
     setSortOrder(String(row.sort_order ?? 0));
     setIsActive(row.is_active !== false);
     setModal("edit");
+    setModalErr("");
+    setFieldErrors({});
   }
 
   async function saveProvider() {
     const name = companyName.trim();
     if (!name) {
-      setErr("Indica el nombre de la empresa.");
+      setModalErr("Revisa los campos marcados.");
+      setFieldErrors({ company_name: "Campo obligatorio." });
       return;
     }
     if (editRow) {
       if (!modalShoppingCenterId) {
-        setErr("Selecciona el centro comercial al que pertenece este proveedor.");
+        setModalErr("Revisa los campos marcados.");
+        setFieldErrors({ shopping_center: "Campo obligatorio." });
         return;
       }
     } else {
@@ -206,12 +219,14 @@ export function MountingProvidersAdminSection() {
         .map((n) => Number(n))
         .filter((n) => Number.isFinite(n) && n > 0);
       if (ids.length === 0) {
-        setErr("Selecciona al menos un centro comercial.");
+        setModalErr("Revisa los campos marcados.");
+        setFieldErrors({ shopping_center_ids: "Selecciona al menos un centro comercial." });
         return;
       }
     }
-    setErr("");
+    setModalErr("");
     setMsg("");
+    setFieldErrors({});
     const so = Number.parseInt(String(sortOrder).trim(), 10);
     const payload = {
       company_name: name,
@@ -268,12 +283,12 @@ export function MountingProvidersAdminSection() {
       setModalShoppingCenterIds([]);
       await reloadProviders();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "No se pudo guardar.");
+      setModalErr(e instanceof Error ? e.message : "No se pudo guardar.");
     }
   }
 
   async function executeDelete(id) {
-    setErr("");
+    setPageErr("");
     setMsg("");
     try {
       await authFetch(`/api/admin/mounting-providers/${id}/`, { method: "DELETE" });
@@ -281,7 +296,7 @@ export function MountingProvidersAdminSection() {
       if (expandedId === id) setExpandedId(null);
       await reloadProviders();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "No se pudo eliminar.");
+      setPageErr(e instanceof Error ? e.message : "No se pudo eliminar.");
     } finally {
       setDeleteTargetId(null);
     }
@@ -340,8 +355,8 @@ export function MountingProvidersAdminSection() {
         {msg ? (
           <p className={`mb-4 ${ROUNDED_CONTROL} bg-emerald-50 px-3 py-2 text-sm text-emerald-900`}>{msg}</p>
         ) : null}
-        {err ? (
-          <p className={`mb-4 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}>{err}</p>
+        {pageErr ? (
+          <p className={`mb-4 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}>{pageErr}</p>
         ) : null}
 
         {centers.length === 0 ? (
@@ -517,6 +532,7 @@ export function MountingProvidersAdminSection() {
           </div>
         }
       >
+        {modalErr ? <AdminInlineAlert variant="error">{modalErr}</AdminInlineAlert> : null}
         <div className="space-y-4">
           <div>
             <p className={adminLabel}>
@@ -569,11 +585,14 @@ export function MountingProvidersAdminSection() {
             </label>
             <input
               id="mp-company"
-              className={adminField}
+              className={fieldClass("company_name")}
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
               autoComplete="organization"
             />
+            {fieldErrors?.company_name ? (
+              <p className="mt-1 text-xs text-rose-700">{fieldErrors.company_name}</p>
+            ) : null}
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

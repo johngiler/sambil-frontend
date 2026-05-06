@@ -312,7 +312,12 @@ export async function testMyWorkspaceTransactionalSmtp(body, { token } = {}) {
 
 export async function authFetch(path, { method = "GET", body, token } = {}) {
   const parsed = await fetchWithAuth(path, { method, body, token });
-  if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
+  if (!parsed.ok) {
+    const err = new Error(errorMessageFromParsed(parsed));
+    err.status = parsed.status;
+    err.data = parsed.data;
+    throw err;
+  }
   return parsed.data;
 }
 
@@ -382,7 +387,12 @@ export async function authFetchForm(path, { method = "POST", formData, token, _r
       return authFetchForm(path, { method, formData, _retry401: true });
     }
   }
-  if (!parsed.ok) throw new Error(errorMessageFromParsed(parsed));
+  if (!parsed.ok) {
+    const err = new Error(errorMessageFromParsed(parsed));
+    err.status = parsed.status;
+    err.data = parsed.data;
+    throw err;
+  }
   return parsed.data;
 }
 

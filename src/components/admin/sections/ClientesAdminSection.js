@@ -17,6 +17,7 @@ import { AdminCreatePlusIcon } from "@/components/admin/AdminCreatePlusIcon";
 import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { AdminRowActions } from "@/components/admin/AdminRowActions";
+import { AdminInlineAlert } from "@/components/admin/AdminInlineAlert";
 import {
   adminField,
   adminLabel,
@@ -61,6 +62,7 @@ import {
   AdminDashboardFilterLink,
   dashboardUsuariosSearchHref,
 } from "@/lib/adminDashboardLinks";
+import { fieldErrorsFromDrfData } from "@/lib/adminFieldErrors";
 
 const CLIENT_STATUS_FILTERS = [{ v: "all", l: "Todos los estados" }, ...CLIENT_STATUS];
 
@@ -116,7 +118,9 @@ export function ClientesAdminSection() {
   const { authReady, accessToken } = useAuth();
   const [expandedId, setExpandedId] = useState(null);
   const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
+  const [pageErr, setPageErr] = useState("");
+  const [modalErr, setModalErr] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
@@ -160,7 +164,7 @@ export function ClientesAdminSection() {
     (!isLoading && (data !== undefined || swrError !== undefined));
 
   useEffect(() => {
-    setErr(
+    setPageErr(
       swrError ? (swrError instanceof Error ? swrError.message : String(swrError)) : "",
     );
   }, [swrError]);
@@ -194,10 +198,16 @@ export function ClientesAdminSection() {
     if (fileRef.current) fileRef.current.value = "";
   }
 
+  function fieldClass(name) {
+    return `${adminField} ${fieldErrors?.[name] ? "mp-admin-field-error" : ""}`;
+  }
+
   function openCreate() {
     setSelected(null);
     resetForm();
     setModal("create");
+    setModalErr("");
+    setFieldErrors({});
   }
 
   function openView(c) {
@@ -221,17 +231,21 @@ export function ClientesAdminSection() {
     setPendingClearCover(false);
     if (fileRef.current) fileRef.current.value = "";
     setModal("edit");
+    setModalErr("");
+    setFieldErrors({});
   }
 
   function closeModal() {
     setModal(null);
     setSelected(null);
     resetForm();
+    setModalErr("");
+    setFieldErrors({});
   }
 
   async function generateUserForClient(c) {
     if (!c?.id || !clientCanGenerateUser(c)) return;
-    setErr("");
+    setPageErr("");
     setMsg("");
     setGeneratingClientId(c.id);
     try {
@@ -255,15 +269,24 @@ export function ClientesAdminSection() {
       }
       await reloadClientes();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "No se pudo generar el usuario.");
+      setPageErr(e instanceof Error ? e.message : "No se pudo generar el usuario.");
     } finally {
       setGeneratingClientId(null);
     }
   }
 
   async function submitSave() {
-    setErr("");
+    setModalErr("");
     setMsg("");
+    setFieldErrors({});
+    const nextFe = {};
+    if (!companyName.trim()) nextFe.company_name = "Campo obligatorio.";
+    if (!email.trim()) nextFe.email = "Campo obligatorio.";
+    if (Object.keys(nextFe).length) {
+      setFieldErrors(nextFe);
+      setModalErr("Revisa los campos marcados.");
+      return;
+    }
     try {
       if (modal === "create") {
         if (coverFile) {
@@ -328,7 +351,15 @@ export function ClientesAdminSection() {
       closeModal();
       await reloadClientes();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Error");
+      if (e && typeof e === "object" && e.data) {
+        const fe = fieldErrorsFromDrfData(e.data);
+        if (Object.keys(fe).length) {
+          setFieldErrors(fe);
+          setModalErr("Revisa los campos marcados.");
+          return;
+        }
+      }
+      setModalErr(e instanceof Error ? e.message : "Error");
     }
   }
 
@@ -337,13 +368,13 @@ export function ClientesAdminSection() {
   }
 
   async function executeDeleteClient(id) {
-    setErr("");
+    setPageErr("");
     try {
       await authFetch(`/api/clients/${id}/`, { method: "DELETE" });
       setMsg("Cliente eliminado.");
       await reloadClientes();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Error");
+      setPageErr(e instanceof Error ? e.message : "Error");
       throw e;
     }
   }
@@ -384,8 +415,8 @@ export function ClientesAdminSection() {
       {msg ? (
         <p className={`mt-4 ${ROUNDED_CONTROL} bg-emerald-50 px-3 py-2 text-sm text-emerald-900`}>{msg}</p>
       ) : null}
-      {err ? (
-        <p className={`mt-4 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}>{err}</p>
+      {pageErr ? (
+        <p className={`mt-4 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}>{pageErr}</p>
       ) : null}
 
       {totalCount === 0 && !filtersActive ? (
@@ -692,6 +723,7 @@ export function ClientesAdminSection() {
           )
         }
       >
+        {!readOnly && modalErr ? <AdminInlineAlert variant="error">{modalErr}</AdminInlineAlert> : null}
         {readOnly && selected ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
@@ -799,15 +831,18 @@ export function ClientesAdminSection() {
             </div>
             <div className="sm:col-span-2">
               <label className={adminLabel} htmlFor="cl-name">
-                Razón social
+                Razón social <span className="text-red-600">*</span>
               </label>
               <input
                 id="cl-name"
-                className={adminField}
+                className={fieldClass("company_name")}
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 required
               />
+              {fieldErrors?.company_name ? (
+                <p className="mt-1 text-xs text-rose-700">{fieldErrors.company_name}</p>
+              ) : null}
             </div>
             <div>
               <label className={adminLabel} htmlFor="cl-rif">
@@ -851,16 +886,19 @@ export function ClientesAdminSection() {
             </div>
             <div>
               <label className={adminLabel} htmlFor="cl-email">
-                Email
+                Email <span className="text-red-600">*</span>
               </label>
               <input
                 id="cl-email"
                 type="email"
-                className={adminField}
+                className={fieldClass("email")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
+              {fieldErrors?.email ? (
+                <p className="mt-1 text-xs text-rose-700">{fieldErrors.email}</p>
+              ) : null}
             </div>
             <div>
               <label className={adminLabel} htmlFor="cl-phone">

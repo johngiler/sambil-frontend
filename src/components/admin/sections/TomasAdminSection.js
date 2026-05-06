@@ -17,6 +17,7 @@ import { AdminCreatePlusIcon } from "@/components/admin/AdminCreatePlusIcon";
 import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { AdminRowActions } from "@/components/admin/AdminRowActions";
+import { AdminInlineAlert } from "@/components/admin/AdminInlineAlert";
 import {
   adminField,
   adminLabel,
@@ -124,6 +125,7 @@ function buildSpacePayload(fd, values) {
     production_specs,
     installation_notes,
     hem_pocket_top_cm,
+    is_active,
   } = values;
   fd.append("code", code.trim());
   fd.append("shopping_center", String(shopping_center));
@@ -133,6 +135,7 @@ function buildSpacePayload(fd, values) {
   fd.append("monthly_price_usd", String(monthly_price_usd).trim());
   fd.append("status", status);
   fd.append("double_sided", double_sided ? "true" : "false");
+  if (typeof is_active === "boolean") fd.append("is_active", is_active ? "true" : "false");
   if (width.trim()) fd.append("width", width.trim());
   if (height.trim()) fd.append("height", height.trim());
   if (quantity.trim()) fd.append("quantity", quantity.trim());
@@ -150,6 +153,14 @@ function spaceTypeLabel(v) {
   return o ? o.l : v;
 }
 
+function centerAllowsPublicCatalog(center) {
+  if (!center) return false;
+  const enabled =
+    center.marketplace_catalog_enabled === true || center.marketplace_enabled === true;
+  const active = center.is_active !== false;
+  return Boolean(enabled && active);
+}
+
 export function TomasAdminSection() {
   const { authReady, accessToken } = useAuth();
   const { caps } = useWorkspaceCapabilities();
@@ -157,7 +168,9 @@ export function TomasAdminSection() {
   const { mutate: swrGlobalMutate } = useSWRConfig();
   const [expandedId, setExpandedId] = useState(null);
   const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
+  const [pageErr, setPageErr] = useState("");
+  const [modalErr, setModalErr] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
@@ -179,6 +192,7 @@ export function TomasAdminSection() {
   const [description, setDescription] = useState("");
   const [monthlyPrice, setMonthlyPrice] = useState("");
   const [status, setStatus] = useState("available");
+  const [isActive, setIsActive] = useState(true);
   const [width, setWidth] = useState("");
   const [height, setHeight] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -244,7 +258,7 @@ export function TomasAdminSection() {
         ? spacesSwrError.message
         : String(spacesSwrError)
       : "";
-    setErr(ce || sp);
+    setPageErr(ce || sp);
   }, [centersSwrError, spacesSwrError]);
 
   useEffect(() => {
@@ -259,6 +273,7 @@ export function TomasAdminSection() {
     setDescription("");
     setMonthlyPrice("");
     setStatus("available");
+    setIsActive(true);
     setWidth("");
     setHeight("");
     setQuantity("1");
@@ -276,6 +291,7 @@ export function TomasAdminSection() {
     setSelected(null);
     resetForm();
     setModal("create");
+    setFieldErrors({});
   }
 
   function openView(s) {
@@ -293,6 +309,7 @@ export function TomasAdminSection() {
     setDescription(s.description || "");
     setMonthlyPrice(String(s.monthly_price_usd));
     setStatus(s.status);
+    setIsActive(s.is_active !== false);
     setWidth(s.width != null ? String(s.width) : "");
     setHeight(s.height != null ? String(s.height) : "");
     setQuantity(s.quantity != null ? String(s.quantity) : "1");
@@ -305,12 +322,56 @@ export function TomasAdminSection() {
     setInstallationNotes(s.installation_notes || "");
     setHemPocketTopCm(s.hem_pocket_top_cm != null ? String(s.hem_pocket_top_cm) : "");
     setModal("edit");
+    setFieldErrors({});
   }
 
   function closeModal() {
     setModal(null);
     setSelected(null);
     resetForm();
+    setFieldErrors({});
+  }
+
+  function setFieldErrorMapFromApiData(data) {
+    if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+    const next = {};
+    for (const [k, v] of Object.entries(data)) {
+      if (v == null) continue;
+      if (typeof v === "string") next[k] = v;
+      else if (Array.isArray(v)) next[k] = v.map(String).join("\n");
+      else if (typeof v === "object" && v.detail != null) next[k] = String(v.detail);
+      else next[k] = String(v);
+    }
+    if (Object.keys(next).length === 0) return false;
+    setFieldErrors(next);
+    return true;
+  }
+
+  function fieldClass(name) {
+    return `${adminField} ${fieldErrors?.[name] ? "mp-admin-field-error" : ""}`;
+  }
+
+  async function suggestNextCode() {
+    const centerId = parseInt(shoppingCenter, 10);
+    if (!centerId) {
+      setModalErr("Selecciona un centro comercial para sugerir el código.");
+      return;
+    }
+    try {
+      setModalErr("");
+      setFieldErrors((x) => ({ ...(x || {}), code: undefined }));
+      const data = await authFetch(`/api/admin/spaces/next-code/?shopping_center=${centerId}`);
+      if (data?.suggested_code) {
+        setCode(String(data.suggested_code));
+      }
+      if (data?.marketplace_catalog_enabled === false) {
+        setModalErr(
+          "Este centro tiene el catálogo del marketplace desactivado. La toma se creará, pero no aparecerá en el catálogo público hasta que habilites el centro.",
+        );
+      }
+    } catch (e) {
+      setModalErr(e instanceof Error ? e.message : "No se pudo sugerir el código.");
+    }
   }
 
   function valuesObject() {
@@ -334,23 +395,49 @@ export function TomasAdminSection() {
       production_specs: productionSpecs,
       installation_notes: installationNotes,
       hem_pocket_top_cm: hemPocketTopCm,
+      is_active: Boolean(isActive),
     };
   }
 
   async function submitSave() {
-    setErr("");
+    setModalErr("");
     setMsg("");
+    setFieldErrors({});
     const centerId = parseInt(shoppingCenter, 10);
     if (!centerId) {
-      setErr("Selecciona un centro comercial.");
+      setModalErr("Selecciona un centro comercial.");
+      setFieldErrors({ shopping_center: "Campo obligatorio" });
       return;
+    }
+    if (modal === "create") {
+      const c = centers.find((x) => Number(x.id) === Number(centerId));
+      const enabled =
+        c?.marketplace_catalog_enabled === true || c?.marketplace_enabled === true;
+      if (!enabled) {
+        setModalErr(
+          "Este centro tiene el catálogo del marketplace desactivado. Habilítalo en «Centros comerciales» para que la toma aparezca en el catálogo público.",
+        );
+        setFieldErrors({ shopping_center: "Habilita el catálogo del centro" });
+        return;
+      }
     }
     if (modal === "create") {
       const codeErr = validateTomaCodeFormat(code);
       if (codeErr) {
-        setErr(codeErr);
+        setModalErr(codeErr);
+        setFieldErrors({ code: codeErr });
         return;
       }
+    }
+    if (!title.trim()) {
+      setModalErr("Revisa los campos marcados.");
+      setFieldErrors((x) => ({ ...(x || {}), title: "Campo obligatorio" }));
+      return;
+    }
+    if (!String(monthlyPrice || "").trim()) {
+      setModalErr("Revisa los campos marcados.");
+      setFieldErrors((x) => ({ ...(x || {}), monthly_price_usd: "Campo obligatorio" }));
+      return;
     }
     try {
       const v = valuesObject();
@@ -372,8 +459,12 @@ export function TomasAdminSection() {
       }
       closeModal();
       await reloadSpaces();
+      await revalidateHomeCatalog(swrGlobalMutate);
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Error");
+      if (e && typeof e === "object" && e.data) {
+        setFieldErrorMapFromApiData(e.data);
+      }
+      setModalErr(e instanceof Error ? e.message : "Error");
     }
   }
 
@@ -382,13 +473,13 @@ export function TomasAdminSection() {
   }
 
   async function executeDeleteSpace(id) {
-    setErr("");
+    setPageErr("");
     try {
       await authFetch(`/api/admin/spaces/${id}/`, { method: "DELETE" });
       setMsg("Toma eliminada.");
       await reloadSpaces();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Error");
+      setPageErr(e instanceof Error ? e.message : "Error");
       throw e;
     }
   }
@@ -435,8 +526,8 @@ export function TomasAdminSection() {
       {msg ? (
         <p className={`mt-4 ${ROUNDED_CONTROL} bg-emerald-50 px-3 py-2 text-sm text-emerald-900`}>{msg}</p>
       ) : null}
-      {err ? (
-        <p className={`mt-4 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}>{err}</p>
+      {pageErr ? (
+        <p className={`mt-4 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}>{pageErr}</p>
       ) : null}
 
       {totalCount === 0 && !filtersActive ? (
@@ -523,6 +614,11 @@ export function TomasAdminSection() {
                 {rows.map((s) => {
                 const open = expandedId === s.id;
                 const panelId = `toma-extra-${s.id}`;
+                      const centerForRow = centers.find(
+                        (c) => String(c.id) === String(s.shopping_center),
+                      );
+                      const publicOk =
+                        s.is_active !== false && centerAllowsPublicCatalog(centerForRow);
                 return (
                   <Fragment key={s.id}>
                     <tr className="border-b border-zinc-100 transition-colors hover:bg-zinc-50/70">
@@ -624,11 +720,15 @@ export function TomasAdminSection() {
                       <AdminAccordionRowPanel colSpan={7} panelId={panelId}>
                         <AdminAccordionDetailHeader
                           badgeText={s.code || "—"}
-                          titleLabel="Toma en catálogo"
+                          titleLabel={publicOk ? "Toma en catálogo" : "No visible en catálogo"}
                           titleLine={
                             <p className="truncate text-sm font-medium text-zinc-900">{s.title}</p>
                           }
-                          hint="Vista ampliada sin editar"
+                          hint={
+                            publicOk
+                              ? "Vista ampliada sin editar"
+                              : "Activa el catálogo del centro y/o la toma para que aparezca en el marketplace"
+                          }
                         />
 
                         <div className="mt-5 space-y-6">
@@ -798,7 +898,9 @@ export function TomasAdminSection() {
             </div>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            {modalErr ? <AdminInlineAlert variant="error">{modalErr}</AdminInlineAlert> : null}
+            <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
               <AdminAdSpaceGalleryField
                 ref={galleryRef}
@@ -820,14 +922,29 @@ export function TomasAdminSection() {
                 inModal
                 aria-label="Centro comercial"
               />
+              {fieldErrors?.shopping_center ? (
+                <p className="mt-1 text-xs text-rose-700">{fieldErrors.shopping_center}</p>
+              ) : null}
             </div>
             <div>
-              <label className={adminLabel} htmlFor="s-code">
-                Código toma
-              </label>
+              <div className="flex items-center justify-between gap-2">
+                <label className={adminLabel} htmlFor="s-code">
+                  Código toma
+                </label>
+                {modal === "create" ? (
+                  <button
+                    type="button"
+                    className="text-xs font-semibold text-zinc-700 underline decoration-zinc-300 underline-offset-2 hover:text-zinc-900"
+                    onClick={suggestNextCode}
+                    disabled={!shoppingCenter}
+                  >
+                    Generar
+                  </button>
+                ) : null}
+              </div>
               <input
                 id="s-code"
-                className={adminField}
+                className={fieldClass("code")}
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 required
@@ -835,6 +952,9 @@ export function TomasAdminSection() {
                 autoComplete="off"
                 spellCheck={false}
               />
+              {fieldErrors?.code ? (
+                <p className="mt-1 text-xs text-rose-700">{fieldErrors.code}</p>
+              ) : null}
               {modal === "create" ? (
                 <p className="mt-1 text-xs text-zinc-500">
                   Formato{" "}
@@ -859,6 +979,9 @@ export function TomasAdminSection() {
                 inModal
                 aria-label="Tipo de toma"
               />
+              {fieldErrors?.type ? (
+                <p className="mt-1 text-xs text-rose-700">{fieldErrors.type}</p>
+              ) : null}
             </div>
             <div className="sm:col-span-2">
               <label className={adminLabel} htmlFor="s-title">
@@ -866,11 +989,14 @@ export function TomasAdminSection() {
               </label>
               <input
                 id="s-title"
-                className={adminField}
+                className={fieldClass("title")}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 required
               />
+              {fieldErrors?.title ? (
+                <p className="mt-1 text-xs text-rose-700">{fieldErrors.title}</p>
+              ) : null}
             </div>
             <div className="sm:col-span-2">
               <label className={adminLabel} htmlFor="s-desc">
@@ -890,11 +1016,14 @@ export function TomasAdminSection() {
               </label>
               <input
                 id="s-price"
-                className={adminField}
+                className={fieldClass("monthly_price_usd")}
                 value={monthlyPrice}
                 onChange={(e) => setMonthlyPrice(e.target.value)}
                 required
               />
+              {fieldErrors?.monthly_price_usd ? (
+                <p className="mt-1 text-xs text-rose-700">{fieldErrors.monthly_price_usd}</p>
+              ) : null}
             </div>
             <div>
               <label className={adminLabel} htmlFor="s-status">
@@ -908,6 +1037,18 @@ export function TomasAdminSection() {
                 inModal
                 aria-label="Estado de la toma"
               />
+            </div>
+            <div className="flex items-center gap-2 sm:col-span-2">
+              <input
+                id="s-active"
+                type="checkbox"
+                className="size-4 rounded border-zinc-300 accent-[var(--mp-primary)] focus:outline-none focus:ring-2 focus:ring-[color-mix(in_srgb,var(--mp-primary)_30%,transparent)]"
+                checked={isActive}
+                onChange={(e) => setIsActive(e.target.checked)}
+              />
+              <label htmlFor="s-active" className="text-sm font-medium text-zinc-800">
+                Toma activa (visible en catálogo si el centro también lo permite)
+              </label>
             </div>
             <div>
               <label className={adminLabel} htmlFor="s-w">
@@ -1011,6 +1152,7 @@ export function TomasAdminSection() {
                 onChange={(e) => setInstallationNotes(e.target.value)}
                 placeholder="Bolsillo solo arriba, prohibición pendón corrido, etc."
               />
+            </div>
             </div>
           </div>
         )}

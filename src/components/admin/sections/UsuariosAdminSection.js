@@ -23,6 +23,7 @@ import { AdminCreatePlusIcon } from "@/components/admin/AdminCreatePlusIcon";
 import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { AdminRowActions } from "@/components/admin/AdminRowActions";
+import { AdminInlineAlert } from "@/components/admin/AdminInlineAlert";
 import {
   adminField,
   adminLabel,
@@ -54,6 +55,7 @@ import { useDebouncedValue } from "@/lib/useDebouncedValue";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 import { parsePaginatedResponse } from "@/services/api";
 import { authFetch, authFetchForm } from "@/services/authApi";
+import { fieldErrorsFromDrfData } from "@/lib/adminFieldErrors";
 import {
   AdminFilterClearButton,
   AdminFiltersRow,
@@ -130,7 +132,9 @@ export function UsuariosAdminSection() {
   const canCreateAdminUsers = caps.can_create_marketplace_admin_users;
   const [expandedId, setExpandedId] = useState(null);
   const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
+  const [pageErr, setPageErr] = useState("");
+  const [modalErr, setModalErr] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [pendingDeleteUser, setPendingDeleteUser] = useState(null);
@@ -228,8 +232,12 @@ export function UsuariosAdminSection() {
         ? clientsSwrError.message
         : String(clientsSwrError)
       : "";
-    setErr(u || c);
+    setPageErr(u || c);
   }, [usersSwrError, clientsSwrError]);
+
+  function fieldClass(name) {
+    return `${adminField} ${fieldErrors?.[name] ? "mp-admin-field-error" : ""}`;
+  }
 
   useEffect(() => {
     setPage(1);
@@ -262,6 +270,8 @@ export function UsuariosAdminSection() {
     resetForm();
     setModal("create");
     void reloadClients();
+    setModalErr("");
+    setFieldErrors({});
   }
 
   function openView(u) {
@@ -282,17 +292,21 @@ export function UsuariosAdminSection() {
     setPendingClearCover(false);
     if (fileRef.current) fileRef.current.value = "";
     setModal("edit");
+    setModalErr("");
+    setFieldErrors({});
   }
 
   function closeModal() {
     setModal(null);
     setSelected(null);
     resetForm();
+    setModalErr("");
+    setFieldErrors({});
   }
 
   async function copyPasswordSetupLink(u) {
     if (!u?.id || u.role !== "client" || u.has_usable_password !== false) return;
-    setErr("");
+    setPageErr("");
     setMsg("");
     setPasswordLinkUserId(u.id);
     try {
@@ -311,25 +325,36 @@ export function UsuariosAdminSection() {
         }
       }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "No se pudo generar el enlace.");
+      setPageErr(e instanceof Error ? e.message : "No se pudo generar el enlace.");
     } finally {
       setPasswordLinkUserId(null);
     }
   }
 
   async function submitSave() {
-    setErr("");
+    setModalErr("");
     setMsg("");
+    setFieldErrors({});
+    const nextFe = {};
+    if (!username.trim()) nextFe.username = "Campo obligatorio.";
+    if (!email.trim()) nextFe.email = "Campo obligatorio.";
+    if (Object.keys(nextFe).length) {
+      setFieldErrors(nextFe);
+      setModalErr("Revisa los campos marcados.");
+      return;
+    }
     try {
       if (modal === "create") {
         if (role === "client" && (!linkedClientId || linkedClientId === "")) {
-          setErr(
+          setModalErr(
             "Selecciona el cliente vinculado para el rol cliente marketplace.",
           );
+          setFieldErrors({ client_id: "Campo obligatorio." });
           return;
         }
         if (password.length < 8) {
-          setErr("La contraseña debe tener al menos 8 caracteres.");
+          setModalErr("La contraseña debe tener al menos 8 caracteres.");
+          setFieldErrors({ password: "Debe tener al menos 8 caracteres." });
           return;
         }
         if (coverFile) {
@@ -365,13 +390,15 @@ export function UsuariosAdminSection() {
         setMsg("Usuario creado.");
       } else if (modal === "edit" && selected) {
         if (role === "client" && (!linkedClientId || linkedClientId === "")) {
-          setErr(
+          setModalErr(
             "Selecciona el cliente vinculado para el rol cliente marketplace.",
           );
+          setFieldErrors({ client_id: "Campo obligatorio." });
           return;
         }
         if (password && password.length < 8) {
-          setErr("La contraseña debe tener al menos 8 caracteres.");
+          setModalErr("La contraseña debe tener al menos 8 caracteres.");
+          setFieldErrors({ password: "Debe tener al menos 8 caracteres." });
           return;
         }
         if (coverFile) {
@@ -411,26 +438,34 @@ export function UsuariosAdminSection() {
       await reloadUsers();
       await reloadClients();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Error");
+      if (e && typeof e === "object" && e.data) {
+        const fe = fieldErrorsFromDrfData(e.data);
+        if (Object.keys(fe).length) {
+          setFieldErrors(fe);
+          setModalErr("Revisa los campos marcados.");
+          return;
+        }
+      }
+      setModalErr(e instanceof Error ? e.message : "Error");
     }
   }
 
   function askDeleteUser(u) {
     if (u.id === me?.id) {
-      setErr("No puedes eliminar tu propio usuario.");
+      setPageErr("No puedes eliminar tu propio usuario.");
       return;
     }
     setPendingDeleteUser(u);
   }
 
   async function executeDeleteUser(u) {
-    setErr("");
+    setPageErr("");
     try {
       await authFetch(`/api/admin/users/${u.id}/`, { method: "DELETE" });
       setMsg("Usuario eliminado.");
       await reloadUsers();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Error");
+      setPageErr(e instanceof Error ? e.message : "Error");
       throw e;
     }
   }
@@ -476,11 +511,11 @@ export function UsuariosAdminSection() {
           {msg}
         </p>
       ) : null}
-      {err ? (
+      {pageErr ? (
         <p
           className={`mt-4 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}
         >
-          {err}
+          {pageErr}
         </p>
       ) : null}
 
@@ -774,6 +809,7 @@ export function UsuariosAdminSection() {
           )
         }
       >
+        {!readOnly && modalErr ? <AdminInlineAlert variant="error">{modalErr}</AdminInlineAlert> : null}
         {readOnly && selected ? (
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2">
@@ -844,17 +880,20 @@ export function UsuariosAdminSection() {
             </div>
             <div className="sm:col-span-2">
               <label className={adminLabel} htmlFor="u-user">
-                Nombre de usuario
+                Nombre de usuario <span className="text-red-600">*</span>
               </label>
               <input
                 id="u-user"
-                className={adminField}
+                className={fieldClass("username")}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required={modal === "create"}
                 disabled={modal === "edit"}
                 autoComplete="off"
               />
+              {fieldErrors?.username ? (
+                <p className="mt-1 text-xs text-rose-700">{fieldErrors.username}</p>
+              ) : null}
               {modal === "edit" ? (
                 <p className="mt-1 text-xs text-zinc-500">
                   El nombre de usuario no se puede cambiar.
@@ -863,16 +902,19 @@ export function UsuariosAdminSection() {
             </div>
             <div className="sm:col-span-2">
               <label className={adminLabel} htmlFor="u-email">
-                Email
+                Email <span className="text-red-600">*</span>
               </label>
               <input
                 id="u-email"
                 type="email"
-                className={adminField}
+                className={fieldClass("email")}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
+              {fieldErrors?.email ? (
+                <p className="mt-1 text-xs text-rose-700">{fieldErrors.email}</p>
+              ) : null}
             </div>
             <div className="sm:col-span-2">
               <label className={adminLabel} htmlFor="u-pass">
@@ -884,7 +926,7 @@ export function UsuariosAdminSection() {
                 <input
                   id="u-pass"
                   type={showUserPassword ? "text" : "password"}
-                  className={`${adminField} pr-11`}
+                  className={`${fieldClass("password")} pr-11`}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required={modal === "create"}
@@ -894,6 +936,9 @@ export function UsuariosAdminSection() {
                     modal === "edit" ? "Dejar vacío para no cambiar" : ""
                   }
                 />
+                {fieldErrors?.password ? (
+                  <p className="mt-1 text-xs text-rose-700">{fieldErrors.password}</p>
+                ) : null}
                 <button
                   type="button"
                   className="mp-ring-brand absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-[15px] text-zinc-500 transition-colors hover:bg-zinc-100/80 hover:text-zinc-800 focus:outline-none"

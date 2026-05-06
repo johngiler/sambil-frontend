@@ -8,6 +8,7 @@ import { AdminCreatePlusIcon } from "@/components/admin/AdminCreatePlusIcon";
 import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { AdminRowActions } from "@/components/admin/AdminRowActions";
+import { AdminInlineAlert } from "@/components/admin/AdminInlineAlert";
 import {
   adminField,
   adminLabel,
@@ -33,6 +34,7 @@ import { ADMIN_CENTERS_ALL_SWR_KEY, authJsonFetcher } from "@/lib/swr/fetchers";
 import { adminCenterCoverLightboxItems } from "@/lib/imageLightboxItems";
 import { catalogRasterImgAttrs } from "@/lib/catalogImageProps";
 import { useDebouncedValue } from "@/lib/useDebouncedValue";
+import { fieldErrorsFromDrfData } from "@/lib/adminFieldErrors";
 import {
   squareAdminTablePortadaFrameClass,
   squareAdminTablePortadaImgClass,
@@ -84,7 +86,9 @@ export function CentrosAdminSection() {
   const canCreateCenters = caps.can_create_shopping_centers;
   const [expandedId, setExpandedId] = useState(null);
   const [msg, setMsg] = useState("");
-  const [err, setErr] = useState("");
+  const [pageErr, setPageErr] = useState("");
+  const [modalErr, setModalErr] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [modal, setModal] = useState(null);
   const [selected, setSelected] = useState(null);
   const [deleteTargetId, setDeleteTargetId] = useState(null);
@@ -101,6 +105,7 @@ export function CentrosAdminSection() {
 
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
+  const [slugTouched, setSlugTouched] = useState(false);
   const [city, setCity] = useState("");
   const [address, setAddress] = useState("");
   const [country, setCountry] = useState("Venezuela");
@@ -137,7 +142,7 @@ export function CentrosAdminSection() {
     (!isLoading && (data !== undefined || swrError !== undefined));
 
   useEffect(() => {
-    setErr(
+    setPageErr(
       swrError ? (swrError instanceof Error ? swrError.message : String(swrError)) : "",
     );
   }, [swrError]);
@@ -160,6 +165,7 @@ export function CentrosAdminSection() {
     setSelected(null);
     setName("");
     setSlug("");
+    setSlugTouched(false);
     setCity("");
     setAddress("");
     setCountry("Venezuela");
@@ -176,6 +182,8 @@ export function CentrosAdminSection() {
     setPendingClearCover(false);
     if (fileRef.current) fileRef.current.value = "";
     setModal("create");
+    setFieldErrors({});
+    setModalErr("");
   }
 
   function openView(c) {
@@ -188,6 +196,7 @@ export function CentrosAdminSection() {
     setSelected(c);
     setName(c.name);
     setSlug(c.slug || "");
+    setSlugTouched(true);
     setCity(c.city || "");
     setAddress(c.address || "");
     setCountry(c.country?.trim() || "Venezuela");
@@ -204,6 +213,8 @@ export function CentrosAdminSection() {
     setPendingClearCover(false);
     if (fileRef.current) fileRef.current.value = "";
     setModal("edit");
+    setFieldErrors({});
+    setModalErr("");
   }
 
   function closeModal() {
@@ -212,11 +223,74 @@ export function CentrosAdminSection() {
     setCoverFile(null);
     setPendingClearCover(false);
     if (fileRef.current) fileRef.current.value = "";
+    setSlugTouched(false);
+    setFieldErrors({});
+    setModalErr("");
   }
 
+  function fieldClass(name) {
+    return `${adminField} ${fieldErrors?.[name] ? "mp-admin-field-error" : ""}`;
+  }
+
+  function suggestCenterSlug(nm) {
+    const raw = String(nm || "").trim();
+    if (!raw) return "";
+    const low = raw.toLowerCase();
+    if (low.startsWith("sambil ")) {
+      const rest = raw.slice(7).trim();
+      const tokens = rest
+        .split(/\s+/)
+        .filter(Boolean)
+        .map((t) => t.replace(/[^a-z0-9áéíóúüñ]/gi, ""));
+      if (tokens.length) {
+        const letters = [];
+        for (const t of tokens) {
+          if (!t) continue;
+          if (letters.length < 2) letters.push(t[0].toLowerCase());
+        }
+        const first = tokens[0].toLowerCase();
+        const consonants = first.replace(/[aeiouáéíóúü]/g, "");
+        let i = 0;
+        while (letters.length < 3 && i < consonants.length) {
+          const ch = consonants[i++];
+          if (ch) letters.push(ch);
+        }
+        while (letters.length < 3 && first.length) letters.push(first[letters.length] || "x");
+        const out = `s${letters.join("")}`.slice(0, 3);
+        return out.replace(/[^a-z0-9]/g, "");
+      }
+    }
+    return raw
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 80);
+  }
+
+  useEffect(() => {
+    if (modal !== "create") return;
+    if (slugTouched) return;
+    const next = suggestCenterSlug(name);
+    if (next && next !== slug) setSlug(next);
+    if (!name.trim() && slug) setSlug("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [name, modal, slugTouched]);
+
   async function submitSave() {
-    setErr("");
+    setModalErr("");
     setMsg("");
+    setFieldErrors({});
+    const nextFe = {};
+    if (!name.trim()) nextFe.name = "Campo obligatorio.";
+    if (!slug.trim()) nextFe.slug = "Campo obligatorio.";
+    if (!city.trim()) nextFe.city = "Campo obligatorio.";
+    if (Object.keys(nextFe).length) {
+      setFieldErrors(nextFe);
+      setModalErr("Revisa los campos marcados.");
+      return;
+    }
     const lo = Math.max(0, parseInt(listingOrder, 10) || 0);
     const extra = {
       district: district.trim(),
@@ -317,7 +391,15 @@ export function CentrosAdminSection() {
       closeModal();
       await reloadCenters();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Error");
+      if (e && typeof e === "object" && e.data) {
+        const fe = fieldErrorsFromDrfData(e.data);
+        if (Object.keys(fe).length) {
+          setFieldErrors(fe);
+          setModalErr("Revisa los campos marcados.");
+          return;
+        }
+      }
+      setModalErr(e instanceof Error ? e.message : "Error");
     }
   }
 
@@ -326,13 +408,13 @@ export function CentrosAdminSection() {
   }
 
   async function executeDeleteCenter(id) {
-    setErr("");
+    setPageErr("");
     try {
       await authFetch(`/api/admin/centers/${id}/`, { method: "DELETE" });
       setMsg("Centro eliminado.");
       await reloadCenters();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "Error");
+      setPageErr(e instanceof Error ? e.message : "Error");
       throw e;
     }
   }
@@ -382,11 +464,11 @@ export function CentrosAdminSection() {
           {msg}
         </p>
       ) : null}
-      {err ? (
+      {pageErr ? (
         <p
           className={`mt-4 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}
         >
-          {err}
+          {pageErr}
         </p>
       ) : null}
 
@@ -721,6 +803,9 @@ export function CentrosAdminSection() {
           )
         }
       >
+        {!readOnly && modalErr ? (
+          <AdminInlineAlert variant="error">{modalErr}</AdminInlineAlert>
+        ) : null}
         {readOnly && selected ? (
           <div className="space-y-4 text-sm">
             <CoverImageField
@@ -855,44 +940,57 @@ export function CentrosAdminSection() {
             />
             <div>
               <label className={adminLabel} htmlFor="c-name">
-                Nombre
+                Nombre <span className="text-red-600">*</span>
               </label>
               <input
                 id="c-name"
-                className={adminField}
+                className={fieldClass("name")}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
               />
+              {fieldErrors?.name ? (
+                <p className="mt-1 text-xs text-rose-700">{fieldErrors.name}</p>
+              ) : null}
             </div>
             <div>
               <label className={adminLabel} htmlFor="c-slug">
-                Slug (URL)
+                Slug (URL) <span className="text-red-600">*</span>
               </label>
               <input
                 id="c-slug"
-                className={adminField}
+                className={fieldClass("slug")}
                 value={slug}
-                onChange={(e) => setSlug(e.target.value)}
+                onChange={(e) => {
+                  setSlugTouched(true);
+                  setSlug(e.target.value);
+                }}
                 required
                 autoComplete="off"
                 spellCheck={false}
                 placeholder="solo-minusculas-numeros-guiones"
               />
+              {fieldErrors?.slug ? (
+                <p className="mt-1 text-xs text-rose-700">{fieldErrors.slug}</p>
+              ) : null}
               <p className="mt-1 text-xs text-zinc-500">
                 Identificador en enlaces públicos (?center=, /m/…, API). Solo letras minúsculas, números y guiones.
               </p>
             </div>
             <div>
               <label className={adminLabel} htmlFor="c-city">
-                Ciudad
+                Ciudad <span className="text-red-600">*</span>
               </label>
               <input
                 id="c-city"
-                className={adminField}
+                className={fieldClass("city")}
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
+                required
               />
+              {fieldErrors?.city ? (
+                <p className="mt-1 text-xs text-rose-700">{fieldErrors.city}</p>
+              ) : null}
             </div>
             <div>
               <label className={adminLabel} htmlFor="c-district">

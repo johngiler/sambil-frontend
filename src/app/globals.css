@@ -283,6 +283,17 @@
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--mp-primary) 14%, transparent);
 }
 
+/* Error en campos admin: debe ganar incluso en focus. */
+.mp-admin-field-error {
+  border-color: #fb7185 !important; /* rose-400 */
+  box-shadow: 0 0 0 2px rgba(251, 113, 133, 0.18) !important;
+}
+
+.mp-admin-field-error:focus {
+  border-color: #fb7185 !important;
+  box-shadow: 0 0 0 2px rgba(251, 113, 133, 0.22) !important;
+}
+
 /* Icono de cabecera de sección admin. */
 .mp-admin-section-icon {
   background-color: color-mix(in srgb, var(--mp-primary) 12%, #fff);
