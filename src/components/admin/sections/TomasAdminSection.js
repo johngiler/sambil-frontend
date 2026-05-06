@@ -39,6 +39,7 @@ import { IconAdminGrid } from "@/components/admin/adminIcons";
 import { TomasAdminSectionSkeleton } from "@/components/admin/skeletons/TomasAdminSectionSkeleton";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
+import { ThumbnailPlaceholder } from "@/components/media/ThumbnailPlaceholder";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspaceCapabilities } from "@/hooks/useWorkspaceCapabilities";
 import { EmptyState, EmptyStateIconGrid } from "@/components/ui/EmptyState";
@@ -542,7 +543,11 @@ export function TomasAdminSection() {
                           const thumbRaw = rawMediaUrlFromApiField(first);
                           const lbItems = adminTomaRowLightboxItems(s, s.title);
                           if (!thumbRaw) {
-                            return <div className={squareAdminTablePortadaFrameClass} aria-hidden />;
+                            return (
+                              <div className={squareAdminTablePortadaFrameClass} aria-label="Sin imagen">
+                                <ThumbnailPlaceholder />
+                              </div>
+                            );
                           }
                           return (
                             <button

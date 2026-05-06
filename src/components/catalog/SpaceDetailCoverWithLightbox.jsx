@@ -75,31 +75,34 @@ export function SpaceDetailCoverWithLightbox({
   );
   const validUrls = useGalleryUrlsThatLoad(urls);
   const displayUrls = validUrls ?? urls;
-  if (displayUrls.length === 0) return null;
+  const hasCover = displayUrls.length > 0;
 
   const n = displayUrls.length;
-  const lightboxItems = displayUrls.map((src, i) => ({
-    src,
-    alt: n > 1 ? `${coverAlt} (${i + 1}/${n})` : coverAlt,
-    thumbnailSrc: src,
-  }));
+  const lightboxItems = hasCover
+    ? displayUrls.map((src, i) => ({
+        src,
+        alt: n > 1 ? `${coverAlt} (${i + 1}/${n})` : coverAlt,
+        thumbnailSrc: src,
+      }))
+    : [];
 
   const extraCount = n > 1 ? n - 1 : 0;
-  const showExtraBadge = validUrls !== null && extraCount > 0;
+  const showExtraBadge = hasCover && validUrls !== null && extraCount > 0;
 
-  const openLabel =
-    n > 1 ? "Abrir galería de imágenes" : "Abrir imagen ampliada";
+  const openLabel = n > 1 ? "Abrir galería de imágenes" : "Abrir imagen ampliada";
 
   return (
     <>
       <figure className={figureClassName}>
         <div className="group relative w-full overflow-hidden rounded-2xl border border-zinc-200/90 bg-zinc-100 text-left shadow-sm ring-1 ring-zinc-200/60 transition hover:ring-[color-mix(in_srgb,var(--mp-primary)_35%,#d4d4d8)]">
-          <button
-            type="button"
-            onClick={() => setOpen(true)}
-            className="absolute inset-0 z-0 cursor-zoom-in rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_45%,transparent)]"
-            aria-label={openLabel}
-          />
+          {hasCover ? (
+            <button
+              type="button"
+              onClick={() => setOpen(true)}
+              className="absolute inset-0 z-0 cursor-zoom-in rounded-2xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_45%,transparent)]"
+              aria-label={openLabel}
+            />
+          ) : null}
           <div className="pointer-events-none relative aspect-square w-full">
             <CatalogRasterImage
               candidates={displayUrls}

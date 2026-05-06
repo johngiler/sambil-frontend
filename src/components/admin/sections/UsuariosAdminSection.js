@@ -38,6 +38,7 @@ import { IconAdminUserPlus } from "@/components/admin/adminIcons";
 import { ClientesUsuariosSectionSkeleton } from "@/components/admin/skeletons/ClientesUsuariosSectionSkeleton";
 import { CoverImageField } from "@/components/admin/CoverImageField";
 import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
+import { ThumbnailPlaceholder } from "@/components/media/ThumbnailPlaceholder";
 import { rawMediaUrlFromApiField } from "@/lib/mediaUrls";
 import { useAuth } from "@/context/AuthContext";
 import { useWorkspaceCapabilities } from "@/hooks/useWorkspaceCapabilities";
@@ -576,7 +577,7 @@ export function UsuariosAdminSection() {
                               />
                             </td>
                             <td className="px-2 py-2">
-                              <div className="flex h-11 w-11 overflow-hidden rounded-full border border-zinc-100 bg-zinc-100">
+                              <div className="relative flex h-11 w-11 overflow-hidden rounded-full border border-zinc-100 bg-zinc-100">
                                 {avatarUrl ? (
                                   <RasterFromApiUrl
                                     url={avatarUrl}
@@ -586,7 +587,9 @@ export function UsuariosAdminSection() {
                                     className="h-full w-full object-cover"
                                     {...catalogRasterImgAttrs}
                                   />
-                                ) : null}
+                                ) : (
+                                  <ThumbnailPlaceholder variant="avatar" />
+                                )}
                               </div>
                             </td>
                             <td className="px-3 py-2.5 font-medium text-zinc-900">

@@ -37,6 +37,7 @@ import { IconAdminBriefcase, IconAdminUserPlus } from "@/components/admin/adminI
 import { ClientesUsuariosSectionSkeleton } from "@/components/admin/skeletons/ClientesUsuariosSectionSkeleton";
 import { CoverImageField } from "@/components/admin/CoverImageField";
 import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
+import { ThumbnailPlaceholder } from "@/components/media/ThumbnailPlaceholder";
 import { rawMediaUrlFromApiField } from "@/lib/mediaUrls";
 import { useAuth } from "@/context/AuthContext";
 import { EmptyState, EmptyStateIconBriefcase } from "@/components/ui/EmptyState";
@@ -481,7 +482,7 @@ export function ClientesAdminSection() {
                         />
                       </td>
                       <td className="px-2 py-2">
-                        <div className="flex h-11 w-11 overflow-hidden rounded-full border border-zinc-100 bg-zinc-100">
+                        <div className="relative flex h-11 w-11 overflow-hidden rounded-full border border-zinc-100 bg-zinc-100">
                           {clientAvatarUrl ? (
                             <RasterFromApiUrl
                               url={clientAvatarUrl}
@@ -491,7 +492,9 @@ export function ClientesAdminSection() {
                               className="h-full w-full object-cover"
                               {...catalogRasterImgAttrs}
                             />
-                          ) : null}
+                          ) : (
+                            <ThumbnailPlaceholder variant="avatar" />
+                          )}
                         </div>
                       </td>
                       <td className="max-w-[10rem] truncate px-3 py-2.5 font-medium text-zinc-900" title={c.company_name}>

@@ -83,10 +83,50 @@ export function CatalogRasterImage({
     [effectiveSrc, chain, onErrorProp, useWebpVariantRetry],
   );
 
-  if (!effectiveSrc) return null;
-
   const fillClass = fill ? "absolute inset-0 h-full w-full" : "";
   const mergedClass = [fillClass, className].filter(Boolean).join(" ");
+
+  if (!effectiveSrc) {
+    const label = alt && String(alt).trim() ? String(alt).trim() : "Imagen no disponible";
+    return (
+      <div
+        role="img"
+        aria-label={label}
+        className={[
+          fillClass,
+          "flex items-center justify-center rounded-none bg-zinc-100 text-zinc-400",
+          className,
+        ]
+          .filter(Boolean)
+          .join(" ")}
+      >
+        <div className="flex flex-col items-center gap-2 px-4 text-center">
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            className="opacity-80"
+            aria-hidden
+          >
+            <path
+              d="M8.2 6.6 9.6 5h4.8l1.4 1.6H18a3 3 0 0 1 3 3v7.4a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V9.6a3 3 0 0 1 3-3h2.2Z"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinejoin="round"
+            />
+            <path
+              d="M12 17.2a3.4 3.4 0 1 0 0-6.8 3.4 3.4 0 0 0 0 6.8Z"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+          </svg>
+          <span className="text-xs font-semibold uppercase tracking-wide">Sin imagen</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <img

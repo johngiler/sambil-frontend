@@ -22,6 +22,7 @@ import { CentrosAdminSectionSkeleton } from "@/components/admin/skeletons/Centro
 import { CoverImageField } from "@/components/admin/CoverImageField";
 import { ImageLightbox } from "@/components/media/ImageLightbox";
 import { RasterFromApiUrl } from "@/components/media/RasterFromApiUrl";
+import { ThumbnailPlaceholder } from "@/components/media/ThumbnailPlaceholder";
 import { rawMediaUrlFromApiField } from "@/lib/mediaUrls";
 import { IconBuildingSection } from "@/components/admin/rowActionIcons";
 import { useAuth } from "@/context/AuthContext";
@@ -462,6 +463,9 @@ export function CentrosAdminSection() {
                     Ciudad
                   </th>
                   <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                    Tomas
+                  </th>
+                  <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
                     Estado
                   </th>
                   <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
@@ -511,7 +515,9 @@ export function CentrosAdminSection() {
                               />
                             </button>
                           ) : (
-                            <div className={squareAdminTablePortadaFrameClass} aria-hidden />
+                            <div className={squareAdminTablePortadaFrameClass} aria-label="Sin imagen">
+                              <ThumbnailPlaceholder />
+                            </div>
                           )}
                         </td>
                         <td className="px-3 py-2.5 font-mono text-xs text-zinc-800">
@@ -522,6 +528,9 @@ export function CentrosAdminSection() {
                         </td>
                         <td className="px-3 py-2.5 text-zinc-600">
                           {c.city || "—"}
+                        </td>
+                        <td className="px-3 py-2.5 text-zinc-700 tabular-nums">
+                          {typeof c.tomas_count === "number" ? c.tomas_count : "—"}
                         </td>
                         <td className="px-3 py-2.5">
                           <span
