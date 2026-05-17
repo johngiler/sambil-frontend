@@ -25,7 +25,9 @@ function cartLineHasUsableMedia(item) {
   if (normalizeMediaUrlForUi(item.cover_image)) return true;
   if (
     Array.isArray(item.gallery_images) &&
-    item.gallery_images.some((u) => typeof u === "string" && u.trim() && normalizeMediaUrlForUi(u))
+    item.gallery_images.some(
+      (u) => typeof u === "string" && u.trim() && normalizeMediaUrlForUi(u),
+    )
   ) {
     return true;
   }
@@ -39,8 +41,8 @@ function coverAndGalleryFromSpace(space) {
   return { coverUrl, galleryNormalized };
 }
 
-const LEGACY_CART = "sambil-marketplace-cart";
-const LEGACY_PERIOD = "sambil-marketplace-rental";
+const LEGACY_CART = "publivalla-marketplace-cart";
+const LEGACY_PERIOD = "publivalla-marketplace-rental";
 
 function cartStorageKey() {
   return `mp_cart_${storageKeySuffix()}`;
@@ -73,7 +75,10 @@ function readStorage() {
 
 function writeStorage(items) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(cartStorageKey(), JSON.stringify(sanitizeCartItems(items)));
+  localStorage.setItem(
+    cartStorageKey(),
+    JSON.stringify(sanitizeCartItems(items)),
+  );
 }
 
 /** Período global antiguo: se copia a cada línea sin fechas y luego se deja de usar. */
@@ -91,9 +96,11 @@ function readLegacyPeriod() {
 }
 
 function migrateItemsWithLegacyPeriod(items, legacy) {
-  const fallback = legacy?.start_date && legacy?.end_date ? legacy : defaultRentalPeriod();
+  const fallback =
+    legacy?.start_date && legacy?.end_date ? legacy : defaultRentalPeriod();
   return items.map((i) => {
-    if (typeof i.start_date === "string" && typeof i.end_date === "string") return i;
+    if (typeof i.start_date === "string" && typeof i.end_date === "string")
+      return i;
     return {
       ...i,
       start_date: fallback.start_date,
@@ -144,7 +151,8 @@ export function CartProvider({ children }) {
         try {
           const space = await getSpace(line.id);
           if (cancelled) return;
-          const { coverUrl, galleryNormalized } = coverAndGalleryFromSpace(space);
+          const { coverUrl, galleryNormalized } =
+            coverAndGalleryFromSpace(space);
           mediaHydrateAttemptedRef.current.add(sid);
           if (!coverUrl && galleryNormalized.length === 0) continue;
 
@@ -154,7 +162,9 @@ export function CartProvider({ children }) {
                 ? {
                     ...x,
                     ...(coverUrl ? { cover_image: coverUrl } : {}),
-                    ...(galleryNormalized.length > 0 ? { gallery_images: galleryNormalized } : {}),
+                    ...(galleryNormalized.length > 0
+                      ? { gallery_images: galleryNormalized }
+                      : {}),
                   }
                 : x,
             );
@@ -177,13 +187,16 @@ export function CartProvider({ children }) {
     const detailLine =
       typeof space.venue_zone === "string" && space.venue_zone.trim() !== ""
         ? space.venue_zone.trim()
-        : typeof space.location_description === "string" && space.location_description.trim() !== ""
+        : typeof space.location_description === "string" &&
+            space.location_description.trim() !== ""
           ? space.location_description.trim()
           : typeof space.type === "string"
             ? space.type
             : "";
     const centerName =
-      typeof space.shopping_center_name === "string" ? space.shopping_center_name.trim() : "";
+      typeof space.shopping_center_name === "string"
+        ? space.shopping_center_name.trim()
+        : "";
     const { coverUrl, galleryNormalized } = coverAndGalleryFromSpace(space);
 
     setItems((prev) => {
@@ -201,7 +214,9 @@ export function CartProvider({ children }) {
             ...(centerName ? { shopping_center_name: centerName } : {}),
             ...(detailLine ? { detail_line: detailLine } : {}),
             ...(coverUrl ? { cover_image: coverUrl } : {}),
-            ...(galleryNormalized.length > 0 ? { gallery_images: galleryNormalized } : {}),
+            ...(galleryNormalized.length > 0
+              ? { gallery_images: galleryNormalized }
+              : {}),
           },
         ]);
       writeStorage(next);
@@ -213,7 +228,9 @@ export function CartProvider({ children }) {
     if (!range?.start_date || !range?.end_date) return;
     setItems((prev) => {
       const next = prev.map((x) =>
-        x.id === id ? { ...x, start_date: range.start_date, end_date: range.end_date } : x,
+        x.id === id
+          ? { ...x, start_date: range.start_date, end_date: range.end_date }
+          : x,
       );
       writeStorage(next);
       return next;

@@ -1,6 +1,13 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import useSWR, { mutate as globalMutate } from "swr";
 
 import { AdminAccordionToggle } from "@/components/admin/AdminAccordionToggle";
@@ -125,16 +132,32 @@ export function CentrosAdminSection() {
   const fileRef = useRef(null);
 
   const listKey =
-    authReady && accessToken ? centersAdminListPath(page, debouncedFilterQ, filterActive) : null;
-  const { data, error: swrError, isLoading, mutate: mutateCenters } = useSWR(listKey, authJsonFetcher, {
+    authReady && accessToken
+      ? centersAdminListPath(page, debouncedFilterQ, filterActive)
+      : null;
+  const {
+    data,
+    error: swrError,
+    isLoading,
+    mutate: mutateCenters,
+  } = useSWR(listKey, authJsonFetcher, {
     keepPreviousData: true,
   });
 
-  const rows = useMemo(() => (data ? parsePaginatedResponse(data).results : []), [data]);
-  const totalCount = useMemo(() => (data ? parsePaginatedResponse(data).count : 0), [data]);
+  const rows = useMemo(
+    () => (data ? parsePaginatedResponse(data).results : []),
+    [data],
+  );
+  const totalCount = useMemo(
+    () => (data ? parsePaginatedResponse(data).count : 0),
+    [data],
+  );
 
   const reloadCenters = useCallback(async () => {
-    await Promise.all([mutateCenters(), globalMutate(ADMIN_CENTERS_ALL_SWR_KEY)]);
+    await Promise.all([
+      mutateCenters(),
+      globalMutate(ADMIN_CENTERS_ALL_SWR_KEY),
+    ]);
   }, [mutateCenters]);
 
   const ready =
@@ -143,7 +166,11 @@ export function CentrosAdminSection() {
 
   useEffect(() => {
     setPageErr(
-      swrError ? (swrError instanceof Error ? swrError.message : String(swrError)) : "",
+      swrError
+        ? swrError instanceof Error
+          ? swrError.message
+          : String(swrError)
+        : "",
     );
   }, [swrError]);
 
@@ -236,7 +263,7 @@ export function CentrosAdminSection() {
     const raw = String(nm || "").trim();
     if (!raw) return "";
     const low = raw.toLowerCase();
-    if (low.startsWith("sambil ")) {
+    if (low.startsWith("acme ")) {
       const rest = raw.slice(7).trim();
       const tokens = rest
         .split(/\s+/)
@@ -255,7 +282,8 @@ export function CentrosAdminSection() {
           const ch = consonants[i++];
           if (ch) letters.push(ch);
         }
-        while (letters.length < 3 && first.length) letters.push(first[letters.length] || "x");
+        while (letters.length < 3 && first.length)
+          letters.push(first[letters.length] || "x");
         const out = `s${letters.join("")}`.slice(0, 3);
         return out.replace(/[^a-z0-9]/g, "");
       }
@@ -435,725 +463,774 @@ export function CentrosAdminSection() {
     <>
       <AdminListQuerySync onQuery={setFilterQ} />
       <div className={adminPanelCard}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className={adminSectionHeaderIconWrap}>
-            <IconBuildingSection className="block" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">
-              Centros comerciales
-            </h2>
-            <p className="mt-0.5 text-sm text-zinc-500">
-              {totalCount} centro{totalCount === 1 ? "" : "s"}
-            </p>
-          </div>
-        </div>
-        {canCreateCenters ? (
-          <button type="button" className={adminPrimaryBtn} onClick={openCreate}>
-            <AdminCreatePlusIcon />
-            <span className={adminCreateBtnLabel}>Nuevo centro</span>
-          </button>
-        ) : null}
-      </div>
-
-      {msg ? (
-        <p
-          className={`mt-4 ${ROUNDED_CONTROL} bg-emerald-50 px-3 py-2 text-sm text-emerald-900`}
-        >
-          {msg}
-        </p>
-      ) : null}
-      {pageErr ? (
-        <p
-          className={`mt-4 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}
-        >
-          {pageErr}
-        </p>
-      ) : null}
-
-      {totalCount === 0 && !filtersActive ? (
-        <div className="mt-6">
-          <EmptyState
-            icon={<EmptyStateIconBuilding />}
-            title="No hay centros comerciales registrados"
-            description={
-              canCreateCenters
-                ? "Aún no hay ningún centro registrado. Puedes crear el primero con el botón «Nuevo centro»."
-                : "Aún no hay ningún centro registrado. La creación de centros no está habilitada para este workspace; si necesitas cambiarlo, contacta a la plataforma."
-            }
-          />
-        </div>
-      ) : (
-        <>
-          <AdminFiltersRow>
-            <AdminFilterSearchInput
-              id="centros-filter-q"
-              value={filterQ}
-              onChange={setFilterQ}
-              placeholder="Slug, nombre, ciudad, zona…"
-            />
-            <AdminFilterSelect
-              id="centros-filter-active"
-              label="Estado operativo"
-              value={filterActive}
-              onChange={setFilterActive}
-              options={CENTER_ACTIVE_FILTERS}
-            />
-            <AdminFilterClearButton
-              show={filtersActive}
-              onClick={() => {
-                setFilterQ("");
-                setFilterActive("all");
-                setPage(1);
-              }}
-            />
-          </AdminFiltersRow>
-
-          {rows.length === 0 && filtersActive ? (
-            <div className="mt-6 rounded-[15px] border border-zinc-200 bg-zinc-50/80 px-4 py-8 text-center text-sm text-zinc-600">
-              <p>Ningún centro coincide con los filtros.</p>
-              <div className="mt-5 flex justify-center">
-                <FilterClearAction
-                  onClick={() => {
-                    setFilterQ("");
-                    setFilterActive("all");
-                    setPage(1);
-                  }}
-                />
-              </div>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className={adminSectionHeaderIconWrap}>
+              <IconBuildingSection className="block" />
             </div>
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">
+                Centros comerciales
+              </h2>
+              <p className="mt-0.5 text-sm text-zinc-500">
+                {totalCount} centro{totalCount === 1 ? "" : "s"}
+              </p>
+            </div>
+          </div>
+          {canCreateCenters ? (
+            <button
+              type="button"
+              className={adminPrimaryBtn}
+              onClick={openCreate}
+            >
+              <AdminCreatePlusIcon />
+              <span className={adminCreateBtnLabel}>Nuevo centro</span>
+            </button>
           ) : null}
-
-          {rows.length > 0 ? (
-        <div className={`mt-6 ${adminTableCard}`}>
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b border-zinc-100 bg-zinc-50/90">
-                  <th className="w-8 px-2 py-3" aria-hidden />
-                  <th className="px-2 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Portada
-                  </th>
-                  <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Slug
-                  </th>
-                  <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Nombre
-                  </th>
-                  <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Ciudad
-                  </th>
-                  <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Tomas
-                  </th>
-                  <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Estado
-                  </th>
-                  <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((c) => {
-                  const open = expandedId === c.id;
-                  const panelId = `centro-extra-${c.id}`;
-                  const coverUrl = rawMediaUrlFromApiField(c.cover_image);
-                  return (
-                    <Fragment key={c.id}>
-                      <tr className="border-b border-zinc-100 transition-colors hover:bg-zinc-50/70">
-                        <td className="px-2 py-2.5">
-                          <AdminAccordionToggle
-                            expanded={open}
-                            onToggle={() => setExpandedId(open ? null : c.id)}
-                            rowId={c.id}
-                            controlsId={panelId}
-                          />
-                        </td>
-                        <td className="px-2 py-2">
-                          {coverUrl ? (
-                            <button
-                              type="button"
-                              className={`${squareAdminTablePortadaFrameClass} ${squareListImagePreviewButtonRingClass} p-0`}
-                              aria-label={
-                                c.name
-                                  ? `Ver portada ampliada: ${c.name}`
-                                  : "Ver portada ampliada del centro"
-                              }
-                              onClick={() => {
-                                const items = adminCenterCoverLightboxItems(c);
-                                if (items.length)
-                                  setPortadaLightbox({ open: true, items, initialIndex: 0 });
-                              }}
-                            >
-                              <RasterFromApiUrl
-                                url={coverUrl}
-                                alt=""
-                                width={60}
-                                height={60}
-                                className={squareAdminTablePortadaImgClass}
-                                {...catalogRasterImgAttrs}
-                              />
-                            </button>
-                          ) : (
-                            <div className={squareAdminTablePortadaFrameClass} aria-label="Sin imagen">
-                              <ThumbnailPlaceholder />
-                            </div>
-                          )}
-                        </td>
-                        <td className="px-3 py-2.5 font-mono text-xs text-zinc-800">
-                          {c.slug}
-                        </td>
-                        <td className="px-3 py-2.5 font-medium text-zinc-900">
-                          {c.name}
-                        </td>
-                        <td className="px-3 py-2.5 text-zinc-600">
-                          {c.city || "—"}
-                        </td>
-                        <td className="px-3 py-2.5 text-zinc-700 tabular-nums">
-                          {typeof c.tomas_count === "number" ? c.tomas_count : "—"}
-                        </td>
-                        <td className="px-3 py-2.5">
-                          <span
-                            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                              c.is_active !== false
-                                ? "bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200/80"
-                                : "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200/80"
-                            }`}
-                          >
-                            {c.is_active !== false ? "Activo" : "Inactivo"}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2">
-                          <AdminRowActions
-                            onView={() => openView(c)}
-                            onEdit={() => openEdit(c)}
-                            onDelete={() => askDeleteCenter(c.id)}
-                          />
-                        </td>
-                      </tr>
-                      {open ? (
-                        <AdminAccordionRowPanel colSpan={7} panelId={panelId}>
-                          <AdminAccordionDetailHeader
-                            badgeText={
-                              typeof c.slug === "string" && c.slug.trim() !== ""
-                                ? c.slug.trim()
-                                : undefined
-                            }
-                            titleLabel="Centro en sistema"
-                            titleLine={
-                              <p className="truncate text-sm font-medium text-zinc-900">
-                                <span className="font-mono text-zinc-600">
-                                  {c.slug}
-                                </span>
-                                <span
-                                  className="mx-2 text-zinc-300"
-                                  aria-hidden
-                                >
-                                  ·
-                                </span>
-                                {c.name}
-                              </p>
-                            }
-                            hint="Datos ampliados del centro comercial"
-                          />
-
-                          <div className="mt-5 grid gap-6 lg:grid-cols-2 lg:gap-8">
-                            <AdminDetailSection
-                              panelId={panelId}
-                              sectionId="ubic"
-                              title="Ubicación"
-                            >
-                              <AdminDetailInset>
-                                <AdminDetailField label="Dirección">
-                                  {adminDetailEmpty(c.address)}
-                                </AdminDetailField>
-                                <div className="grid gap-4 sm:grid-cols-2">
-                                  <AdminDetailField label="Ciudad">
-                                    {adminDetailEmpty(c.city)}
-                                  </AdminDetailField>
-                                  <AdminDetailField label="País">
-                                    {adminDetailEmpty(c.country)}
-                                  </AdminDetailField>
-                                </div>
-                              </AdminDetailInset>
-                            </AdminDetailSection>
-
-                            <AdminDetailSection
-                              panelId={panelId}
-                              sectionId="contact"
-                              title="Contacto del centro"
-                            >
-                              <AdminDetailInset>
-                                <AdminDetailField label="Teléfono">
-                                  {adminDetailEmpty(c.phone)}
-                                </AdminDetailField>
-                                <AdminDetailField label="Correo">
-                                  {c.contact_email?.trim() ? (
-                                    <a
-                                      href={`mailto:${c.contact_email.trim()}`}
-                                      className="font-medium text-zinc-900 no-underline underline-offset-2 hover:underline"
-                                    >
-                                      {c.contact_email.trim()}
-                                    </a>
-                                  ) : (
-                                    adminDetailEmpty("")
-                                  )}
-                                </AdminDetailField>
-                                <AdminDetailField label="Sitio web">
-                                  {c.website?.trim() ? (
-                                    <a
-                                      href={
-                                        /^https?:\/\//i.test(c.website.trim())
-                                          ? c.website.trim()
-                                          : `https://${c.website.trim()}`
-                                      }
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="font-medium text-zinc-900 no-underline underline-offset-2 hover:underline"
-                                    >
-                                      {c.website.trim()}
-                                    </a>
-                                  ) : (
-                                    adminDetailEmpty("")
-                                  )}
-                                </AdminDetailField>
-                              </AdminDetailInset>
-                            </AdminDetailSection>
-                          </div>
-
-                          <div className="mt-6 border-t border-zinc-100 pt-5">
-                            <AdminDetailSection
-                              panelId={panelId}
-                              sectionId="desc"
-                              title="Descripción"
-                            >
-                              <AdminDetailProse
-                                text={c.description}
-                                emptyHint="Aún no hay descripción del centro."
-                              />
-                            </AdminDetailSection>
-                          </div>
-                        </AdminAccordionRowPanel>
-                      ) : null}
-                    </Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
         </div>
-          ) : null}
-          <AdminListPagination page={page} totalCount={totalCount} onPageChange={setPage} />
-        </>
-      )}
 
-      <AdminModal
-        open={modal != null}
-        onClose={closeModal}
-        title={
-          modal === "create"
-            ? "Nuevo centro"
-            : modal === "edit"
-              ? "Editar centro"
-              : "Detalle del centro"
-        }
-        subtitle={
-          modal === "view" ? `${selected?.slug} · ${selected?.name}` : undefined
-        }
-        wide={modal !== "view"}
-        footer={
-          readOnly ? (
-            <div className="flex justify-end gap-2">
-              <button
-                type="button"
-                className={adminSecondaryBtn}
-                onClick={closeModal}
-              >
-                Cerrar
-              </button>
-              <button
-                type="button"
-                className={adminPrimaryBtn}
-                onClick={() => {
-                  openEdit(selected);
-                }}
-              >
-                Editar
-              </button>
-            </div>
-          ) : (
-            <div className="flex flex-wrap justify-end gap-2">
-              <button
-                type="button"
-                className={adminSecondaryBtn}
-                onClick={closeModal}
-              >
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className={adminPrimaryBtn}
-                onClick={submitSave}
-              >
-                {modal === "create" ? "Crear" : "Guardar"}
-              </button>
-            </div>
-          )
-        }
-      >
-        {!readOnly && modalErr ? (
-          <AdminInlineAlert variant="error">{modalErr}</AdminInlineAlert>
+        {msg ? (
+          <p
+            className={`mt-4 ${ROUNDED_CONTROL} bg-emerald-50 px-3 py-2 text-sm text-emerald-900`}
+          >
+            {msg}
+          </p>
         ) : null}
-        {readOnly && selected ? (
-          <div className="space-y-4 text-sm">
-            <CoverImageField
-              readOnly
-              variant="cover"
-              existingUrl={selected.cover_image}
+        {pageErr ? (
+          <p
+            className={`mt-4 break-words ${ROUNDED_CONTROL} bg-red-50 px-3 py-2 text-sm text-red-800`}
+          >
+            {pageErr}
+          </p>
+        ) : null}
+
+        {totalCount === 0 && !filtersActive ? (
+          <div className="mt-6">
+            <EmptyState
+              icon={<EmptyStateIconBuilding />}
+              title="No hay centros comerciales registrados"
+              description={
+                canCreateCenters
+                  ? "Aún no hay ningún centro registrado. Puedes crear el primero con el botón «Nuevo centro»."
+                  : "Aún no hay ningún centro registrado. La creación de centros no está habilitada para este workspace; si necesitas cambiarlo, contacta a la plataforma."
+              }
             />
-            <div>
-              <p className={adminLabel}>Nombre</p>
-              <p className="mt-1 font-medium text-zinc-900">{selected.name}</p>
-            </div>
-            <div>
-              <p className={adminLabel}>Slug (URL)</p>
-              <p className="mt-1 font-mono text-zinc-800">{selected.slug}</p>
-            </div>
-            <div>
-              <p className={adminLabel}>Ciudad</p>
-              <p className="mt-1 text-zinc-800">{selected.city || "—"}</p>
-            </div>
-            <div>
-              <p className={adminLabel}>Zona / barrio (titular en tarjetas)</p>
-              <p className="mt-1 text-zinc-800">
-                {selected.district?.trim() || "—"}
-              </p>
-            </div>
-            {selected.display_title ? (
-              <div>
-                <p className={adminLabel}>Título en tarjetas (calculado)</p>
-                <p className="mt-1 font-medium text-zinc-900">
-                  {selected.display_title}
-                </p>
-              </div>
-            ) : null}
-            <div>
-              <p className={adminLabel}>En listado público de centros</p>
-              <p className="mt-1 text-zinc-800">
-                {selected.on_homepage !== false ? "Sí" : "No"}
-              </p>
-            </div>
-            <div>
-              <p className={adminLabel}>Estado</p>
-              <p className="mt-1 text-zinc-800">
-                {selected.is_active !== false ? "Activo" : "Inactivo"}
-              </p>
-            </div>
-            <div>
-              <p className={adminLabel}>Catálogo de reservas (marketplace)</p>
-              <p className="mt-1 text-zinc-800">
-                {centerCatalogEnabled(selected) ? "Sí" : "No"}
-              </p>
-            </div>
-            <div>
-              <p className={adminLabel}>Creado</p>
-              <p className="mt-1 tabular-nums text-zinc-800">
-                {selected.created_at
-                  ? new Date(selected.created_at).toLocaleString("es-VE", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })
-                  : "—"}
-              </p>
-            </div>
-            <div>
-              <p className={adminLabel}>Última actualización</p>
-              <p className="mt-1 tabular-nums text-zinc-800">
-                {selected.updated_at
-                  ? new Date(selected.updated_at).toLocaleString("es-VE", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })
-                  : "—"}
-              </p>
-            </div>
-            <div>
-              <p className={adminLabel}>Orden en listado de centros</p>
-              <p className="mt-1 tabular-nums text-zinc-800">
-                {selected.listing_order ?? 0}
-              </p>
-            </div>
-            <div>
-              <p className={adminLabel}>Dirección</p>
-              <p className="mt-1 text-zinc-800">{selected.address || "—"}</p>
-            </div>
-            <div>
-              <p className={adminLabel}>País</p>
-              <p className="mt-1 text-zinc-800">
-                {selected.country?.trim() || "—"}
-              </p>
-            </div>
-            <div>
-              <p className={adminLabel}>Teléfono del centro</p>
-              <p className="mt-1 text-zinc-800">
-                {selected.phone?.trim() || "—"}
-              </p>
-            </div>
-            <div>
-              <p className={adminLabel}>Email de contacto</p>
-              <p className="mt-1 text-zinc-800">
-                {selected.contact_email?.trim() || "—"}
-              </p>
-            </div>
-            <div>
-              <p className={adminLabel}>Sitio web</p>
-              <p className="mt-1 break-all text-zinc-800">
-                {selected.website?.trim() || "—"}
-              </p>
-            </div>
-            <div>
-              <p className={adminLabel}>Descripción</p>
-              <p className="mt-1 whitespace-pre-wrap text-zinc-800">
-                {selected.description?.trim() || "—"}
-              </p>
-            </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            <CoverImageField
-              readOnly={false}
-              variant="cover"
-              existingUrl={existingCover}
-              filePreviewUrl={filePreview}
-              onFileChange={(f) => {
-                setCoverFile(f);
-                setPendingClearCover(false);
-              }}
-              onClearExisting={() => {
-                setPendingClearCover(true);
-                setCoverFile(null);
-                if (fileRef.current) fileRef.current.value = "";
-              }}
-              fileInputRef={fileRef}
-            />
-            <div>
-              <label className={adminLabel} htmlFor="c-name">
-                Nombre <span className="text-red-600">*</span>
-              </label>
-              <input
-                id="c-name"
-                className={fieldClass("name")}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
+          <>
+            <AdminFiltersRow>
+              <AdminFilterSearchInput
+                id="centros-filter-q"
+                value={filterQ}
+                onChange={setFilterQ}
+                placeholder="Slug, nombre, ciudad, zona…"
               />
-              {fieldErrors?.name ? (
-                <p className="mt-1 text-xs text-rose-700">{fieldErrors.name}</p>
-              ) : null}
-            </div>
-            <div>
-              <label className={adminLabel} htmlFor="c-slug">
-                Slug (URL) <span className="text-red-600">*</span>
-              </label>
-              <input
-                id="c-slug"
-                className={fieldClass("slug")}
-                value={slug}
-                onChange={(e) => {
-                  setSlugTouched(true);
-                  setSlug(e.target.value);
+              <AdminFilterSelect
+                id="centros-filter-active"
+                label="Estado operativo"
+                value={filterActive}
+                onChange={setFilterActive}
+                options={CENTER_ACTIVE_FILTERS}
+              />
+              <AdminFilterClearButton
+                show={filtersActive}
+                onClick={() => {
+                  setFilterQ("");
+                  setFilterActive("all");
+                  setPage(1);
                 }}
-                required
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="solo-minusculas-numeros-guiones"
               />
-              {fieldErrors?.slug ? (
-                <p className="mt-1 text-xs text-rose-700">{fieldErrors.slug}</p>
-              ) : null}
-              <p className="mt-1 text-xs text-zinc-500">
-                Identificador en enlaces públicos (?center=, /m/…, API). Solo letras minúsculas, números y guiones.
-              </p>
-            </div>
-            <div>
-              <label className={adminLabel} htmlFor="c-city">
-                Ciudad <span className="text-red-600">*</span>
-              </label>
-              <input
-                id="c-city"
-                className={fieldClass("city")}
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                required
-              />
-              {fieldErrors?.city ? (
-                <p className="mt-1 text-xs text-rose-700">{fieldErrors.city}</p>
-              ) : null}
-            </div>
-            <div>
-              <label className={adminLabel} htmlFor="c-district">
-                Zona / barrio (titular en tarjetas)
-              </label>
-              <input
-                id="c-district"
-                className={adminField}
-                value={district}
-                onChange={(e) => setDistrict(e.target.value)}
-                placeholder="Ej. Chacao, La Candelaria…"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-800">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-zinc-300"
-                  checked={isActive}
-                  onChange={(e) => setIsActive(e.target.checked)}
-                />
-                Centro activo (inactivo: sin catálogo de tomas ni reservas en el marketplace)
-              </label>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-800">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-zinc-300"
-                  checked={marketplaceCatalogEnabled}
-                  onChange={(e) => setMarketplaceCatalogEnabled(e.target.checked)}
-                />
-                Catálogo de reservas en marketplace (tomas públicas y ruta /m/…)
-              </label>
-            </div>
-            <div className="space-y-1">
-              <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-800">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-zinc-300"
-                  checked={onHomepage}
-                  onChange={(e) => setOnHomepage(e.target.checked)}
-                />
-                Incluir en listado público de centros
-              </label>
-              <p className="ml-6 text-xs text-zinc-500">
-                La portada principal del sitio muestra tomas, no centros. Esto solo afecta el API de
-                centros y posibles integraciones.
-              </p>
-            </div>
-            <div>
-              <label className={adminLabel} htmlFor="c-order">
-                Orden en listado de centros
-              </label>
-              <input
-                id="c-order"
-                type="number"
-                min={0}
-                className={`${adminField} max-w-[8rem]`}
-                value={listingOrder}
-                onChange={(e) => setListingOrder(e.target.value)}
-              />
-              <p className="mt-1 text-xs text-zinc-500">
-                Número menor = aparece antes en ese listado.
-              </p>
-            </div>
-            <div>
-              <label className={adminLabel} htmlFor="c-addr">
-                Dirección
-              </label>
-              <input
-                id="c-addr"
-                className={adminField}
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className={adminLabel} htmlFor="c-country">
-                País
-              </label>
-              <input
-                id="c-country"
-                className={adminField}
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className={adminLabel} htmlFor="c-phone">
-                Teléfono del centro
-              </label>
-              <input
-                id="c-phone"
-                className={adminField}
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className={adminLabel} htmlFor="c-cemail">
-                Email de contacto
-              </label>
-              <input
-                id="c-cemail"
-                type="email"
-                className={adminField}
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className={adminLabel} htmlFor="c-web">
-                Sitio web
-              </label>
-              <input
-                id="c-web"
-                type="url"
-                className={adminField}
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                placeholder="https://"
-              />
-            </div>
-            <div>
-              <label className={adminLabel} htmlFor="c-desc">
-                Descripción
-              </label>
-              <textarea
-                id="c-desc"
-                className={adminField}
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-          </div>
+            </AdminFiltersRow>
+
+            {rows.length === 0 && filtersActive ? (
+              <div className="mt-6 rounded-[15px] border border-zinc-200 bg-zinc-50/80 px-4 py-8 text-center text-sm text-zinc-600">
+                <p>Ningún centro coincide con los filtros.</p>
+                <div className="mt-5 flex justify-center">
+                  <FilterClearAction
+                    onClick={() => {
+                      setFilterQ("");
+                      setFilterActive("all");
+                      setPage(1);
+                    }}
+                  />
+                </div>
+              </div>
+            ) : null}
+
+            {rows.length > 0 ? (
+              <div className={`mt-6 ${adminTableCard}`}>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-zinc-100 bg-zinc-50/90">
+                        <th className="w-8 px-2 py-3" aria-hidden />
+                        <th className="px-2 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                          Portada
+                        </th>
+                        <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                          Slug
+                        </th>
+                        <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                          Nombre
+                        </th>
+                        <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                          Ciudad
+                        </th>
+                        <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                          Tomas
+                        </th>
+                        <th className="px-3 py-3 text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                          Estado
+                        </th>
+                        <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((c) => {
+                        const open = expandedId === c.id;
+                        const panelId = `centro-extra-${c.id}`;
+                        const coverUrl = rawMediaUrlFromApiField(c.cover_image);
+                        return (
+                          <Fragment key={c.id}>
+                            <tr className="border-b border-zinc-100 transition-colors hover:bg-zinc-50/70">
+                              <td className="px-2 py-2.5">
+                                <AdminAccordionToggle
+                                  expanded={open}
+                                  onToggle={() =>
+                                    setExpandedId(open ? null : c.id)
+                                  }
+                                  rowId={c.id}
+                                  controlsId={panelId}
+                                />
+                              </td>
+                              <td className="px-2 py-2">
+                                {coverUrl ? (
+                                  <button
+                                    type="button"
+                                    className={`${squareAdminTablePortadaFrameClass} ${squareListImagePreviewButtonRingClass} p-0`}
+                                    aria-label={
+                                      c.name
+                                        ? `Ver portada ampliada: ${c.name}`
+                                        : "Ver portada ampliada del centro"
+                                    }
+                                    onClick={() => {
+                                      const items =
+                                        adminCenterCoverLightboxItems(c);
+                                      if (items.length)
+                                        setPortadaLightbox({
+                                          open: true,
+                                          items,
+                                          initialIndex: 0,
+                                        });
+                                    }}
+                                  >
+                                    <RasterFromApiUrl
+                                      url={coverUrl}
+                                      alt=""
+                                      width={60}
+                                      height={60}
+                                      className={
+                                        squareAdminTablePortadaImgClass
+                                      }
+                                      {...catalogRasterImgAttrs}
+                                    />
+                                  </button>
+                                ) : (
+                                  <div
+                                    className={
+                                      squareAdminTablePortadaFrameClass
+                                    }
+                                    aria-label="Sin imagen"
+                                  >
+                                    <ThumbnailPlaceholder />
+                                  </div>
+                                )}
+                              </td>
+                              <td className="px-3 py-2.5 font-mono text-xs text-zinc-800">
+                                {c.slug}
+                              </td>
+                              <td className="px-3 py-2.5 font-medium text-zinc-900">
+                                {c.name}
+                              </td>
+                              <td className="px-3 py-2.5 text-zinc-600">
+                                {c.city || "—"}
+                              </td>
+                              <td className="px-3 py-2.5 text-zinc-700 tabular-nums">
+                                {typeof c.tomas_count === "number"
+                                  ? c.tomas_count
+                                  : "—"}
+                              </td>
+                              <td className="px-3 py-2.5">
+                                <span
+                                  className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                    c.is_active !== false
+                                      ? "bg-emerald-50 text-emerald-900 ring-1 ring-emerald-200/80"
+                                      : "bg-zinc-100 text-zinc-600 ring-1 ring-zinc-200/80"
+                                  }`}
+                                >
+                                  {c.is_active !== false
+                                    ? "Activo"
+                                    : "Inactivo"}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2">
+                                <AdminRowActions
+                                  onView={() => openView(c)}
+                                  onEdit={() => openEdit(c)}
+                                  onDelete={() => askDeleteCenter(c.id)}
+                                />
+                              </td>
+                            </tr>
+                            {open ? (
+                              <AdminAccordionRowPanel
+                                colSpan={7}
+                                panelId={panelId}
+                              >
+                                <AdminAccordionDetailHeader
+                                  badgeText={
+                                    typeof c.slug === "string" &&
+                                    c.slug.trim() !== ""
+                                      ? c.slug.trim()
+                                      : undefined
+                                  }
+                                  titleLabel="Centro en sistema"
+                                  titleLine={
+                                    <p className="truncate text-sm font-medium text-zinc-900">
+                                      <span className="font-mono text-zinc-600">
+                                        {c.slug}
+                                      </span>
+                                      <span
+                                        className="mx-2 text-zinc-300"
+                                        aria-hidden
+                                      >
+                                        ·
+                                      </span>
+                                      {c.name}
+                                    </p>
+                                  }
+                                  hint="Datos ampliados del centro comercial"
+                                />
+
+                                <div className="mt-5 grid gap-6 lg:grid-cols-2 lg:gap-8">
+                                  <AdminDetailSection
+                                    panelId={panelId}
+                                    sectionId="ubic"
+                                    title="Ubicación"
+                                  >
+                                    <AdminDetailInset>
+                                      <AdminDetailField label="Dirección">
+                                        {adminDetailEmpty(c.address)}
+                                      </AdminDetailField>
+                                      <div className="grid gap-4 sm:grid-cols-2">
+                                        <AdminDetailField label="Ciudad">
+                                          {adminDetailEmpty(c.city)}
+                                        </AdminDetailField>
+                                        <AdminDetailField label="País">
+                                          {adminDetailEmpty(c.country)}
+                                        </AdminDetailField>
+                                      </div>
+                                    </AdminDetailInset>
+                                  </AdminDetailSection>
+
+                                  <AdminDetailSection
+                                    panelId={panelId}
+                                    sectionId="contact"
+                                    title="Contacto del centro"
+                                  >
+                                    <AdminDetailInset>
+                                      <AdminDetailField label="Teléfono">
+                                        {adminDetailEmpty(c.phone)}
+                                      </AdminDetailField>
+                                      <AdminDetailField label="Correo">
+                                        {c.contact_email?.trim() ? (
+                                          <a
+                                            href={`mailto:${c.contact_email.trim()}`}
+                                            className="font-medium text-zinc-900 no-underline underline-offset-2 hover:underline"
+                                          >
+                                            {c.contact_email.trim()}
+                                          </a>
+                                        ) : (
+                                          adminDetailEmpty("")
+                                        )}
+                                      </AdminDetailField>
+                                      <AdminDetailField label="Sitio web">
+                                        {c.website?.trim() ? (
+                                          <a
+                                            href={
+                                              /^https?:\/\//i.test(
+                                                c.website.trim(),
+                                              )
+                                                ? c.website.trim()
+                                                : `https://${c.website.trim()}`
+                                            }
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="font-medium text-zinc-900 no-underline underline-offset-2 hover:underline"
+                                          >
+                                            {c.website.trim()}
+                                          </a>
+                                        ) : (
+                                          adminDetailEmpty("")
+                                        )}
+                                      </AdminDetailField>
+                                    </AdminDetailInset>
+                                  </AdminDetailSection>
+                                </div>
+
+                                <div className="mt-6 border-t border-zinc-100 pt-5">
+                                  <AdminDetailSection
+                                    panelId={panelId}
+                                    sectionId="desc"
+                                    title="Descripción"
+                                  >
+                                    <AdminDetailProse
+                                      text={c.description}
+                                      emptyHint="Aún no hay descripción del centro."
+                                    />
+                                  </AdminDetailSection>
+                                </div>
+                              </AdminAccordionRowPanel>
+                            ) : null}
+                          </Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ) : null}
+            <AdminListPagination
+              page={page}
+              totalCount={totalCount}
+              onPageChange={setPage}
+            />
+          </>
         )}
-      </AdminModal>
 
-      <AdminConfirmDialog
-        open={deleteTargetId != null}
-        onClose={() => setDeleteTargetId(null)}
-        title="Eliminar centro"
-        confirmLabel="Eliminar"
-        onConfirm={async () => {
-          if (deleteTargetId == null) return;
-          await executeDeleteCenter(deleteTargetId);
-        }}
-      >
-        <p>¿Eliminar este centro? Se borrarán tomas asociadas.</p>
-      </AdminConfirmDialog>
+        <AdminModal
+          open={modal != null}
+          onClose={closeModal}
+          title={
+            modal === "create"
+              ? "Nuevo centro"
+              : modal === "edit"
+                ? "Editar centro"
+                : "Detalle del centro"
+          }
+          subtitle={
+            modal === "view"
+              ? `${selected?.slug} · ${selected?.name}`
+              : undefined
+          }
+          wide={modal !== "view"}
+          footer={
+            readOnly ? (
+              <div className="flex justify-end gap-2">
+                <button
+                  type="button"
+                  className={adminSecondaryBtn}
+                  onClick={closeModal}
+                >
+                  Cerrar
+                </button>
+                <button
+                  type="button"
+                  className={adminPrimaryBtn}
+                  onClick={() => {
+                    openEdit(selected);
+                  }}
+                >
+                  Editar
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap justify-end gap-2">
+                <button
+                  type="button"
+                  className={adminSecondaryBtn}
+                  onClick={closeModal}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  className={adminPrimaryBtn}
+                  onClick={submitSave}
+                >
+                  {modal === "create" ? "Crear" : "Guardar"}
+                </button>
+              </div>
+            )
+          }
+        >
+          {!readOnly && modalErr ? (
+            <AdminInlineAlert variant="error">{modalErr}</AdminInlineAlert>
+          ) : null}
+          {readOnly && selected ? (
+            <div className="space-y-4 text-sm">
+              <CoverImageField
+                readOnly
+                variant="cover"
+                existingUrl={selected.cover_image}
+              />
+              <div>
+                <p className={adminLabel}>Nombre</p>
+                <p className="mt-1 font-medium text-zinc-900">
+                  {selected.name}
+                </p>
+              </div>
+              <div>
+                <p className={adminLabel}>Slug (URL)</p>
+                <p className="mt-1 font-mono text-zinc-800">{selected.slug}</p>
+              </div>
+              <div>
+                <p className={adminLabel}>Ciudad</p>
+                <p className="mt-1 text-zinc-800">{selected.city || "—"}</p>
+              </div>
+              <div>
+                <p className={adminLabel}>
+                  Zona / barrio (titular en tarjetas)
+                </p>
+                <p className="mt-1 text-zinc-800">
+                  {selected.district?.trim() || "—"}
+                </p>
+              </div>
+              {selected.display_title ? (
+                <div>
+                  <p className={adminLabel}>Título en tarjetas (calculado)</p>
+                  <p className="mt-1 font-medium text-zinc-900">
+                    {selected.display_title}
+                  </p>
+                </div>
+              ) : null}
+              <div>
+                <p className={adminLabel}>En listado público de centros</p>
+                <p className="mt-1 text-zinc-800">
+                  {selected.on_homepage !== false ? "Sí" : "No"}
+                </p>
+              </div>
+              <div>
+                <p className={adminLabel}>Estado</p>
+                <p className="mt-1 text-zinc-800">
+                  {selected.is_active !== false ? "Activo" : "Inactivo"}
+                </p>
+              </div>
+              <div>
+                <p className={adminLabel}>Catálogo de reservas (marketplace)</p>
+                <p className="mt-1 text-zinc-800">
+                  {centerCatalogEnabled(selected) ? "Sí" : "No"}
+                </p>
+              </div>
+              <div>
+                <p className={adminLabel}>Creado</p>
+                <p className="mt-1 tabular-nums text-zinc-800">
+                  {selected.created_at
+                    ? new Date(selected.created_at).toLocaleString("es-VE", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })
+                    : "—"}
+                </p>
+              </div>
+              <div>
+                <p className={adminLabel}>Última actualización</p>
+                <p className="mt-1 tabular-nums text-zinc-800">
+                  {selected.updated_at
+                    ? new Date(selected.updated_at).toLocaleString("es-VE", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })
+                    : "—"}
+                </p>
+              </div>
+              <div>
+                <p className={adminLabel}>Orden en listado de centros</p>
+                <p className="mt-1 tabular-nums text-zinc-800">
+                  {selected.listing_order ?? 0}
+                </p>
+              </div>
+              <div>
+                <p className={adminLabel}>Dirección</p>
+                <p className="mt-1 text-zinc-800">{selected.address || "—"}</p>
+              </div>
+              <div>
+                <p className={adminLabel}>País</p>
+                <p className="mt-1 text-zinc-800">
+                  {selected.country?.trim() || "—"}
+                </p>
+              </div>
+              <div>
+                <p className={adminLabel}>Teléfono del centro</p>
+                <p className="mt-1 text-zinc-800">
+                  {selected.phone?.trim() || "—"}
+                </p>
+              </div>
+              <div>
+                <p className={adminLabel}>Email de contacto</p>
+                <p className="mt-1 text-zinc-800">
+                  {selected.contact_email?.trim() || "—"}
+                </p>
+              </div>
+              <div>
+                <p className={adminLabel}>Sitio web</p>
+                <p className="mt-1 break-all text-zinc-800">
+                  {selected.website?.trim() || "—"}
+                </p>
+              </div>
+              <div>
+                <p className={adminLabel}>Descripción</p>
+                <p className="mt-1 whitespace-pre-wrap text-zinc-800">
+                  {selected.description?.trim() || "—"}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <CoverImageField
+                readOnly={false}
+                variant="cover"
+                existingUrl={existingCover}
+                filePreviewUrl={filePreview}
+                onFileChange={(f) => {
+                  setCoverFile(f);
+                  setPendingClearCover(false);
+                }}
+                onClearExisting={() => {
+                  setPendingClearCover(true);
+                  setCoverFile(null);
+                  if (fileRef.current) fileRef.current.value = "";
+                }}
+                fileInputRef={fileRef}
+              />
+              <div>
+                <label className={adminLabel} htmlFor="c-name">
+                  Nombre <span className="text-red-600">*</span>
+                </label>
+                <input
+                  id="c-name"
+                  className={fieldClass("name")}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+                {fieldErrors?.name ? (
+                  <p className="mt-1 text-xs text-rose-700">
+                    {fieldErrors.name}
+                  </p>
+                ) : null}
+              </div>
+              <div>
+                <label className={adminLabel} htmlFor="c-slug">
+                  Slug (URL) <span className="text-red-600">*</span>
+                </label>
+                <input
+                  id="c-slug"
+                  className={fieldClass("slug")}
+                  value={slug}
+                  onChange={(e) => {
+                    setSlugTouched(true);
+                    setSlug(e.target.value);
+                  }}
+                  required
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="solo-minusculas-numeros-guiones"
+                />
+                {fieldErrors?.slug ? (
+                  <p className="mt-1 text-xs text-rose-700">
+                    {fieldErrors.slug}
+                  </p>
+                ) : null}
+                <p className="mt-1 text-xs text-zinc-500">
+                  Identificador en enlaces públicos (?center=, /m/…, API). Solo
+                  letras minúsculas, números y guiones.
+                </p>
+              </div>
+              <div>
+                <label className={adminLabel} htmlFor="c-city">
+                  Ciudad <span className="text-red-600">*</span>
+                </label>
+                <input
+                  id="c-city"
+                  className={fieldClass("city")}
+                  value={city}
+                  onChange={(e) => setCity(e.target.value)}
+                  required
+                />
+                {fieldErrors?.city ? (
+                  <p className="mt-1 text-xs text-rose-700">
+                    {fieldErrors.city}
+                  </p>
+                ) : null}
+              </div>
+              <div>
+                <label className={adminLabel} htmlFor="c-district">
+                  Zona / barrio (titular en tarjetas)
+                </label>
+                <input
+                  id="c-district"
+                  className={adminField}
+                  value={district}
+                  onChange={(e) => setDistrict(e.target.value)}
+                  placeholder="Ej. Chacao, La Candelaria…"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-800">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-zinc-300"
+                    checked={isActive}
+                    onChange={(e) => setIsActive(e.target.checked)}
+                  />
+                  Centro activo (inactivo: sin catálogo de tomas ni reservas en
+                  el marketplace)
+                </label>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-800">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-zinc-300"
+                    checked={marketplaceCatalogEnabled}
+                    onChange={(e) =>
+                      setMarketplaceCatalogEnabled(e.target.checked)
+                    }
+                  />
+                  Catálogo de reservas en marketplace (tomas públicas y ruta
+                  /m/…)
+                </label>
+              </div>
+              <div className="space-y-1">
+                <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-800">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-zinc-300"
+                    checked={onHomepage}
+                    onChange={(e) => setOnHomepage(e.target.checked)}
+                  />
+                  Incluir en listado público de centros
+                </label>
+                <p className="ml-6 text-xs text-zinc-500">
+                  La portada principal del sitio muestra tomas, no centros. Esto
+                  solo afecta el API de centros y posibles integraciones.
+                </p>
+              </div>
+              <div>
+                <label className={adminLabel} htmlFor="c-order">
+                  Orden en listado de centros
+                </label>
+                <input
+                  id="c-order"
+                  type="number"
+                  min={0}
+                  className={`${adminField} max-w-[8rem]`}
+                  value={listingOrder}
+                  onChange={(e) => setListingOrder(e.target.value)}
+                />
+                <p className="mt-1 text-xs text-zinc-500">
+                  Número menor = aparece antes en ese listado.
+                </p>
+              </div>
+              <div>
+                <label className={adminLabel} htmlFor="c-addr">
+                  Dirección
+                </label>
+                <input
+                  id="c-addr"
+                  className={adminField}
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={adminLabel} htmlFor="c-country">
+                  País
+                </label>
+                <input
+                  id="c-country"
+                  className={adminField}
+                  value={country}
+                  onChange={(e) => setCountry(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={adminLabel} htmlFor="c-phone">
+                  Teléfono del centro
+                </label>
+                <input
+                  id="c-phone"
+                  className={adminField}
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={adminLabel} htmlFor="c-cemail">
+                  Email de contacto
+                </label>
+                <input
+                  id="c-cemail"
+                  type="email"
+                  className={adminField}
+                  value={contactEmail}
+                  onChange={(e) => setContactEmail(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className={adminLabel} htmlFor="c-web">
+                  Sitio web
+                </label>
+                <input
+                  id="c-web"
+                  type="url"
+                  className={adminField}
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://"
+                />
+              </div>
+              <div>
+                <label className={adminLabel} htmlFor="c-desc">
+                  Descripción
+                </label>
+                <textarea
+                  id="c-desc"
+                  className={adminField}
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+        </AdminModal>
 
-      <ImageLightbox
-        open={portadaLightbox.open}
-        onClose={() => setPortadaLightbox((s) => ({ ...s, open: false }))}
-        items={portadaLightbox.items}
-        initialIndex={portadaLightbox.initialIndex}
-        showDownload={false}
-        showThumbnails={false}
-        ariaLabel="Portada del centro comercial"
-      />
-    </div>
+        <AdminConfirmDialog
+          open={deleteTargetId != null}
+          onClose={() => setDeleteTargetId(null)}
+          title="Eliminar centro"
+          confirmLabel="Eliminar"
+          onConfirm={async () => {
+            if (deleteTargetId == null) return;
+            await executeDeleteCenter(deleteTargetId);
+          }}
+        >
+          <p>¿Eliminar este centro? Se borrarán tomas asociadas.</p>
+        </AdminConfirmDialog>
+
+        <ImageLightbox
+          open={portadaLightbox.open}
+          onClose={() => setPortadaLightbox((s) => ({ ...s, open: false }))}
+          items={portadaLightbox.items}
+          initialIndex={portadaLightbox.initialIndex}
+          showDownload={false}
+          showThumbnails={false}
+          ariaLabel="Portada del centro comercial"
+        />
+      </div>
     </>
   );
 }

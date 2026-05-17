@@ -1,7 +1,7 @@
 import { storageKeySuffix } from "@/lib/tenant";
 
-const LEGACY_ACCESS = "sambil_access";
-const LEGACY_REFRESH = "sambil_refresh";
+const LEGACY_ACCESS = "publivalla_access";
+const LEGACY_REFRESH = "publivalla_refresh";
 
 function keys() {
   const s = storageKeySuffix();

@@ -14,7 +14,7 @@ import {
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 
-const ADMIN_SIDEBAR_COLLAPSED_KEY = "sambil-admin-sidebar-collapsed";
+const ADMIN_SIDEBAR_COLLAPSED_KEY = "publivalla-admin-sidebar-collapsed";
 
 /** Coincide con el breakpoint `lg` de Tailwind (1024px). */
 function isMobileAdminNav() {
@@ -38,7 +38,9 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
   useEffect(() => {
     try {
       if (typeof window === "undefined") return;
-      setCollapsed(window.localStorage.getItem(ADMIN_SIDEBAR_COLLAPSED_KEY) === "1");
+      setCollapsed(
+        window.localStorage.getItem(ADMIN_SIDEBAR_COLLAPSED_KEY) === "1",
+      );
     } catch {
       /* ignore */
     }
@@ -69,7 +71,10 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
     setCollapsed((c) => {
       const next = !c;
       try {
-        window.localStorage.setItem(ADMIN_SIDEBAR_COLLAPSED_KEY, next ? "1" : "0");
+        window.localStorage.setItem(
+          ADMIN_SIDEBAR_COLLAPSED_KEY,
+          next ? "1" : "0",
+        );
       } catch {
         /* ignore */
       }
@@ -106,7 +111,9 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
               setMobileOpen(false);
             }}
           >
-            <Icon className={`shrink-0 ${active ? "text-white" : "text-zinc-500"}`} />
+            <Icon
+              className={`shrink-0 ${active ? "text-white" : "text-zinc-500"}`}
+            />
             <span className={collapsed ? "lg:sr-only" : ""}>{label}</span>
           </Link>
         );
@@ -114,7 +121,8 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
     </nav>
   );
 
-  const workspaceInitial = (displayName || "?").trim().slice(0, 1).toUpperCase() || "?";
+  const workspaceInitial =
+    (displayName || "?").trim().slice(0, 1).toUpperCase() || "?";
 
   return (
     <>
@@ -145,7 +153,10 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
 
         <div className="relative hidden border-b border-zinc-200 lg:block">
           {collapsed ? (
-            <div className="flex flex-col items-center px-2 py-3 pb-5" title={displayName || undefined}>
+            <div
+              className="flex flex-col items-center px-2 py-3 pb-5"
+              title={displayName || undefined}
+            >
               <span
                 className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-200/90 text-sm font-bold text-zinc-800"
                 aria-hidden
@@ -156,8 +167,13 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
             </div>
           ) : (
             <div className="px-4 pb-5 pt-4 pr-4">
-              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">Administración</p>
-              <p className="mt-1 truncate text-sm font-semibold text-zinc-900" title={displayName || undefined}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                Administración
+              </p>
+              <p
+                className="mt-1 truncate text-sm font-semibold text-zinc-900"
+                title={displayName || undefined}
+              >
                 {displayName}
               </p>
             </div>
@@ -166,7 +182,9 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
             type="button"
             className="mp-ring-brand absolute bottom-0 right-0 z-30 flex h-9 w-9 translate-x-1/2 translate-y-1/2 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-700 shadow-md transition hover:bg-zinc-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--mp-primary)_40%,transparent)]"
             aria-expanded={!collapsed}
-            aria-label={collapsed ? "Expandir menú del panel" : "Contraer menú del panel"}
+            aria-label={
+              collapsed ? "Expandir menú del panel" : "Contraer menú del panel"
+            }
             onClick={toggleCollapsed}
           >
             {collapsed ? (
@@ -200,7 +218,9 @@ export function AdminSidebar({ mobileOpen, setMobileOpen }) {
             }}
           >
             <IconChevronLeft className="shrink-0 text-zinc-600" />
-            <span className={collapsed ? "lg:sr-only" : ""}>Volver al marketplace</span>
+            <span className={collapsed ? "lg:sr-only" : ""}>
+              Volver al marketplace
+            </span>
           </Link>
         </div>
       </aside>
