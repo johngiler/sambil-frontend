@@ -86,6 +86,8 @@ function marketplaceRoleLabel(role) {
 const brandAccept =
   ".svg,image/svg+xml,image/png,image/jpeg,image/jpg,image/webp,image/gif,image/x-icon,.ico";
 
+const pngArtifactsAccept = "image/png,.png";
+
 function defaultHex(v, fallback = "#0c9dcf") {
   const s = (v || "").trim();
   if (!s) return fallback;
@@ -124,6 +126,7 @@ function FileBlock({
   onClearMark,
   formatsHint,
   formatErrorMessage,
+  accept = brandAccept,
   /** @type {'logoWide' | 'square100'} */
   previewVariant = "square100",
 }) {
@@ -187,7 +190,7 @@ function FileBlock({
             ariaLabel={label}
             value={file}
             onChange={onFileChange}
-            accept={brandAccept}
+            accept={accept}
             helperText=""
             formatsHint={formatsHint}
             formatErrorMessage={formatErrorMessage}
@@ -247,17 +250,21 @@ export default function MiNegocioView() {
   const [logoUrl, setLogoUrl] = useState("");
   const [logoMarkUrl, setLogoMarkUrl] = useState("");
   const [faviconUrl, setFaviconUrl] = useState("");
+  const [logoPngArtifactsUrl, setLogoPngArtifactsUrl] = useState("");
 
   const [logoFile, setLogoFile] = useState(null);
   const [logoMarkFile, setLogoMarkFile] = useState(null);
   const [faviconFile, setFaviconFile] = useState(null);
+  const [logoPngArtifactsFile, setLogoPngArtifactsFile] = useState(null);
   const [removeLogo, setRemoveLogo] = useState(false);
   const [removeLogoMark, setRemoveLogoMark] = useState(false);
   const [removeFavicon, setRemoveFavicon] = useState(false);
+  const [removeLogoPngArtifacts, setRemoveLogoPngArtifacts] = useState(false);
 
   const [logoPreview, setLogoPreview] = useState(null);
   const [logoMarkPreview, setLogoMarkPreview] = useState(null);
   const [faviconPreview, setFaviconPreview] = useState(null);
+  const [logoPngArtifactsPreview, setLogoPngArtifactsPreview] = useState(null);
 
   const [saveErr, setSaveErr] = useState("");
   const [saveOk, setSaveOk] = useState("");
@@ -297,6 +304,16 @@ export default function MiNegocioView() {
     setFaviconPreview(u);
     return () => URL.revokeObjectURL(u);
   }, [faviconFile]);
+
+  useEffect(() => {
+    if (!logoPngArtifactsFile) {
+      setLogoPngArtifactsPreview(null);
+      return;
+    }
+    const u = URL.createObjectURL(logoPngArtifactsFile);
+    setLogoPngArtifactsPreview(u);
+    return () => URL.revokeObjectURL(u);
+  }, [logoPngArtifactsFile]);
 
   useEffect(() => {
     if (!authReady) return;
@@ -398,12 +415,19 @@ export default function MiNegocioView() {
           typeof d.logo_mark_url === "string" ? d.logo_mark_url : "",
         );
         setFaviconUrl(typeof d.favicon_url === "string" ? d.favicon_url : "");
+        setLogoPngArtifactsUrl(
+          typeof d.logo_png_artifacts_url === "string"
+            ? d.logo_png_artifacts_url
+            : "",
+        );
         setLogoFile(null);
         setLogoMarkFile(null);
         setFaviconFile(null);
+        setLogoPngArtifactsFile(null);
         setRemoveLogo(false);
         setRemoveLogoMark(false);
         setRemoveFavicon(false);
+        setRemoveLogoPngArtifacts(false);
       } catch (e) {
         if (!cancelled)
           setLoadErr(e instanceof Error ? e.message : "Error al cargar");
@@ -541,6 +565,10 @@ export default function MiNegocioView() {
       if (removeLogoMark) fd.append("remove_logo_mark", "true");
       if (faviconFile) fd.append("favicon", faviconFile);
       if (removeFavicon) fd.append("remove_favicon", "true");
+      if (logoPngArtifactsFile)
+        fd.append("logo_png_artifacts", logoPngArtifactsFile);
+      if (removeLogoPngArtifacts)
+        fd.append("remove_logo_png_artifacts", "true");
 
       const data = await patchMyWorkspace(fd, { token: accessToken });
       setSlug(typeof data.slug === "string" ? data.slug : slug);
@@ -551,12 +579,19 @@ export default function MiNegocioView() {
       setFaviconUrl(
         typeof data.favicon_url === "string" ? data.favicon_url : "",
       );
+      setLogoPngArtifactsUrl(
+        typeof data.logo_png_artifacts_url === "string"
+          ? data.logo_png_artifacts_url
+          : "",
+      );
       setLogoFile(null);
       setLogoMarkFile(null);
       setFaviconFile(null);
+      setLogoPngArtifactsFile(null);
       setRemoveLogo(false);
       setRemoveLogoMark(false);
       setRemoveFavicon(false);
+      setRemoveLogoPngArtifacts(false);
       setTxPassword("");
       setTxPwdSet(Boolean(data.transactional_email_password_set));
       setTxApiKey("");
@@ -607,6 +642,7 @@ export default function MiNegocioView() {
   }
 
   const logoExisting = removeLogo ? "" : logoUrl;
+  const logoPngArtifactsExisting = removeLogoPngArtifacts ? "" : logoPngArtifactsUrl;
   const markExisting = removeLogoMark ? "" : logoMarkUrl;
   const favExisting = removeFavicon ? "" : faviconUrl;
   const profileRoleBadge = marketplaceRoleLabel(role);
@@ -1198,6 +1234,25 @@ export default function MiNegocioView() {
                 onClearMark={() => {
                   setRemoveLogo(true);
                   setLogoFile(null);
+                }}
+              />
+              <FileBlock
+                previewVariant="logoWide"
+                label="Logo PNG (correo, PDF y similares)"
+                helper="Solo PNG. Se usa en notificaciones por correo y en PDFs del pedido cuando no aplica SVG. Recomendado si tu logotipo en vector no se reproduce bien en correo o documentos."
+                existingUrl={logoPngArtifactsExisting}
+                previewObjectUrl={logoPngArtifactsPreview}
+                file={logoPngArtifactsFile}
+                accept={pngArtifactsAccept}
+                formatsHint="PNG · máximo 5 MB"
+                formatErrorMessage="Formato no permitido. Usa solo PNG."
+                onFileChange={(f) => {
+                  setLogoPngArtifactsFile(f);
+                  setRemoveLogoPngArtifacts(false);
+                }}
+                onClearMark={() => {
+                  setRemoveLogoPngArtifacts(true);
+                  setLogoPngArtifactsFile(null);
                 }}
               />
               <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 sm:gap-6">

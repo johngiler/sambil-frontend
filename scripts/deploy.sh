@@ -1,18 +1,12 @@
 #!/usr/bin/env bash
-#
-# Deploy del frontend del marketplace (ejemplo: tenant en sambil.publivalla.com).
-# Código fuente bajo src/ (App Router). Next.js standalone; Nginx proxy a Node 127.0.0.1:3010.
-# Requiere: npm, rsync, SSH (Host p. ej. sambil-frontend en ~/.ssh/config).
-# Destino: directorio del tenant en el servidor (aquí /home/git/sambil).
-#
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-REMOTE_HOST="${SAMBIL_FRONTEND_SSH:-sambil-frontend}"
-REMOTE_PATH="/home/git/sambil"
-STAGE_DIR="$FRONTEND_DIR/.next/sambil-deploy-bundle"
+REMOTE_HOST="${PUBLIVALLA_FRONTEND_SSH:-publivalla-frontend}"
+REMOTE_PATH="/home/git/publivalla"
+STAGE_DIR="$FRONTEND_DIR/.next/publivalla-deploy-bundle"
 
 cd "$FRONTEND_DIR"
 
@@ -46,15 +40,15 @@ cp -a "$FRONTEND_DIR/.next/static" "$STAGE_DIR/.next/static"
 cp -a "$FRONTEND_DIR/public" "$STAGE_DIR/public"
 
 echo "[deploy] Creando directorio remoto..."
-ssh "$REMOTE_HOST" "mkdir -p $REMOTE_PATH && chown -R git:git /home/git/sambil 2>/dev/null || true"
+ssh "$REMOTE_HOST" "mkdir -p $REMOTE_PATH && chown -R git:git /home/git/publivalla 2>/dev/null || true"
 
 echo "[deploy] rsync bundle -> $REMOTE_HOST:$REMOTE_PATH"
 rsync -avz --delete -e ssh "$STAGE_DIR/" "$REMOTE_HOST:$REMOTE_PATH/"
 
 echo "[deploy] Permisos para lectura (git + recorrido nginx si aplica)..."
-ssh "$REMOTE_HOST" "chown -R git:git $REMOTE_PATH && chmod 755 /home/git /home/git/sambil 2>/dev/null || true"
+ssh "$REMOTE_HOST" "chown -R git:git $REMOTE_PATH && chmod 755 /home/git /home/git/publivalla 2>/dev/null || true"
 
 echo "[deploy] Reiniciando servicio Node (si existe)..."
-ssh "$REMOTE_HOST" "systemctl restart sambil-frontend 2>/dev/null || true"
+ssh "$REMOTE_HOST" "systemctl restart publivalla-frontend 2>/dev/null || true"
 
-echo "[deploy] Listo. https://sambil.publivalla.com (Nginx → 127.0.0.1:3010)"
+echo "[deploy] Listo."
