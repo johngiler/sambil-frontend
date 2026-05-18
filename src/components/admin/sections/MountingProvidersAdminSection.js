@@ -122,6 +122,23 @@ export function MountingProvidersAdminSection() {
     [centers],
   );
 
+  const centersLabelForRow = useCallback(
+    (row) => {
+      const names = Array.isArray(row?.shopping_center_names)
+        ? row.shopping_center_names.filter(Boolean)
+        : [];
+      if (names.length > 0) return names.join(", ");
+      const ids = Array.isArray(row?.shopping_center_ids)
+        ? row.shopping_center_ids
+        : row?.shopping_center != null
+          ? [row.shopping_center]
+          : [];
+      if (ids.length === 0) return "—";
+      return ids.map((id) => centerLabelById(id)).join(", ");
+    },
+    [centerLabelById],
+  );
+
   const listKey = authReady && accessToken ? mountingProvidersListPath(page) : null;
   const {
     data: listData,
@@ -186,8 +203,13 @@ export function MountingProvidersAdminSection() {
 
   function openEdit(row) {
     setEditRow(row);
-    setModalShoppingCenterIds([]);
-    setModalShoppingCenterId(row.shopping_center != null ? String(row.shopping_center) : "");
+    const ids = Array.isArray(row?.shopping_center_ids)
+      ? row.shopping_center_ids.map((id) => Number(id)).filter((n) => Number.isFinite(n) && n > 0)
+      : row?.shopping_center != null
+        ? [Number(row.shopping_center)].filter((n) => Number.isFinite(n) && n > 0)
+        : [];
+    setModalShoppingCenterIds(ids);
+    setModalShoppingCenterId(ids[0] != null ? String(ids[0]) : "");
     setCompanyName(String(row.company_name || ""));
     setContactName(String(row.contact_name || ""));
     setPhone(String(row.phone || ""));
@@ -209,9 +231,12 @@ export function MountingProvidersAdminSection() {
       return;
     }
     if (editRow) {
-      if (!modalShoppingCenterId) {
+      const editIds = modalShoppingCenterIds
+        .map((n) => Number(n))
+        .filter((n) => Number.isFinite(n) && n > 0);
+      if (editIds.length === 0) {
         setModalErr("Revisa los campos marcados.");
-        setFieldErrors({ shopping_center: "Campo obligatorio." });
+        setFieldErrors({ shopping_center_ids: "Selecciona al menos un centro comercial." });
         return;
       }
     } else {
@@ -240,12 +265,18 @@ export function MountingProvidersAdminSection() {
     };
     try {
       if (editRow) {
-        const centerId = Number(modalShoppingCenterId);
+        const editIds = Array.from(
+          new Set(
+            modalShoppingCenterIds
+              .map((n) => Number(n))
+              .filter((n) => Number.isFinite(n) && n > 0),
+          ),
+        );
         await authFetch(`/api/admin/mounting-providers/${editRow.id}/`, {
           method: "PATCH",
           body: {
             ...payload,
-            shopping_center: centerId,
+            shopping_center_ids: editIds,
           },
         });
         setMsg("Proveedor actualizado.");
@@ -257,25 +288,18 @@ export function MountingProvidersAdminSection() {
               .filter((n) => Number.isFinite(n) && n > 0),
           ),
         );
-        if (ids.length === 1) {
-          await authFetch("/api/admin/mounting-providers/", {
-            method: "POST",
-            body: {
-              ...payload,
-              shopping_center: ids[0],
-            },
-          });
-          setMsg("Proveedor creado.");
-        } else {
-          await authFetch("/api/admin/mounting-providers/", {
-            method: "POST",
-            body: {
-              ...payload,
-              shopping_center_ids: ids,
-            },
-          });
-          setMsg(`Proveedor registrado en ${ids.length} centros comerciales.`);
-        }
+        await authFetch("/api/admin/mounting-providers/", {
+          method: "POST",
+          body: {
+            ...payload,
+            shopping_center_ids: ids,
+          },
+        });
+        setMsg(
+          ids.length > 1
+            ? `Proveedor registrado en ${ids.length} centros comerciales.`
+            : "Proveedor creado.",
+        );
       }
       setModal(null);
       setEditRow(null);
@@ -401,7 +425,7 @@ export function MountingProvidersAdminSection() {
                           />
                         </td>
                         <td className="max-w-[10rem] px-3 py-2 align-middle text-xs text-zinc-700 sm:text-sm">
-                          <span className="line-clamp-2 leading-snug">{centerLabelById(row.shopping_center)}</span>
+                          <span className="line-clamp-2 leading-snug">{centersLabelForRow(row)}</span>
                         </td>
                         <td className="max-w-[12rem] px-3 py-2 align-middle font-semibold text-zinc-900">
                           <span className="line-clamp-2">{row.company_name || "—"}</span>
@@ -440,8 +464,8 @@ export function MountingProvidersAdminSection() {
                           <div className="mt-4">
                             <AdminDetailSection panelId={panelId} sectionId="detail" title="Detalle">
                               <AdminDetailInset className="grid gap-4 sm:grid-cols-2">
-                                <AdminDetailField label="Centro comercial">
-                                  {centerLabelById(row.shopping_center)}
+                                <AdminDetailField label="Centros comerciales">
+                                  {centersLabelForRow(row)}
                                 </AdminDetailField>
                                 <AdminDetailField label="Correo">
                                   {row.email?.trim() ? (
@@ -506,11 +530,7 @@ export function MountingProvidersAdminSection() {
           setModalShoppingCenterIds([]);
         }}
         title={editRow ? "Editar proveedor de montaje" : "Nuevo proveedor de montaje"}
-        subtitle={
-          editRow
-            ? "Puedes cambiar el centro comercial si el proveedor opera en otro CC del mismo marketplace."
-            : "Elige uno o más centros comerciales y completa los datos del proveedor autorizado para montaje."
-        }
+        subtitle="Elige uno o más centros comerciales del mismo marketplace y completa los datos del proveedor autorizado para montaje."
         wide
         footer={
           <div className="flex flex-wrap justify-end gap-2">
@@ -536,47 +556,26 @@ export function MountingProvidersAdminSection() {
         <div className="space-y-4">
           <div>
             <p className={adminLabel}>
-              {editRow ? (
-                <>
-                  Centro comercial <span className="text-red-600">*</span>
-                </>
-              ) : (
-                <>
-                  Centros comerciales <span className="text-red-600">*</span>
-                </>
-              )}
+              Centros comerciales <span className="text-red-600">*</span>
             </p>
             <div className="mt-2 max-w-xl">
-              {editRow ? (
-                <AdminSelect
-                  id="mp-shopping-center"
-                  inputId="mp-shopping-center-input"
-                  options={centerOptionsForEdit}
-                  value={modalShoppingCenterId}
-                  onChange={(v) => setModalShoppingCenterId(v != null && v !== "" ? String(v) : "")}
-                  placeholder="Selecciona un centro…"
-                  aria-label="Centro comercial del proveedor de montaje"
-                  inModal
-                />
-              ) : (
-                <AdminSelect
-                  id="mp-shopping-centers"
-                  inputId="mp-shopping-centers-input"
-                  options={centerOptionsForCreateMulti}
-                  value={modalShoppingCenterIds}
-                  onChange={(arr) => {
-                    const next = Array.isArray(arr)
-                      ? arr.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0)
-                      : [];
-                    setModalShoppingCenterIds(next);
-                  }}
-                  placeholder="Selecciona uno o más centros…"
-                  aria-label="Centros comerciales del proveedor de montaje"
-                  inModal
-                  isMulti
-                  isClearable
-                />
-              )}
+              <AdminSelect
+                id="mp-shopping-centers"
+                inputId="mp-shopping-centers-input"
+                options={centerOptionsForCreateMulti}
+                value={modalShoppingCenterIds}
+                onChange={(arr) => {
+                  const next = Array.isArray(arr)
+                    ? arr.map((v) => Number(v)).filter((n) => Number.isFinite(n) && n > 0)
+                    : [];
+                  setModalShoppingCenterIds(next);
+                }}
+                placeholder="Selecciona uno o más centros…"
+                aria-label="Centros comerciales del proveedor de montaje"
+                inModal
+                isMulti
+                isClearable
+              />
             </div>
           </div>
           <div>
