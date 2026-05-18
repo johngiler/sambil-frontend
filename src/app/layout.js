@@ -18,6 +18,8 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Marketplace · Espacios publicitarios",
   description: "Marketplace B2B de espacios publicitarios en centros comerciales.",
+  // El favicon visible en pestaña lo define WorkspaceBranding según el owner (API).
+  // public/favicon.ico solo atiende la petición directa GET /favicon.ico (fallback neutro).
 };
 
 export const viewport = {

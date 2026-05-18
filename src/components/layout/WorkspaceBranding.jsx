@@ -8,27 +8,58 @@ import { normalizeMediaUrlForUi } from "@/lib/mediaUrls";
 const DEFAULT_PRIMARY = "#0c9dcf";
 const DEFAULT_SECONDARY = "#ea580c";
 
-/** Favicon por defecto del SPA (Next `app/icon.svg`); neutro, sin isotipo de marca. */
-const NEUTRAL_FAVICON_HREF = "/icon.svg";
+/** Favicon neutro si el owner no subió uno (`public/favicon.ico`). */
+const NEUTRAL_FAVICON_HREF = "/favicon.ico";
 
-function sanitizeHex(input, fallback) {
-  if (input == null || typeof input !== "string") return fallback;
-  let s = input.trim();
-  if (!s) return fallback;
-  if (!s.startsWith("#")) s = `#${s}`;
-  if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(s)) return fallback;
-  return s;
+const MANAGED_ICON_ATTR = "data-mp-managed-icon";
+
+/** Rutas estáticas del SPA que no deben competir con el favicon del tenant. */
+const STATIC_ICON_HREFS = new Set(["/favicon.ico", "/icon.svg"]);
+
+function normalizeBrandMediaUrl(raw) {
+  if (raw == null || typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  return normalizeMediaUrlForUi(trimmed) || trimmed;
+}
+
+function resolveTenantFaviconHref(workspace) {
+  if (!workspace || typeof workspace !== "object") return null;
+  const favicon = normalizeBrandMediaUrl(workspace.favicon_url);
+  if (favicon) return favicon;
+  return normalizeBrandMediaUrl(workspace.logo_mark_url);
+}
+
+function removeStaticDefaultIconLinks() {
+  document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]').forEach((el) => {
+    if (el.getAttribute(MANAGED_ICON_ATTR) === "true") return;
+    const href = (el.getAttribute("href") || "").split("?")[0];
+    if (STATIC_ICON_HREFS.has(href)) {
+      el.remove();
+    }
+  });
+}
+
+function clearManagedIconLinks() {
+  document.querySelectorAll(`link[${MANAGED_ICON_ATTR}]`).forEach((el) => el.remove());
 }
 
 function applyFaviconHref(href) {
-  let iconLink = document.querySelector('link[rel="icon"]');
-  if (!iconLink) {
-    iconLink = document.createElement("link");
-    iconLink.rel = "icon";
-    document.head.appendChild(iconLink);
-  }
-  if (iconLink.getAttribute("href") !== href) {
-    iconLink.setAttribute("href", href);
+  if (!href) return;
+
+  clearManagedIconLinks();
+  removeStaticDefaultIconLinks();
+
+  const isSvg = /\.svg(\?|#|$)/i.test(href);
+  for (const rel of ["icon", "shortcut icon"]) {
+    const link = document.createElement("link");
+    link.rel = rel;
+    link.href = href;
+    link.setAttribute(MANAGED_ICON_ATTR, "true");
+    if (isSvg) {
+      link.type = "image/svg+xml";
+    }
+    document.head.appendChild(link);
   }
 }
 
@@ -37,11 +68,9 @@ function applyFaviconHref(href) {
  * según el workspace cargado desde `/api/workspace/current/`.
  */
 export function WorkspaceBranding() {
-  const { workspace, loading } = useWorkspace();
+  const { workspace, loading, workspaceStatus } = useWorkspace();
 
   useEffect(() => {
-    if (loading) return;
-
     const root = document.documentElement;
     const primary = sanitizeHex(workspace?.primary_color, DEFAULT_PRIMARY);
     const secondary = sanitizeHex(workspace?.secondary_color, DEFAULT_SECONDARY);
@@ -55,14 +84,23 @@ export function WorkspaceBranding() {
       document.head.appendChild(meta);
     }
     meta.setAttribute("content", primary);
-
-    const tenantFavicon =
-      typeof workspace?.favicon_url === "string" && workspace.favicon_url.trim() !== ""
-        ? normalizeMediaUrlForUi(workspace.favicon_url.trim())
-        : null;
-
-    applyFaviconHref(tenantFavicon || NEUTRAL_FAVICON_HREF);
   }, [workspace, loading]);
 
+  useEffect(() => {
+    if (loading || workspaceStatus === "loading") return;
+
+    const tenantHref = resolveTenantFaviconHref(workspace);
+    applyFaviconHref(tenantHref || NEUTRAL_FAVICON_HREF);
+  }, [workspace, loading, workspaceStatus]);
+
   return null;
+}
+
+function sanitizeHex(input, fallback) {
+  if (input == null || typeof input !== "string") return fallback;
+  let s = input.trim();
+  if (!s) return fallback;
+  if (!s.startsWith("#")) s = `#${s}`;
+  if (!/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(s)) return fallback;
+  return s;
 }
