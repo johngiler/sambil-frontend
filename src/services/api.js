@@ -1,4 +1,7 @@
-import { workspaceSlugRequestHeaders } from "@/lib/tenant";
+import {
+  workspaceSlugHeadersForFetch,
+  workspaceSlugRequestHeaders,
+} from "@/lib/tenant";
 import { apiBase } from "@/lib/apiBase";
 
 export { apiBase };
@@ -123,6 +126,7 @@ export async function fetchAllPagesWithJson(fetchJsonFn, firstPath) {
 }
 
 export async function getSpaces(centerSlug) {
+  const slugHeaders = await workspaceSlugHeadersForFetch();
   const q =
     centerSlug != null && String(centerSlug).trim() !== ""
       ? `?center=${encodeURIComponent(String(centerSlug).trim())}`
@@ -130,7 +134,10 @@ export async function getSpaces(centerSlug) {
   const paths = [`/api/spaces${q}`, `/api/catalog/spaces${q}`];
   for (const path of paths) {
     try {
-      return await fetchAllPagesWithJson(fetchJson, path);
+      return await fetchAllPagesWithJson(
+        (p) => fetchJson(p, { headers: slugHeaders }),
+        path,
+      );
     } catch {
       /* try next base path */
     }
@@ -141,7 +148,7 @@ export async function getSpaces(centerSlug) {
 export async function getSpace(id) {
   const headers = {
     "Content-Type": "application/json",
-    ...workspaceSlugRequestHeaders(),
+    ...(await workspaceSlugHeadersForFetch()),
   };
   const sid = encodeURIComponent(String(id));
   const paths = [`/api/spaces/${sid}/`, `/api/catalog/spaces/${sid}/`];
@@ -235,13 +242,14 @@ export async function postSpaceRentalRangeCheck(
 
 /**
  * Portada: tomas paginadas con búsqueda y filtro por ciudad del centro.
- * @param {{ search?: string, city?: string, center?: string, page?: number, pageSize?: number }} params
+ * @param {{ search?: string, city?: string, center?: string, type?: string, page?: number, pageSize?: number }} params
  * @returns {Promise<{ results: Array<Record<string, unknown>>, count: number, next: string | null, previous: string | null }>}
  */
 export async function getSpacesCatalogPage({
   search = "",
   city = "",
   center = "",
+  type = "",
   page = 1,
   pageSize = 20,
 } = {}) {
@@ -251,6 +259,7 @@ export async function getSpacesCatalogPage({
   if (search.trim()) params.set("search", search.trim());
   if (city.trim()) params.set("city", city.trim());
   if (center.trim()) params.set("center", center.trim());
+  if (type.trim()) params.set("type", type.trim());
   const qs = `?${params.toString()}`;
   const paths = [`/api/spaces/${qs}`, `/api/catalog/spaces/${qs}`];
   const headers = {
@@ -276,16 +285,18 @@ export async function getSpacesCatalogPage({
 
 /**
  * Conteos por ciudad para pills (respeta la misma búsqueda que el listado).
- * @param {{ search?: string, center?: string }} params
+ * @param {{ search?: string, center?: string, type?: string }} params
  * @returns {Promise<{ total: number, items: Array<{ city: string, count: number, label?: string }> }>}
  */
 export async function getSpacesLocationFacets({
   search = "",
   center = "",
+  type = "",
 } = {}) {
   const params = new URLSearchParams();
   if (search.trim()) params.set("search", search.trim());
   if (center.trim()) params.set("center", center.trim());
+  if (type.trim()) params.set("type", type.trim());
   const q = params.toString();
   const suffix = q ? `?${q}` : "";
   const paths = [
@@ -314,18 +325,63 @@ export async function getSpacesLocationFacets({
 
 /**
  * Conteos por centro comercial para pills en portada (slug + nombre).
- * @param {{ search?: string, city?: string }} params
+ * @param {{ search?: string, city?: string, type?: string }} params
  * @returns {Promise<{ total: number, items: Array<{ slug: string, name: string, count: number }> }>}
  */
-export async function getSpacesCenterFacets({ search = "", city = "" } = {}) {
+export async function getSpacesCenterFacets({
+  search = "",
+  city = "",
+  type = "",
+} = {}) {
   const params = new URLSearchParams();
   if (search.trim()) params.set("search", search.trim());
   if (city.trim()) params.set("city", city.trim());
+  if (type.trim()) params.set("type", type.trim());
   const q = params.toString();
   const suffix = q ? `?${q}` : "";
   const paths = [
     `/api/spaces/center-facets/${suffix}`,
     `/api/catalog/spaces/center-facets/${suffix}`,
+  ];
+  const headers = {
+    "Content-Type": "application/json",
+    ...workspaceSlugRequestHeaders(),
+  };
+  let last = null;
+  for (const path of paths) {
+    try {
+      const res = await fetch(apiUrl(path), { headers, cache: "no-store" });
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || `HTTP ${res.status}`);
+      }
+      return await res.json();
+    } catch (e) {
+      last = e instanceof Error ? e : new Error(String(e));
+    }
+  }
+  throw last ?? new Error("No hubo respuesta del servicio");
+}
+
+/**
+ * Conteos por tipo de toma para filtros en portada.
+ * @param {{ search?: string, city?: string, center?: string }} params
+ * @returns {Promise<{ total: number, items: Array<{ type: string, label: string, count: number }> }>}
+ */
+export async function getSpacesTypeFacets({
+  search = "",
+  city = "",
+  center = "",
+} = {}) {
+  const params = new URLSearchParams();
+  if (search.trim()) params.set("search", search.trim());
+  if (city.trim()) params.set("city", city.trim());
+  if (center.trim()) params.set("center", center.trim());
+  const q = params.toString();
+  const suffix = q ? `?${q}` : "";
+  const paths = [
+    `/api/spaces/type-facets${suffix}`,
+    `/api/catalog/spaces/type-facets${suffix}`,
   ];
   const headers = {
     "Content-Type": "application/json",
@@ -353,7 +409,8 @@ export async function getCenterBySlug(slug) {
   if (!s) throw new Error("Slug de centro vacío");
   const path = `/api/centers/${encodeURIComponent(s)}/`;
   const pathCatalog = `/api/catalog/centers/${encodeURIComponent(s)}/`;
-  return fetchJsonFirst([path, pathCatalog]);
+  const headers = await workspaceSlugHeadersForFetch();
+  return fetchJsonFirst([path, pathCatalog], { headers });
 }
 
 /** Mensaje amigable cuando el backend devuelve detalle técnico de JWT (p. ej. tras access expirado). */

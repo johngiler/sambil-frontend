@@ -1,14 +1,13 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 import { SpaceDetailCoverWithLightbox } from "@/components/catalog/SpaceDetailCoverWithLightbox";
-import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvailabilityBar";
+import { SpaceDetailAvailabilityBar } from "@/components/catalog/SpaceDetailAvailabilityBar";
 import { SpaceMarketplaceCompliance } from "@/components/catalog/SpaceMarketplaceCompliance";
 import { SpaceDetailReservationActions } from "@/components/catalog/SpaceDetailReservationActions";
 import { SPACE_TYPES, spaceStatusLabel, spaceStatusPillClassName } from "@/components/admin/adminConstants";
+import { formatCatalogTitle } from "@/lib/catalogDisplay";
 import { subtitleCityAfterCenterName } from "@/lib/shoppingCenterDisplay";
 import { mediaUrlForUiWithWebp, spaceCoverUrlForUi } from "@/lib/mediaUrls";
-import { getSpace } from "@/services/api";
 
 function labelFromChoices(choices, value) {
   if (value == null || String(value).trim() === "") return null;
@@ -51,18 +50,7 @@ function SpecRow({ label, children, compact = false }) {
   );
 }
 
-export default async function SpaceDetailView({ spaceId }) {
-  let space;
-  try {
-    space = await getSpace(spaceId);
-  } catch {
-    notFound();
-  }
-
-  if (space.catalog_public !== true) {
-    notFound();
-  }
-
+export default function SpaceDetailView({ space }) {
   const backHref = "/";
   const typeLabel = labelFromChoices(SPACE_TYPES, space.type);
   const statusLabel = spaceStatusLabel(space.status, space.status_label);
@@ -91,10 +79,12 @@ export default async function SpaceDetailView({ spaceId }) {
       : coverUrl
         ? [coverUrl]
         : [];
-  const coverAlt =
-    typeof space.title === "string" && space.title.trim() !== ""
-      ? `Imagen principal: ${space.title.trim()}`
-      : "Imagen principal del espacio publicitario";
+  const displayTitle = formatCatalogTitle(
+    typeof space.title === "string" ? space.title : "",
+  );
+  const coverAlt = displayTitle
+    ? `Imagen principal: ${displayTitle}`
+    : "Imagen principal del espacio publicitario";
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 sm:py-10 lg:py-12">
@@ -111,7 +101,7 @@ export default async function SpaceDetailView({ spaceId }) {
       <header className="mt-8 max-w-3xl lg:mt-10">
         <p className="font-mono text-xs font-medium uppercase tracking-wider text-zinc-400">{space.code}</p>
         <h1 className="mt-2 break-words text-3xl font-semibold tracking-tight text-zinc-950 sm:text-4xl">
-          {space.title}
+          {displayTitle}
         </h1>
         <p className="mt-3 text-base text-zinc-600">
           <span className="font-medium text-zinc-700">Centro comercial: </span>
@@ -170,12 +160,11 @@ export default async function SpaceDetailView({ spaceId }) {
               <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
                 Disponibilidad en {year}
               </p>
-              <p className="mt-1 text-xs text-zinc-500">Naranja = ocupado. Gris claro = libre.</p>
               <div className="mt-2 min-w-0">
-                <SpaceMonthAvailabilityBar
+                <SpaceDetailAvailabilityBar
+                  spaceId={space.id}
                   monthsOccupied={space.months_occupied}
-                  labelMetric="occupied"
-                  variant="comfortable"
+                  availabilityYear={year}
                 />
               </div>
             </div>

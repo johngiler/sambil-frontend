@@ -22,15 +22,25 @@ function slugFromHostAndBase(host, base) {
   return sub;
 }
 
+function envTenantSlugFallback() {
+  const env = (process.env.NEXT_PUBLIC_WORKSPACE_SLUG || "").trim().toLowerCase();
+  return env || "local";
+}
+
 /**
+ * Resuelve el slug del workspace a partir del hostname (sin puerto).
+ * @param {string} hostname
  * @returns {string}
  */
-export function clientTenantSlug() {
-  if (typeof window === "undefined") {
-    const env = (process.env.NEXT_PUBLIC_WORKSPACE_SLUG || "").trim().toLowerCase();
-    return env || "local";
-  }
-  const host = window.location.hostname.toLowerCase();
+export function tenantSlugFromHostname(hostname) {
+  const host = String(hostname || "")
+    .trim()
+    .toLowerCase()
+    .split(",")[0]
+    .trim()
+    .split(":")[0];
+  if (!host) return envTenantSlugFallback();
+
   let base = (process.env.NEXT_PUBLIC_TENANT_BASE_DOMAIN || "").trim().toLowerCase();
 
   if (host.endsWith(".localhost") && host !== "localhost") {
@@ -40,7 +50,6 @@ export function clientTenantSlug() {
     }
   }
 
-  // Sin apex en .env: si el host ya es *.publivalla.com, inferir apex (evita mandar X-Workspace-Slug del build equivocado).
   if (!base && host.endsWith(".publivalla.com")) {
     base = "publivalla.com";
   }
@@ -49,17 +58,24 @@ export function clientTenantSlug() {
   if (fromHost) return fromHost;
 
   if (!base) {
-    const env = (process.env.NEXT_PUBLIC_WORKSPACE_SLUG || "").trim().toLowerCase();
-    return env || "local";
+    return envTenantSlugFallback();
   }
 
   if (host === base || host === `www.${base}`) {
-    const env = (process.env.NEXT_PUBLIC_WORKSPACE_SLUG || "").trim().toLowerCase();
-    return env || "local";
+    return envTenantSlugFallback();
   }
 
-  const env = (process.env.NEXT_PUBLIC_WORKSPACE_SLUG || "").trim().toLowerCase();
-  return env || "local";
+  return envTenantSlugFallback();
+}
+
+/**
+ * @returns {string}
+ */
+export function clientTenantSlug() {
+  if (typeof window === "undefined") {
+    return envTenantSlugFallback();
+  }
+  return tenantSlugFromHostname(window.location.hostname);
 }
 
 /** Sufijo seguro para claves de `localStorage`. */
@@ -69,12 +85,41 @@ export function storageKeySuffix() {
 
 /**
  * Cabecera para el API cuando el Host del backend no lleva subdominio (p. ej. 127.0.0.1:8000).
- * Alinea login y `/api/workspace/current/` con el mismo slug que `clientTenantSlug()`.
- * No enviar si el slug es el fallback genérico "local" (sin workspace real con ese nombre).
+ * @param {string} [hostname] Host del navegador o de la petición Next (RSC); si se omite, solo aplica en cliente.
  */
-export function workspaceSlugRequestHeaders() {
-  if (typeof window === "undefined") return {};
-  const slug = clientTenantSlug();
+export function workspaceSlugRequestHeaders(hostname) {
+  let slug;
+  if (hostname != null && String(hostname).trim() !== "") {
+    slug = tenantSlugFromHostname(hostname);
+  } else if (typeof window !== "undefined") {
+    slug = clientTenantSlug();
+  } else {
+    return {};
+  }
+  if (!slug || slug === "local") return {};
+  return { "X-Workspace-Slug": slug };
+}
+
+/**
+ * Cabeceras de tenant para `fetch` en RSC y en cliente (usa `Host` de Next en servidor).
+ * @returns {Promise<Record<string, string>>}
+ */
+export async function workspaceSlugHeadersForFetch() {
+  if (typeof window !== "undefined") {
+    return workspaceSlugRequestHeaders();
+  }
+  try {
+    const { headers } = await import("next/headers");
+    const h = await headers();
+    const raw = h.get("x-forwarded-host") || h.get("host") || "";
+    const host = raw.split(",")[0].trim().split(":")[0];
+    if (host) {
+      return workspaceSlugRequestHeaders(host);
+    }
+  } catch {
+    /* fuera de request Next */
+  }
+  const slug = envTenantSlugFallback();
   if (!slug || slug === "local") return {};
   return { "X-Workspace-Slug": slug };
 }

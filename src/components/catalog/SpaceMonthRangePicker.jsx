@@ -13,12 +13,20 @@ import {
   selectableMonthsExistInYear,
 } from "@/lib/spaceCalendar";
 import { contractMonthsInclusive } from "@/lib/rentalDates";
+import {
+  CATALOG_MONTH_AVAILABLE_BG,
+  CATALOG_MONTH_AVAILABLE_RING,
+  CATALOG_MONTH_CART_BASELINE_BG,
+  CATALOG_MONTH_CART_BASELINE_RING,
+  CATALOG_MONTH_SELECTED_BG,
+  CATALOG_MONTH_SELECTED_RING,
+  CATALOG_MONTH_UNAVAILABLE_BG,
+  CATALOG_MONTH_UNAVAILABLE_RING,
+} from "@/lib/catalogMonthColors";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 
-const ACCENT_RING = "border-[#d98e32] text-[#b45309] ring-1 ring-[#d98e32]/35";
-const DISABLED = "cursor-not-allowed border-zinc-100 bg-zinc-50 text-zinc-300";
-const BASELINE_ONLY =
-  "border border-dashed border-sky-400/75 bg-sky-50/80 text-sky-900 ring-1 ring-sky-200/60 hover:border-sky-500/80 hover:bg-sky-50";
+const DISABLED = `cursor-not-allowed ${CATALOG_MONTH_UNAVAILABLE_BG} ${CATALOG_MONTH_UNAVAILABLE_RING} text-zinc-400`;
+const BASELINE_ONLY = `${CATALOG_MONTH_CART_BASELINE_RING} ${CATALOG_MONTH_CART_BASELINE_BG} text-sky-900 hover:border-sky-500/80 hover:bg-sky-50`;
 
 /**
  * Selector de meses dentro del año del API. El contrato sigue siendo un intervalo continuo
@@ -191,21 +199,30 @@ export function SpaceMonthRangePicker({
         <p className="text-sm font-semibold text-zinc-900">Calendario de meses</p>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-zinc-500">
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm border border-zinc-200 bg-white" aria-hidden />
+            <span
+              className={`h-2.5 w-3 rounded-md ${CATALOG_MONTH_AVAILABLE_BG} ${CATALOG_MONTH_AVAILABLE_RING}`}
+              aria-hidden
+            />
             Libre
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-zinc-100 ring-1 ring-zinc-200/80" aria-hidden />
+            <span
+              className={`h-2.5 w-3 rounded-md ${CATALOG_MONTH_UNAVAILABLE_BG} ${CATALOG_MONTH_UNAVAILABLE_RING}`}
+              aria-hidden
+            />
             No disponible
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <span className="h-2.5 w-2.5 rounded-sm bg-orange-50 ring-1 ring-[#d98e32]/40" aria-hidden />
+            <span
+              className={`h-2.5 w-3 rounded-md ${CATALOG_MONTH_SELECTED_BG} ${CATALOG_MONTH_SELECTED_RING}`}
+              aria-hidden
+            />
             Tu selección
           </span>
           {hasCartBaseline ? (
             <span className="inline-flex items-center gap-1.5">
               <span
-                className="h-2.5 w-2.5 rounded-sm border border-dashed border-sky-400/80 bg-sky-50 ring-1 ring-sky-200/50"
+                className={`h-2.5 w-3 rounded-md ${CATALOG_MONTH_CART_BASELINE_BG} ${CATALOG_MONTH_CART_BASELINE_RING}`}
                 aria-hidden
               />
               En carrito
@@ -227,10 +244,10 @@ export function SpaceMonthRangePicker({
           const inRange = lo != null && hi != null && m >= lo && m <= hi;
           const inBaseline = hasCartBaseline && m >= blo && m <= bhi;
           const baselineOnly = inBaseline && !inRange;
-          let cellClass = "border-zinc-200 bg-white text-zinc-700 hover:border-zinc-300 hover:bg-zinc-50";
+          let cellClass = `${CATALOG_MONTH_AVAILABLE_RING} ${CATALOG_MONTH_AVAILABLE_BG} text-zinc-800 hover:border-zinc-400 hover:bg-white`;
           if (!blocked) {
             if (inRange) {
-              cellClass = `${ACCENT_RING} bg-orange-50/90`;
+              cellClass = `${CATALOG_MONTH_SELECTED_RING} ${CATALOG_MONTH_SELECTED_BG} text-[#b45309]`;
               if (hasCartBaseline && inBaseline && !selectionMatchesBaseline) {
                 cellClass += " shadow-[inset_0_0_0_1px_rgba(14,165,233,0.45)]";
               }

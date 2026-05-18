@@ -8,6 +8,7 @@ import {
   spaceStatusPillClassName,
 } from "@/components/admin/adminConstants";
 import { IconCart } from "@/components/layout/navIcons";
+import { formatCatalogTitle } from "@/lib/catalogDisplay";
 import { spaceCoverCandidatesForUi } from "@/lib/mediaUrls";
 
 function formatUsdMonthly(n) {
@@ -22,13 +23,13 @@ function formatUsdMonthly(n) {
 
 /**
  * Tarjeta de toma en catálogo (título a ancho completo; fila estado / precio; badge centro + ciudad).
- * @param {{ space: Record<string, unknown>, availabilityLabel?: "free" | "occupied", showFooterLink?: boolean, inCart?: boolean, priority?: boolean, secondaryAvailability?: { year: number, monthsOccupied: unknown } | null, cardFooter?: import("react").ReactNode, showFavoriteButton?: boolean }} props
+ * @param {{ space: Record<string, unknown>, showFooterLink?: boolean, inCart?: boolean, cartMonthsInYear?: { lo: number, hi: number } | null, priority?: boolean, secondaryAvailability?: { year: number, monthsOccupied: unknown } | null, cardFooter?: import("react").ReactNode, showFavoriteButton?: boolean }} props
  */
 export function SpaceCard({
   space,
-  availabilityLabel = "free",
   showFooterLink = true,
   inCart = false,
+  cartMonthsInYear = null,
   priority = false,
   secondaryAvailability = null,
   cardFooter = null,
@@ -55,21 +56,14 @@ export function SpaceCard({
     typeof space.code === "string" && space.code.trim() !== ""
       ? space.code.trim()
       : "";
-  const desc =
-    typeof space.description === "string" && space.description.trim() !== ""
-      ? space.description.trim()
-      : typeof space.venue_zone === "string" && space.venue_zone.trim() !== ""
-        ? space.venue_zone
-        : typeof space.location_description === "string"
-          ? space.location_description
-          : typeof space.type === "string"
-            ? space.type
-            : "";
+  const displayTitle = formatCatalogTitle(
+    typeof space.title === "string" ? space.title : "",
+  );
 
   const detailHref = `/catalog/${space.id}`;
 
   return (
-    <article className="group overflow-hidden rounded-2xl bg-white shadow-[0_1px_2px_rgba(0,0,0,0.05)] ring-1 ring-zinc-200/80 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-8px_rgba(0,0,0,0.15)] hover:ring-zinc-300">
+    <article className="group relative overflow-visible rounded-2xl bg-white shadow-[0_1px_2px_rgba(0,0,0,0.05)] ring-1 ring-zinc-200/80 transition-all duration-300 ease-out hover:z-20 hover:-translate-y-0.5 hover:shadow-[0_16px_32px_-8px_rgba(0,0,0,0.15)] hover:ring-zinc-300">
       <div className="relative">
         <Link
           href={detailHref}
@@ -79,11 +73,7 @@ export function SpaceCard({
             {coverCandidates.length > 0 ? (
               <CatalogRasterImage
                 candidates={coverCandidates}
-                alt={
-                  typeof space.title === "string"
-                    ? space.title
-                    : "Espacio publicitario"
-                }
+                alt={displayTitle || "Espacio publicitario"}
                 fill
                 className="object-cover"
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
@@ -146,7 +136,7 @@ export function SpaceCard({
       >
         <div className="p-4">
           <h2 className="w-full text-balance break-words text-[15px] font-semibold leading-snug tracking-tight text-zinc-900">
-            {space.title}
+            {displayTitle}
           </h2>
           {code ? (
             <p className="mt-1 font-mono text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
@@ -163,15 +153,11 @@ export function SpaceCard({
               {formatUsdMonthly(space.monthly_price_usd)}
             </p>
           </div>
-          {desc ? (
-            <p className="mt-1.5 line-clamp-2 break-words text-sm text-zinc-500">
-              {desc}
-            </p>
-          ) : null}
-          <div className="mt-4">
+          <div className="relative z-30 mt-4">
             <SpaceMonthAvailabilityBar
               monthsOccupied={space.months_occupied}
-              labelMetric={availabilityLabel}
+              availabilityYear={Number(space.availability_year) || new Date().getFullYear()}
+              cartMonthsInYear={inCart ? cartMonthsInYear : null}
             />
           </div>
           {secondaryAvailability != null &&
@@ -184,7 +170,7 @@ export function SpaceCard({
               <div className="mt-2">
                 <SpaceMonthAvailabilityBar
                   monthsOccupied={secondaryAvailability.monthsOccupied}
-                  labelMetric={availabilityLabel}
+                  availabilityYear={secondaryAvailability.year}
                 />
               </div>
             </div>

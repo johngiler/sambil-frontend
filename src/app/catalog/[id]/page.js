@@ -1,6 +1,21 @@
+import { notFound } from "next/navigation";
+
 import SpaceDetailView from "@/views/SpaceDetailView";
+import { getSpace } from "@/services/api";
 
 export default async function CatalogDetailPage({ params }) {
   const { id } = await params;
-  return <SpaceDetailView spaceId={id} />;
+
+  let space;
+  try {
+    space = await getSpace(id);
+  } catch {
+    notFound();
+  }
+
+  if (space.catalog_public !== true) {
+    notFound();
+  }
+
+  return <SpaceDetailView space={space} />;
 }

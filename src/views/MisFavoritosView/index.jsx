@@ -125,7 +125,6 @@ export default function MisFavoritosView() {
               <li key={row.id ?? id}>
                 <SpaceCardWithCart
                   space={sp}
-                  availabilityLabel="occupied"
                   showFooterLink={false}
                   showFavoriteButton
                   priority={index < 6}

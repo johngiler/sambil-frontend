@@ -19,9 +19,11 @@ import {
   buildHomeCatalogCenterFacetsKey,
   buildHomeCatalogFacetsKey,
   buildHomeCatalogPageKey,
+  buildHomeCatalogTypeFacetsKey,
   homeCatalogCenterFacetsFetcher,
   homeCatalogFacetsFetcher,
   homeCatalogPageFetcher,
+  homeCatalogTypeFacetsFetcher,
   homeCatalogSwrOptions,
 } from "@/lib/swr/homeCatalogSwr";
 
@@ -70,6 +72,7 @@ export function HomeSpacesCatalogClient() {
   const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
+  const [selectedType, setSelectedType] = useState("");
   const [filtersPanelOpen, setFiltersPanelOpen] = useState(false);
   const debouncedQuery = useDebouncedValue(query, 400);
 
@@ -79,22 +82,37 @@ export function HomeSpacesCatalogClient() {
         search: debouncedQuery,
         city: selectedCity,
         center: centerSlug,
+        type: selectedType,
         page,
       }),
-    [debouncedQuery, selectedCity, centerSlug, page],
+    [debouncedQuery, selectedCity, centerSlug, selectedType, page],
   );
   const facetsKey = useMemo(
     () =>
-      buildHomeCatalogFacetsKey({ search: debouncedQuery, center: centerSlug }),
-    [debouncedQuery, centerSlug],
+      buildHomeCatalogFacetsKey({
+        search: debouncedQuery,
+        center: centerSlug,
+        type: selectedType,
+      }),
+    [debouncedQuery, centerSlug, selectedType],
   );
   const centerFacetsKey = useMemo(
     () =>
       buildHomeCatalogCenterFacetsKey({
         search: debouncedQuery,
         city: selectedCity,
+        type: selectedType,
       }),
-    [debouncedQuery, selectedCity],
+    [debouncedQuery, selectedCity, selectedType],
+  );
+  const typeFacetsKey = useMemo(
+    () =>
+      buildHomeCatalogTypeFacetsKey({
+        search: debouncedQuery,
+        city: selectedCity,
+        center: centerSlug,
+      }),
+    [debouncedQuery, selectedCity, centerSlug],
   );
 
   const {
@@ -112,6 +130,12 @@ export function HomeSpacesCatalogClient() {
   const { data: centerFacetsData, error: centerFacetsError } = useSWR(
     centerFacetsKey,
     homeCatalogCenterFacetsFetcher,
+    homeCatalogSwrOptions,
+  );
+
+  const { data: typeFacetsData, error: typeFacetsError } = useSWR(
+    typeFacetsKey,
+    homeCatalogTypeFacetsFetcher,
     homeCatalogSwrOptions,
   );
 
@@ -139,10 +163,22 @@ export function HomeSpacesCatalogClient() {
     return { total, items };
   }, [centerFacetsData]);
 
+  const typeFacets = useMemo(() => {
+    if (!typeFacetsData || typeof typeFacetsData !== "object")
+      return { total: 0, items: [] };
+    const total =
+      typeof typeFacetsData.total === "number" ? typeFacetsData.total : 0;
+    const items = Array.isArray(typeFacetsData.items) ? typeFacetsData.items : [];
+    return { total, items };
+  }, [typeFacetsData]);
+
   const filtersActive = useMemo(
     () =>
-      selectedCity.trim() !== "" || query.trim() !== "" || centerSlug !== "",
-    [selectedCity, query, centerSlug],
+      selectedCity.trim() !== "" ||
+      query.trim() !== "" ||
+      centerSlug !== "" ||
+      selectedType.trim() !== "",
+    [selectedCity, query, centerSlug, selectedType],
   );
 
   const dataReady = pageData !== undefined || loadError != null;
@@ -150,10 +186,11 @@ export function HomeSpacesCatalogClient() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedQuery, selectedCity, centerSlug]);
+  }, [debouncedQuery, selectedCity, centerSlug, selectedType]);
 
   function clearFilters() {
     setSelectedCity("");
+    setSelectedType("");
     setQuery("");
     setPage(1);
     const p = new URLSearchParams(searchParams.toString());
@@ -187,6 +224,7 @@ export function HomeSpacesCatalogClient() {
   const showFacetsWarning = facetsError != null && loadError == null;
   const showCenterFacetsWarning =
     centerFacetsError != null && loadError == null;
+  const showTypeFacetsWarning = typeFacetsError != null && loadError == null;
 
   function setCenterInUrl(nextSlug) {
     const p = new URLSearchParams(searchParams.toString());
@@ -304,7 +342,7 @@ export function HomeSpacesCatalogClient() {
                     : "pointer-events-none opacity-0 -translate-y-1"
                 }`}
                 aria-hidden={!filtersPanelOpen}
-                aria-label="Filtros por ciudad y centro comercial"
+                aria-label="Filtros por ciudad, centro comercial y tipo de toma"
               >
                 {filtersActive ? (
                   <div className="mb-3 flex justify-end">
@@ -450,6 +488,70 @@ export function HomeSpacesCatalogClient() {
                       </div>
                     </div>
                   </div>
+
+                  <div>
+                    <p
+                      className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-zinc-500"
+                      id="home-filter-type-label"
+                    >
+                      Tipo de toma
+                    </p>
+                    <div
+                      className="mp-hide-scrollbar -mx-1 w-full overflow-x-auto overscroll-x-contain px-1 [-webkit-overflow-scrolling:touch] sm:-mx-0 sm:overflow-visible sm:px-0"
+                      role="toolbar"
+                      aria-labelledby="home-filter-type-label"
+                    >
+                      <div className="flex w-max max-w-none flex-nowrap items-center gap-2 sm:w-full sm:flex-wrap">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedType("")}
+                          title={`Todos los tipos · ${typeFacets.total > 0 ? typeFacets.total : totalForPills} espacios`}
+                          className={`${chipBase} ${selectedType === "" ? chipOn : chipOff}`}
+                        >
+                          <span>Todos</span>
+                          <span
+                            className={
+                              selectedType === ""
+                                ? "tabular-nums text-zinc-200"
+                                : "tabular-nums font-medium text-zinc-400"
+                            }
+                          >
+                            {typeFacets.total > 0 ? typeFacets.total : totalForPills}
+                          </span>
+                        </button>
+                        {typeFacets.items.map((item) => {
+                          const typeKey =
+                            typeof item.type === "string" ? item.type.trim() : "";
+                          const label =
+                            typeof item.label === "string" && item.label.trim()
+                              ? item.label.trim()
+                              : typeKey;
+                          if (!typeKey) return null;
+                          const active = selectedType === typeKey;
+                          return (
+                            <button
+                              key={typeKey}
+                              type="button"
+                              title={`${label} · ${item.count} espacios`}
+                              onClick={() => setSelectedType(active ? "" : typeKey)}
+                              className={`${chipBase} ${active ? chipOn : chipOff}`}
+                            >
+                              <span className="max-w-[12rem] truncate">{label}</span>
+                              <span
+                                className={
+                                  active
+                                    ? "tabular-nums text-zinc-200"
+                                    : "tabular-nums font-medium text-zinc-400"
+                                }
+                              >
+                                {item.count}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -465,6 +567,11 @@ export function HomeSpacesCatalogClient() {
             <p className="text-xs text-amber-800">
               No pudimos cargar los conteos por centro; el listado sigue
               disponible.
+            </p>
+          ) : null}
+          {showTypeFacetsWarning ? (
+            <p className="text-xs text-amber-800">
+              No pudimos cargar los conteos por tipo; el listado sigue disponible.
             </p>
           ) : null}
         </div>
@@ -486,7 +593,7 @@ export function HomeSpacesCatalogClient() {
         <EmptyState
           icon={<EmptyStateIconSearchOff />}
           title="Nada coincide con tu búsqueda"
-          description="Prueba otra búsqueda o abre Filtros para ajustar ciudad y centro comercial."
+          description="Prueba otra búsqueda o abre Filtros para ajustar ciudad, centro y tipo de toma."
           action={
             <FilterClearAction
               onClick={clearFilters}
@@ -498,10 +605,9 @@ export function HomeSpacesCatalogClient() {
         <div className="space-y-6">
           <ul className="grid list-none gap-[10px] p-0 sm:grid-cols-2 lg:grid-cols-4">
             {spaces.map((space, index) => (
-              <li key={space.id}>
+              <li key={space.id} className="relative">
                 <SpaceCardWithCart
                   space={space}
-                  availabilityLabel="occupied"
                   showFooterLink={false}
                   priority={index < 4}
                   showFavoriteButton

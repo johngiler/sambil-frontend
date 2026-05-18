@@ -226,20 +226,20 @@ export function spaceCoverCandidatesForUi(space) {
   if (!space) return [];
   const seen = new Set();
   const out = [];
-  const add = (raw) => {
+  const addCandidates = (raw) => {
     if (raw == null || typeof raw !== "string" || !raw.trim()) return;
-    const t = raw.trim();
-    const identity = normalizeMediaUrlForUi(t) || t;
-    if (seen.has(identity)) return;
-    seen.add(identity);
-    const u = mediaUrlForUiWithWebp(t);
-    if (u) out.push(u);
+    for (const u of rasterDisplayCandidates(raw.trim())) {
+      const identity = normalizeMediaUrlForUi(u) || u;
+      if (seen.has(identity)) continue;
+      seen.add(identity);
+      out.push(u);
+    }
   };
   const gallery = Array.isArray(space.gallery_images) ? space.gallery_images : [];
   for (const g of gallery) {
-    add(g);
+    addCandidates(g);
   }
-  add(rawSpaceCoverSrc(space.cover_image));
+  addCandidates(rawSpaceCoverSrc(space.cover_image));
   return out;
 }
 

@@ -14,6 +14,30 @@ export function availableMonthsCount(occupied) {
 }
 
 /**
+ * Meses aún elegibles en el año (excluye pasados y el mes en curso).
+ * @param {number} availabilityYear
+ * @param {Date} [ref]
+ */
+export function futureMonthsInYear(availabilityYear, ref = new Date()) {
+  const cy = ref.getFullYear();
+  const cm = ref.getMonth() + 1;
+  if (availabilityYear < cy) return 0;
+  if (availabilityYear > cy) return 12;
+  return Math.max(0, 12 - cm);
+}
+
+/**
+ * Meses libres entre los que aún se puede reservar (sin pasado ni ocupados).
+ * @param {number} availabilityYear
+ * @param {unknown} monthsOccupied
+ * @param {Date} [ref]
+ */
+export function futureAvailableMonthsCount(availabilityYear, monthsOccupied, ref = new Date()) {
+  const merged = mergeOccupiedWithPastMonths(availabilityYear, monthsOccupied, ref);
+  return merged.filter((busy) => !busy).length;
+}
+
+/**
  * @param {number} year
  * @param {number} startMonth 1–12
  * @param {number} endMonth 1–12
