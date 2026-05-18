@@ -5,29 +5,29 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { spaceStatusLabel, spaceStatusPillClassName } from "@/components/admin/adminConstants";
 import { adminPrimaryBtn } from "@/components/admin/adminFormStyles";
-import { SpaceMonthRangePicker } from "@/components/catalog/SpaceMonthRangePicker";
+import { SpaceMultiYearMonthRangePicker } from "@/components/catalog/SpaceMultiYearMonthRangePicker";
 import { marketplaceSecondaryBtn } from "@/lib/marketplaceActionButtons";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartProvider";
 import { spaceAllowsMarketplaceReservation } from "@/lib/spaceMarketplaceReservation";
-import { contractMonthsInclusive, MIN_RESERVATION_CALENDAR_MONTHS } from "@/lib/rentalDates";
+import {
+  MIN_RESERVATION_CALENDAR_MONTHS,
+  normalizeRentalSegments,
+  rentalSelectionEquals,
+  selectedMonthCountFromItem,
+} from "@/lib/rentalDates";
 import { postSpaceRentalRangeCheck } from "@/services/api";
 import {
-  mergeOccupiedWithPastMonths,
-  monthBoundsFromIsoInYear,
-  normalizeMonthsOccupied,
-  rangeTouchesOccupiedMonth,
+  buildDisabledMonthsByYear,
+  catalogAvailabilityYears,
+  rentalSegmentsToLinearIndices,
+  resolveMonthsOccupiedByYear,
+  selectedMonthsTouchOccupied,
 } from "@/lib/spaceCalendar";
 import { ROUNDED_CONTROL } from "@/lib/uiRounding";
 
-function isoYearMonth(iso) {
-  const y = Number(iso.slice(0, 4));
-  const m = Number(iso.slice(5, 7));
-  return { y, m };
-}
-
 /**
- * Bloque de reserva en detalle de toma: período por meses + carrito.
+ * Bloque de reserva en detalle de toma: meses sueltos + carrito.
  */
 export function SpaceDetailReservationActions({ space }) {
   const { authReady, me, isClient, isAdmin } = useAuth();
@@ -36,13 +36,17 @@ export function SpaceDetailReservationActions({ space }) {
   const [rangeCheckError, setRangeCheckError] = useState("");
   const [rangeCheckLoading, setRangeCheckLoading] = useState(false);
 
-  const year = Number(space.availability_year) || new Date().getFullYear();
   const refDate = useMemo(() => new Date(), []);
-  const occ = useMemo(() => normalizeMonthsOccupied(space.months_occupied), [space.months_occupied]);
-  const monthDisabled = useMemo(
-    () => mergeOccupiedWithPastMonths(year, occ, refDate),
-    [year, occ, refDate],
+  const calendarYears = useMemo(() => catalogAvailabilityYears(refDate, space), [refDate, space]);
+  const byYear = useMemo(() => resolveMonthsOccupiedByYear(space, refDate), [space, refDate]);
+  const disabledByYear = useMemo(
+    () => buildDisabledMonthsByYear(byYear, calendarYears, refDate),
+    [byYear, calendarYears, refDate],
   );
+  const yearLabel =
+    calendarYears.length > 1
+      ? `${calendarYears[0]}–${calendarYears[calendarYears.length - 1]}`
+      : String(calendarYears[0] ?? "");
 
   const spaceInCart = useMemo(
     () => items.some((i) => String(i.id) === String(space.id)),
@@ -54,76 +58,70 @@ export function SpaceDetailReservationActions({ space }) {
     [items, space.id],
   );
 
-  const cartDatesInYear = useMemo(() => {
-    if (!cartLine?.start_date || !cartLine?.end_date) return null;
-    const { y: ys, m: sm } = isoYearMonth(cartLine.start_date);
-    const { y: ye, m: em } = isoYearMonth(cartLine.end_date);
-    if (ys !== year || ye !== year) return null;
-    return { start_date: cartLine.start_date, end_date: cartLine.end_date };
-  }, [cartLine, year]);
-
-  const cartBaselineMonths = useMemo(
-    () =>
-      spaceInCart && cartDatesInYear
-        ? monthBoundsFromIsoInYear(cartDatesInYear.start_date, cartDatesInYear.end_date, year)
-        : null,
-    [spaceInCart, cartDatesInYear, year],
+  const cartBaselineSegments = useMemo(
+    () => (cartLine ? normalizeRentalSegments(cartLine) : null),
+    [cartLine],
   );
 
+  const cartBaselineIso = useMemo(() => {
+    if (!cartBaselineSegments?.length) return null;
+    return {
+      start_date: cartBaselineSegments[0].start_date,
+      end_date: cartBaselineSegments[cartBaselineSegments.length - 1].end_date,
+    };
+  }, [cartBaselineSegments]);
+
   useEffect(() => {
-    if (spaceInCart && cartLine?.start_date && cartLine?.end_date) {
-      const b = monthBoundsFromIsoInYear(cartLine.start_date, cartLine.end_date, year);
-      if (b && rangeTouchesOccupiedMonth(year, b.lo, b.hi, monthDisabled)) {
+    if (spaceInCart && cartBaselineSegments?.length) {
+      const indices = rentalSegmentsToLinearIndices(cartBaselineSegments);
+      if (selectedMonthsTouchOccupied(disabledByYear, indices)) {
         setPick(null);
         return;
       }
-      setPick({ start_date: cartLine.start_date, end_date: cartLine.end_date });
+      setPick({
+        rental_segments: cartBaselineSegments,
+        start_date: cartBaselineIso?.start_date,
+        end_date: cartBaselineIso?.end_date,
+      });
     } else if (!spaceInCart) {
       setPick(null);
     }
   }, [
     space.id,
-    space.months_occupied,
+    space.months_occupied_by_year,
     spaceInCart,
-    cartLine?.start_date,
-    cartLine?.end_date,
-    year,
-    monthDisabled,
+    cartBaselineSegments,
+    cartBaselineIso?.start_date,
+    cartBaselineIso?.end_date,
+    disabledByYear,
   ]);
 
   const pickValid = useMemo(() => {
-    if (!pick?.start_date || !pick?.end_date) return false;
-    const { y: ys, m: sm } = isoYearMonth(pick.start_date);
-    const { y: ye, m: em } = isoYearMonth(pick.end_date);
-    if (ys !== year || ye !== year) return false;
-    const lo = Math.min(sm, em);
-    const hi = Math.max(sm, em);
-    if (rangeTouchesOccupiedMonth(year, lo, hi, monthDisabled)) return false;
-    return (
-      contractMonthsInclusive(pick.start_date, pick.end_date) >= MIN_RESERVATION_CALENDAR_MONTHS
-    );
-  }, [pick, year, monthDisabled]);
+    if (!pick) return false;
+    const segs = normalizeRentalSegments(pick);
+    if (!segs.length) return false;
+    const indices = rentalSegmentsToLinearIndices(segs);
+    if (selectedMonthsTouchOccupied(disabledByYear, indices)) return false;
+    return selectedMonthCountFromItem(pick) >= MIN_RESERVATION_CALENDAR_MONTHS;
+  }, [pick, disabledByYear]);
 
   const hasRealModification = useMemo(() => {
-    if (!spaceInCart || !pickValid || !pick?.start_date || !pick?.end_date) return false;
-    if (!cartLine?.start_date || !cartLine?.end_date) return false;
-    return pick.start_date !== cartLine.start_date || pick.end_date !== cartLine.end_date;
-  }, [spaceInCart, pickValid, cartLine?.start_date, cartLine?.end_date, pick?.start_date, pick?.end_date]);
+    if (!spaceInCart || !pickValid || !cartLine) return false;
+    return !rentalSelectionEquals(cartLine, pick);
+  }, [spaceInCart, pickValid, cartLine, pick]);
 
   useEffect(() => {
     setRangeCheckError("");
-  }, [pick?.start_date, pick?.end_date]);
+  }, [pick]);
 
   const onConfirmDates = useCallback(async () => {
     if (!pickValid || !pick) return;
     if (spaceInCart && !hasRealModification) return;
+    const segs = normalizeRentalSegments(pick);
     setRangeCheckError("");
     setRangeCheckLoading(true);
     try {
-      const r = await postSpaceRentalRangeCheck(space.id, {
-        start_date: pick.start_date,
-        end_date: pick.end_date,
-      });
+      const r = await postSpaceRentalRangeCheck(space.id, { rental_segments: segs });
       if (!r.ok) {
         setRangeCheckError(
           typeof r.detail === "string" && r.detail.trim()
@@ -133,7 +131,7 @@ export function SpaceDetailReservationActions({ space }) {
         return;
       }
       if (spaceInCart) {
-        updateItemDates(space.id, { start_date: pick.start_date, end_date: pick.end_date });
+        updateItemDates(space.id, pick);
       } else {
         addItem(space, pick);
       }
@@ -221,21 +219,21 @@ export function SpaceDetailReservationActions({ space }) {
             Período de reserva
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-zinc-600">
-            Año <strong className="font-medium text-zinc-800">{year}</strong>: elige meses seguidos (mínimo{" "}
-            <strong className="font-medium text-zinc-800">1</strong> mes). Los meses en gris no se pueden usar (ocupados
-            o ya pasados, incluido el mes actual).
+            Ventana <strong className="font-medium text-zinc-800">{yearLabel}</strong>: elige uno o más meses libres
+            (no tienen que ser consecutivos). Mínimo{" "}
+            <strong className="font-medium text-zinc-800">1</strong> mes en total. Los meses en gris no se pueden usar.
           </p>
         </div>
 
         <div className="px-5 py-6 sm:px-8 sm:py-8">
-          <SpaceMonthRangePicker
-            availabilityYear={year}
-            monthsOccupied={space.months_occupied}
+          <SpaceMultiYearMonthRangePicker
+            space={space}
             monthlyPriceUsd={space.monthly_price_usd}
             minMonths={MIN_RESERVATION_CALENDAR_MONTHS}
             onRangeChange={setPick}
             pickSync={pick}
-            cartBaselineMonths={cartBaselineMonths}
+            cartBaselineIso={cartBaselineIso}
+            cartBaselineSegments={cartBaselineSegments}
           />
         </div>
 
@@ -274,8 +272,8 @@ export function SpaceDetailReservationActions({ space }) {
               </Link>
               {!pickValid ? (
                 <p className="text-center text-xs text-zinc-500">
-                  Elige un rango válido para actualizar <strong className="font-medium text-zinc-700">esta toma</strong>{" "}
-                  en el carrito.
+                  Elige al menos un mes válido para actualizar{" "}
+                  <strong className="font-medium text-zinc-700">esta toma</strong> en el carrito.
                 </p>
               ) : null}
             </div>
@@ -296,7 +294,7 @@ export function SpaceDetailReservationActions({ space }) {
           )}
           {!pickValid && !spaceInCart ? (
             <p className="text-center text-xs text-zinc-500">
-              Elige meses futuros libres (mínimo 1 mes) para habilitar el botón.
+              Marca al menos un mes futuro libre para habilitar el botón.
             </p>
           ) : null}
         </div>

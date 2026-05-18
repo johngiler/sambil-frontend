@@ -1,4 +1,4 @@
-import { parseISODateOnly } from "@/lib/rentalDates";
+import { normalizeRentalSegments, parseISODateOnly } from "@/lib/rentalDates";
 import { MONTH_SHORT_ES } from "@/lib/spaceCalendar";
 
 /**
@@ -19,6 +19,23 @@ export function contractMonthShortLabels(startStr, endStr) {
     const label = MONTH_SHORT_ES[cur.getMonth()];
     if (!out.length || out[out.length - 1] !== label) out.push(label);
     cur.setMonth(cur.getMonth() + 1);
+  }
+  return out;
+}
+
+/**
+ * Etiquetas de meses para una línea de carrito (varios tramos o rango legacy).
+ * @param {Record<string, unknown>} item
+ * @returns {string[]}
+ */
+export function cartLineMonthShortLabels(item) {
+  const segs = normalizeRentalSegments(item);
+  if (!segs.length) return [];
+  const out = [];
+  for (const seg of segs) {
+    for (const label of contractMonthShortLabels(seg.start_date, seg.end_date)) {
+      if (!out.includes(label)) out.push(label);
+    }
   }
   return out;
 }

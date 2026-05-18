@@ -11,7 +11,7 @@ import {
 } from "react";
 
 import { sanitizeCartItems } from "@/lib/demoCatalog";
-import { defaultRentalPeriod } from "@/lib/rentalDates";
+import { defaultRentalPeriod, normalizeRentalSegments } from "@/lib/rentalDates";
 import {
   adSpaceGalleryUrlsForUi,
   normalizeMediaUrlForUi,
@@ -99,12 +99,18 @@ function migrateItemsWithLegacyPeriod(items, legacy) {
   const fallback =
     legacy?.start_date && legacy?.end_date ? legacy : defaultRentalPeriod();
   return items.map((i) => {
-    if (typeof i.start_date === "string" && typeof i.end_date === "string")
+    if (typeof i.start_date === "string" && typeof i.end_date === "string") {
+      const segs = normalizeRentalSegments(i);
+      if (segs.length && !Array.isArray(i.rental_segments)) {
+        return { ...i, rental_segments: segs };
+      }
       return i;
+    }
     return {
       ...i,
       start_date: fallback.start_date,
       end_date: fallback.end_date,
+      rental_segments: [{ start_date: fallback.start_date, end_date: fallback.end_date }],
     };
   });
 }
@@ -183,7 +189,10 @@ export function CartProvider({ children }) {
   }, [items]);
 
   const addItem = useCallback((space, range) => {
-    if (!range?.start_date || !range?.end_date) return;
+    const segs = normalizeRentalSegments(range);
+    if (!segs.length) return;
+    const start_date = range?.start_date ?? segs[0].start_date;
+    const end_date = range?.end_date ?? segs[segs.length - 1].end_date;
     const detailLine =
       typeof space.venue_zone === "string" && space.venue_zone.trim() !== ""
         ? space.venue_zone.trim()
@@ -209,8 +218,15 @@ export function CartProvider({ children }) {
             code: space.code,
             title: space.title,
             monthly_price_usd: String(space.monthly_price_usd),
-            start_date: range.start_date,
-            end_date: range.end_date,
+            ...(Array.isArray(space.high_season_months)
+              ? { high_season_months: space.high_season_months }
+              : {}),
+            ...(space.high_season_multiplier != null
+              ? { high_season_multiplier: space.high_season_multiplier }
+              : {}),
+            start_date,
+            end_date,
+            rental_segments: segs,
             ...(centerName ? { shopping_center_name: centerName } : {}),
             ...(detailLine ? { detail_line: detailLine } : {}),
             ...(coverUrl ? { cover_image: coverUrl } : {}),
@@ -225,11 +241,14 @@ export function CartProvider({ children }) {
   }, []);
 
   const updateItemDates = useCallback((id, range) => {
-    if (!range?.start_date || !range?.end_date) return;
+    const segs = normalizeRentalSegments(range);
+    if (!segs.length) return;
+    const start_date = range?.start_date ?? segs[0].start_date;
+    const end_date = range?.end_date ?? segs[segs.length - 1].end_date;
     setItems((prev) => {
       const next = prev.map((x) =>
         x.id === id
-          ? { ...x, start_date: range.start_date, end_date: range.end_date }
+          ? { ...x, start_date, end_date, rental_segments: segs }
           : x,
       );
       writeStorage(next);

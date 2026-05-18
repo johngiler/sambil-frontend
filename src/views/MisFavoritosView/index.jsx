@@ -115,12 +115,6 @@ export default function MisFavoritosView() {
             const sp = row?.ad_space;
             if (!sp || typeof sp !== "object") return null;
             const id = sp.id;
-            const y1 = sp.availability_year_next ?? (Number(sp.availability_year) || new Date().getFullYear()) + 1;
-            const nextOcc = sp.months_occupied_next_year;
-            const secondary =
-              Array.isArray(nextOcc) && nextOcc.length === 12
-                ? { year: y1, monthsOccupied: nextOcc }
-                : null;
             return (
               <li key={row.id ?? id}>
                 <SpaceCardWithCart
@@ -128,7 +122,6 @@ export default function MisFavoritosView() {
                   showFooterLink={false}
                   showFavoriteButton
                   priority={index < 6}
-                  secondaryAvailability={secondary}
                   cardFooter={
                     <button
                       type="button"

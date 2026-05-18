@@ -54,7 +54,13 @@ export default function SpaceDetailView({ space }) {
   const backHref = "/";
   const typeLabel = labelFromChoices(SPACE_TYPES, space.type);
   const statusLabel = spaceStatusLabel(space.status, space.status_label);
-  const year = Number(space.availability_year) || new Date().getFullYear();
+  const calendarYears = Array.isArray(space.availability_calendar_years)
+    ? space.availability_calendar_years
+    : null;
+  const yearLabel =
+    calendarYears && calendarYears.length > 1
+      ? `${calendarYears[0]}–${calendarYears[calendarYears.length - 1]}`
+      : String(Number(space.availability_year) || new Date().getFullYear());
   const centerName =
     typeof space.shopping_center_name === "string" && space.shopping_center_name.trim() !== ""
       ? space.shopping_center_name.trim()
@@ -158,14 +164,10 @@ export default function SpaceDetailView({ space }) {
             </p>
             <div className="mt-3 border-t border-zinc-100 pt-3">
               <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                Disponibilidad en {year}
+                Disponibilidad {yearLabel}
               </p>
               <div className="mt-2 min-w-0">
-                <SpaceDetailAvailabilityBar
-                  spaceId={space.id}
-                  monthsOccupied={space.months_occupied}
-                  availabilityYear={year}
-                />
+                <SpaceDetailAvailabilityBar space={space} spaceId={space.id} />
               </div>
             </div>
           </div>

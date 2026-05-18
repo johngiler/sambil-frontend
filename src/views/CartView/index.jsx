@@ -19,7 +19,7 @@ import {
   ivaFromSubtotal,
   totalWithIva,
 } from "@/lib/marketplacePricing";
-import { contractMonthShortLabels } from "@/lib/rentalMonthPills";
+import { cartLineMonthShortLabels } from "@/lib/rentalMonthPills";
 import {
   marketplacePrimaryBtn,
   marketplaceSecondaryBtn,
@@ -129,10 +129,7 @@ export default function CartView() {
         <ul className="mt-6 space-y-4">
           {items.map((item) => {
             const line = cartLineSubtotalOrNull(item);
-            const monthPills =
-              typeof item.start_date === "string" && typeof item.end_date === "string"
-                ? contractMonthShortLabels(item.start_date, item.end_date)
-                : [];
+            const monthPills = cartLineMonthShortLabels(item);
             const center =
               typeof item.shopping_center_name === "string" ? item.shopping_center_name : "";
             const detail =

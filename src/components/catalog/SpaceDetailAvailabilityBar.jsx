@@ -2,36 +2,29 @@
 
 import { useMemo } from "react";
 
-import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvailabilityBar";
+import { SpaceMultiYearAvailabilityBar } from "@/components/catalog/SpaceMultiYearAvailabilityBar";
 import { useCart } from "@/context/CartProvider";
-import { monthBoundsFromIsoInYear } from "@/lib/spaceCalendar";
 
 /**
- * Barra anual en ficha de detalle: meses en carrito en naranja y leyenda al hover.
- * @param {{ spaceId: number | string, monthsOccupied?: unknown, availabilityYear: number }} props
+ * Calendario multi-año en ficha de detalle (meses en carrito resaltados).
+ * @param {{ space: Record<string, unknown>, spaceId?: number | string }} props
  */
-export function SpaceDetailAvailabilityBar({ spaceId, monthsOccupied, availabilityYear }) {
+export function SpaceDetailAvailabilityBar({ space, spaceId }) {
   const { items } = useCart();
+  const id = spaceId ?? space?.id;
 
-  const cartMonthsInYear = useMemo(() => {
-    const line = items.find((i) => String(i.id) === String(spaceId));
-    if (
-      !line ||
-      typeof line.start_date !== "string" ||
-      typeof line.end_date !== "string"
-    ) {
-      return null;
-    }
-    return monthBoundsFromIsoInYear(line.start_date, line.end_date, availabilityYear);
-  }, [items, spaceId, availabilityYear]);
+  const cartLine = useMemo(
+    () => items.find((i) => String(i.id) === String(id)),
+    [items, id],
+  );
+
+  const cartStartIso =
+    cartLine && typeof cartLine.start_date === "string" ? cartLine.start_date : null;
+  const cartEndIso = cartLine && typeof cartLine.end_date === "string" ? cartLine.end_date : null;
 
   return (
     <div className="relative z-30 min-w-0">
-      <SpaceMonthAvailabilityBar
-        monthsOccupied={monthsOccupied}
-        availabilityYear={availabilityYear}
-        cartMonthsInYear={cartMonthsInYear}
-      />
+      <SpaceMultiYearAvailabilityBar space={space} cartStartIso={cartStartIso} cartEndIso={cartEndIso} />
     </div>
   );
 }

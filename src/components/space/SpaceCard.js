@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { SpaceDetailFavoriteButton } from "@/components/catalog/SpaceDetailFavoriteButton";
 import { CatalogRasterImage } from "@/components/media/CatalogRasterImage";
-import { SpaceMonthAvailabilityBar } from "@/components/catalog/SpaceMonthAvailabilityBar";
+import { SpaceMultiYearAvailabilityBar } from "@/components/catalog/SpaceMultiYearAvailabilityBar";
 import {
   spaceStatusLabel,
   spaceStatusPillClassName,
@@ -23,15 +23,15 @@ function formatUsdMonthly(n) {
 
 /**
  * Tarjeta de toma en catálogo (título a ancho completo; fila estado / precio; badge centro + ciudad).
- * @param {{ space: Record<string, unknown>, showFooterLink?: boolean, inCart?: boolean, cartMonthsInYear?: { lo: number, hi: number } | null, priority?: boolean, secondaryAvailability?: { year: number, monthsOccupied: unknown } | null, cardFooter?: import("react").ReactNode, showFavoriteButton?: boolean }} props
+ * @param {{ space: Record<string, unknown>, showFooterLink?: boolean, inCart?: boolean, cartStartIso?: string | null, cartEndIso?: string | null, priority?: boolean, cardFooter?: import("react").ReactNode, showFavoriteButton?: boolean }} props
  */
 export function SpaceCard({
   space,
   showFooterLink = true,
   inCart = false,
-  cartMonthsInYear = null,
+  cartStartIso = null,
+  cartEndIso = null,
   priority = false,
-  secondaryAvailability = null,
   cardFooter = null,
   showFavoriteButton = false,
 }) {
@@ -154,27 +154,13 @@ export function SpaceCard({
             </p>
           </div>
           <div className="relative z-30 mt-4">
-            <SpaceMonthAvailabilityBar
-              monthsOccupied={space.months_occupied}
-              availabilityYear={Number(space.availability_year) || new Date().getFullYear()}
-              cartMonthsInYear={inCart ? cartMonthsInYear : null}
+            <SpaceMultiYearAvailabilityBar
+              space={space}
+              cartStartIso={inCart ? cartStartIso : null}
+              cartEndIso={inCart ? cartEndIso : null}
+              compact
             />
           </div>
-          {secondaryAvailability != null &&
-          typeof secondaryAvailability.year === "number" &&
-          secondaryAvailability.monthsOccupied != null ? (
-            <div className="mt-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
-                Disponibilidad {secondaryAvailability.year}
-              </p>
-              <div className="mt-2">
-                <SpaceMonthAvailabilityBar
-                  monthsOccupied={secondaryAvailability.monthsOccupied}
-                  availabilityYear={secondaryAvailability.year}
-                />
-              </div>
-            </div>
-          ) : null}
           {showFooterLink ? (
             <span className="mt-3 inline-block text-sm font-semibold text-zinc-800 no-underline underline-offset-4 group-hover:underline">
               Ver detalle

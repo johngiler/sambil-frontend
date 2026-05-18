@@ -209,9 +209,13 @@ export async function fetchMountingProvidersPage(nextPath) {
 
 export async function postSpaceRentalRangeCheck(
   spaceId,
-  { start_date, end_date },
+  { start_date, end_date, rental_segments },
 ) {
-  const body = JSON.stringify({ start_date, end_date });
+  const body = JSON.stringify(
+    Array.isArray(rental_segments) && rental_segments.length
+      ? { rental_segments }
+      : { start_date, end_date },
+  );
   const headers = {
     "Content-Type": "application/json",
     ...workspaceSlugRequestHeaders(),

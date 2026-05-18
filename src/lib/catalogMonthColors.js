@@ -16,3 +16,8 @@ export const CATALOG_MONTH_SELECTED_RING =
 export const CATALOG_MONTH_CART_BASELINE_BG = "bg-sky-50/80";
 export const CATALOG_MONTH_CART_BASELINE_RING =
   "border border-dashed border-sky-400/75 ring-1 ring-sky-200/60";
+
+/** Mes libre en temporada alta (antes de seleccionar). */
+export const CATALOG_MONTH_HIGH_SEASON_BG = "bg-amber-50/70";
+export const CATALOG_MONTH_HIGH_SEASON_RING =
+  "border border-amber-200/90 ring-1 ring-amber-100/80";

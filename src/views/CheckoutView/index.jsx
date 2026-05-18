@@ -19,7 +19,11 @@ import {
   ivaFromSubtotal,
   totalWithIva,
 } from "@/lib/marketplacePricing";
-import { cartAllItemsMeetCheckoutRules, cartTotalUsd } from "@/lib/rentalDates";
+import {
+  cartAllItemsMeetCheckoutRules,
+  cartTotalUsd,
+  expandCartItemsToOrderPayload,
+} from "@/lib/rentalDates";
 import { EmptyState, EmptyStateIconInbox } from "@/components/ui/EmptyState";
 import {
   marketplacePrimaryBtn,
@@ -261,11 +265,7 @@ export default function CheckoutView() {
       }
 
       const orderPayload = {
-        items: items.map((i) => ({
-          ad_space: i.id,
-          start_date: i.start_date,
-          end_date: i.end_date,
-        })),
+        items: expandCartItemsToOrderPayload(items),
       };
       const draft = await authFetch("/api/orders/", {
         method: "POST",
@@ -340,11 +340,7 @@ export default function CheckoutView() {
           create_account: createAccount,
           password: createAccount ? password : "",
           password_confirm: createAccount ? passwordConfirm : "",
-          items: items.map((i) => ({
-            ad_space: i.id,
-            start_date: i.start_date,
-            end_date: i.end_date,
-          })),
+          items: expandCartItemsToOrderPayload(items),
         },
       );
       setResult(submitted);

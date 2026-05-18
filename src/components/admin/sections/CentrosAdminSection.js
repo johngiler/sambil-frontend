@@ -14,6 +14,12 @@ import { AdminAccordionToggle } from "@/components/admin/AdminAccordionToggle";
 import { AdminCreatePlusIcon } from "@/components/admin/AdminCreatePlusIcon";
 import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
 import { AdminModal } from "@/components/admin/AdminModal";
+import { HighSeasonMonthsField } from "@/components/admin/HighSeasonMonthsField";
+import {
+  MONTH_LABELS_ES,
+  normalizeHighSeasonMonths,
+  parseHighSeasonMultiplier,
+} from "@/lib/highSeasonPricing";
 import { AdminRowActions } from "@/components/admin/AdminRowActions";
 import { AdminInlineAlert } from "@/components/admin/AdminInlineAlert";
 import {
@@ -128,6 +134,8 @@ export function CentrosAdminSection() {
   const [marketplaceCatalogEnabled, setMarketplaceCatalogEnabled] =
     useState(false);
   const [listingOrder, setListingOrder] = useState("0");
+  const [highSeasonMonths, setHighSeasonMonths] = useState([]);
+  const [highSeasonMultiplier, setHighSeasonMultiplier] = useState("1");
   const [coverFile, setCoverFile] = useState(null);
   const [filePreview, setFilePreview] = useState("");
   const [pendingClearCover, setPendingClearCover] = useState(false);
@@ -207,6 +215,8 @@ export function CentrosAdminSection() {
     setIsActive(true);
     setMarketplaceCatalogEnabled(false);
     setListingOrder("0");
+    setHighSeasonMonths([]);
+    setHighSeasonMultiplier("1");
     setCoverFile(null);
     setPendingClearCover(false);
     if (fileRef.current) fileRef.current.value = "";
@@ -238,6 +248,8 @@ export function CentrosAdminSection() {
     setIsActive(c.is_active !== false);
     setMarketplaceCatalogEnabled(centerCatalogEnabled(c));
     setListingOrder(String(c.listing_order ?? 0));
+    setHighSeasonMonths(normalizeHighSeasonMonths(c.high_season_months));
+    setHighSeasonMultiplier(String(parseHighSeasonMultiplier(c.high_season_multiplier)));
     setCoverFile(null);
     setPendingClearCover(false);
     if (fileRef.current) fileRef.current.value = "";
@@ -323,12 +335,16 @@ export function CentrosAdminSection() {
       return;
     }
     const lo = Math.max(0, parseInt(listingOrder, 10) || 0);
+    const mult = parseHighSeasonMultiplier(highSeasonMultiplier);
+    const hsMonths = normalizeHighSeasonMonths(highSeasonMonths);
     const extra = {
       district: district.trim(),
       on_homepage: onHomepage,
       is_active: isActive,
       marketplace_catalog_enabled: marketplaceCatalogEnabled,
       listing_order: lo,
+      high_season_months: hsMonths,
+      high_season_multiplier: mult,
     };
     try {
       if (modal === "create") {
@@ -351,6 +367,8 @@ export function CentrosAdminSection() {
             marketplaceCatalogEnabled ? "true" : "false",
           );
           fd.append("listing_order", String(lo));
+          fd.append("high_season_months", JSON.stringify(hsMonths));
+          fd.append("high_season_multiplier", String(mult));
           fd.append("cover_image", coverFile);
           await authFetchForm("/api/admin/centers/", {
             method: "POST",
@@ -394,6 +412,8 @@ export function CentrosAdminSection() {
             marketplaceCatalogEnabled ? "true" : "false",
           );
           fd.append("listing_order", String(lo));
+          fd.append("high_season_months", JSON.stringify(hsMonths));
+          fd.append("high_season_multiplier", String(mult));
           fd.append("cover_image", coverFile);
           await authFetchForm(`/api/admin/centers/${selected.id}/`, {
             method: "PATCH",
@@ -785,6 +805,29 @@ export function CentrosAdminSection() {
                                 <div className="mt-6 border-t border-zinc-100 pt-5">
                                   <AdminDetailSection
                                     panelId={panelId}
+                                    sectionId="pricing"
+                                    title="Temporada alta"
+                                  >
+                                    <AdminDetailInset>
+                                      <AdminDetailField label="Meses">
+                                        {normalizeHighSeasonMonths(c.high_season_months).length
+                                          ? normalizeHighSeasonMonths(c.high_season_months)
+                                              .map((m) => MONTH_LABELS_ES[m - 1])
+                                              .join(", ")
+                                          : adminDetailEmpty("")}
+                                      </AdminDetailField>
+                                      <AdminDetailField label="Multiplicador">
+                                        {normalizeHighSeasonMonths(c.high_season_months).length
+                                          ? `×${parseHighSeasonMultiplier(c.high_season_multiplier)}`
+                                          : adminDetailEmpty("")}
+                                      </AdminDetailField>
+                                    </AdminDetailInset>
+                                  </AdminDetailSection>
+                                </div>
+
+                                <div className="mt-6 border-t border-zinc-100 pt-5">
+                                  <AdminDetailSection
+                                    panelId={panelId}
                                     sectionId="desc"
                                     title="Descripción"
                                   >
@@ -924,6 +967,16 @@ export function CentrosAdminSection() {
                 <p className={adminLabel}>Catálogo de reservas (marketplace)</p>
                 <p className="mt-1 text-zinc-800">
                   {centerCatalogEnabled(selected) ? "Sí" : "No"}
+                </p>
+              </div>
+              <div>
+                <p className={adminLabel}>Temporada alta</p>
+                <p className="mt-1 text-zinc-800">
+                  {normalizeHighSeasonMonths(selected.high_season_months).length
+                    ? `${normalizeHighSeasonMonths(selected.high_season_months)
+                        .map((m) => MONTH_LABELS_ES[m - 1])
+                        .join(", ")} · ×${parseHighSeasonMultiplier(selected.high_season_multiplier)}`
+                    : "Sin meses configurados (canon base todo el año)"}
                 </p>
               </div>
               <div>
@@ -1106,6 +1159,12 @@ export function CentrosAdminSection() {
                   /m/…)
                 </label>
               </div>
+              <HighSeasonMonthsField
+                value={highSeasonMonths}
+                onChange={setHighSeasonMonths}
+                multiplier={highSeasonMultiplier}
+                onMultiplierChange={setHighSeasonMultiplier}
+              />
               <div className="space-y-1">
                 <label className="inline-flex cursor-pointer items-center gap-2 text-sm text-zinc-800">
                   <input
